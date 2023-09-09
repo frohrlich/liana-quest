@@ -1,0 +1,7 @@
+All assets used in this tutorial are CC0 licensed. 
+
+The player sprites can be found here .
+https://opengameart.org/content/rpg-character-sprites
+
+The enemies sprites are from here
+https://opengameart.org/content/dragon-1
