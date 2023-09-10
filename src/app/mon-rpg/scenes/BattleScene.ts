@@ -2,17 +2,20 @@ import Phaser from 'phaser';
 
 export class BattleScene extends Phaser.Scene {
   player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
-  cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
-  speed: number = 40;
   clickedTile!: Phaser.Tilemaps.Tile | null;
+
+  // starter position of the player
+  // (in tile index, from upper left corner, starting from 0)
   posX: number = 5;
   posY: number = 8;
+
   tileWidth!: number;
   tileHeight!: number;
   map!: Phaser.Tilemaps.Tilemap;
   isMoving: boolean = false;
   direction!: string;
   tileset!: Phaser.Tilemaps.Tileset | null;
+  obstacles!: Phaser.Tilemaps.TilemapLayer | null;
 
   constructor() {
     super({
@@ -25,19 +28,22 @@ export class BattleScene extends Phaser.Scene {
   preload(): void {}
 
   create(): void {
+    // create tilemap and get tile dimensions
     this.map = this.make.tilemap({ key: 'battlemap' });
     this.tileWidth = this.map.tileWidth;
     this.tileHeight = this.map.tileHeight;
 
-    // tiles creation
+    // get the tileset
     this.tileset = this.map.addTilesetImage('forest_tilemap', 'tiles');
+
+    // create layers and player sprite
     let background = this.map.createLayer(
       'calque_background',
       this.tileset!,
       0,
       0
     );
-    let obstacles = this.map.createLayer(
+    this.obstacles = this.map.createLayer(
       'calque_obstacles',
       this.tileset!,
       0,
@@ -51,12 +57,11 @@ export class BattleScene extends Phaser.Scene {
       0,
       0
     );
+    // transparent to see player beneath tall items
     overPlayer?.setAlpha(0.5);
-    // enable collisions for certain tiles
-    //obstacles!.setCollisionByProperty({ collide: true });
 
     // player and boundaries creation
-    // size of the hitbox (only the feet)
+    // set size and position of the hitbox (only the feet)
     this.player.setSize(
       this.player.displayWidth * 0.8,
       this.player.displayHeight / 3
@@ -67,19 +72,12 @@ export class BattleScene extends Phaser.Scene {
     );
     this.player.scale = 1.5;
 
-    // player start position
+    // set player start position
     let initialPlayerX = this.tilePosToPixelsX(this.posX);
     let initialPlayerY = this.tilePosToPixelsY(this.posY);
     this.player.setPosition(initialPlayerX, initialPlayerY);
 
-    this.physics.world.bounds.width = this.map.widthInPixels;
-    this.physics.world.bounds.height = this.map.heightInPixels;
-    this.player.setCollideWorldBounds(false);
-
-    // enables arrow keys
-    this.cursors = this.input.keyboard!.createCursorKeys();
-
-    // make the camera follow the player
+    // camera settings
     let zoom = 6;
     this.cameras.main.setZoom(zoom);
     this.cameras.main.setBounds(
@@ -91,7 +89,8 @@ export class BattleScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player);
     this.cameras.main.roundPixels = true;
 
-    let grid = this.add.grid(
+    // game grid
+    this.add.grid(
       0,
       0,
       this.map.widthInPixels * zoom,
@@ -104,7 +103,7 @@ export class BattleScene extends Phaser.Scene {
       0.1
     );
 
-    // animation with key 'left', we don't need left and right
+    // animation for 'left' move, we don't need left and right
     // as we will use one and flip the sprite
     let framerate = 5;
     this.anims.create({
@@ -116,7 +115,7 @@ export class BattleScene extends Phaser.Scene {
       repeat: -1,
     });
 
-    // animation with key 'right'
+    // animation for 'right'
     this.anims.create({
       key: 'right',
       frames: this.anims.generateFrameNumbers('player', {
@@ -126,6 +125,7 @@ export class BattleScene extends Phaser.Scene {
       repeat: -1,
     });
 
+    // animation for 'up'
     this.anims.create({
       key: 'up',
       frames: this.anims.generateFrameNumbers('player', {
@@ -135,6 +135,7 @@ export class BattleScene extends Phaser.Scene {
       repeat: -1,
     });
 
+    // animation for 'down'
     this.anims.create({
       key: 'down',
       frames: this.anims.generateFrameNumbers('player', {
@@ -144,11 +145,12 @@ export class BattleScene extends Phaser.Scene {
       repeat: -1,
     });
 
-    // mouse clicks on tiles
+    // register mouse clicks on tiles
     let pointer = this.input.activePointer;
     this.input.on(
       'pointerup',
       () => {
+        // get clicked tile
         this.clickedTile = this.map.getTileAtWorldXY(
           pointer.worldX,
           pointer.worldY,
@@ -157,6 +159,8 @@ export class BattleScene extends Phaser.Scene {
           background!
         );
 
+        // if a tile is clicked and player not currently moving,
+        // check if movement is possible
         if (this.clickedTile && !this.isMoving) {
           this.checkMovement();
         }
@@ -165,38 +169,46 @@ export class BattleScene extends Phaser.Scene {
       },
       this
     );
-
-    this.physics.add.collider(this.player, obstacles!);
-
-    this.sys.events.on('wake', this.wake, this);
   }
 
+  // actual moving of the player
+  // via tweens
   move(tilePos: number, direction: string) {
     if (direction == 'x') {
       this.tweens.add({
         targets: this.player,
         x: this.tilePosToPixelsX(tilePos),
-        ease: 'Linear', // 'Cubic', 'Elastic', 'Bounce', 'Back'
-        onStart: () => {this.isMoving = true;},
-        onComplete: () => {this.stop()},
+        ease: 'Linear',
+        onStart: () => {
+          this.isMoving = true;
+        },
+        onComplete: () => {
+          this.stop();
+        },
         duration: 300,
-        repeat: 0, // -1: infinity
+        repeat: 0,
         yoyo: false,
       });
     } else {
       this.tweens.add({
         targets: this.player,
         y: this.tilePosToPixelsY(tilePos),
-        ease: 'Linear', // 'Cubic', 'Elastic', 'Bounce', 'Back'
-        onStart: () => {this.isMoving = true;},
-        onComplete: () => {this.stop()},
+        ease: 'Linear',
+        onStart: () => {
+          this.isMoving = true;
+        },
+        onComplete: () => {
+          this.stop();
+        },
         duration: 300,
-        repeat: 0, // -1: infinity
+        repeat: 0,
         yoyo: false,
       });
     }
   }
 
+  // stop player movement
+  // and their animation too
   stop() {
     this.isMoving = false;
     this.player.anims.stop();
@@ -219,66 +231,77 @@ export class BattleScene extends Phaser.Scene {
     this.direction = '';
   }
 
+  // called after clicking on a tile
+  // to check if movement is possible
+  // if it is, start animation and call actual move method
   checkMovement() {
-    // left
-    if (
-      this.posY == this.clickedTile!.y &&
-      this.posX - this.clickedTile!.x == 1
-    ) {
-      this.player.setFlipX(true);
-      this.player.anims.play('left', true);
-      this.direction = "left";
-      this.move(this.clickedTile!.x, 'x');
-      this.posX--;
+    // first check if clicked tile is an obstacle
+    // if so, do nothing
+    if (!this.isObstacle()) {
+      // left
+      if (
+        this.posY == this.clickedTile!.y &&
+        this.posX - this.clickedTile!.x == 1
+      ) {
+        this.player.setFlipX(true);
+        this.player.anims.play('left', true);
+        this.direction = 'left';
+        this.move(this.clickedTile!.x, 'x');
+        this.posX--;
+      }
+      // right
+      else if (
+        this.posY == this.clickedTile!.y &&
+        this.posX - this.clickedTile!.x == -1
+      ) {
+        this.player.setFlipX(false);
+        this.player.anims.play('right', true);
+        this.direction = 'right';
+        this.move(this.clickedTile!.x, 'x');
+        this.posX++;
+        // down
+      } else if (
+        this.posX == this.clickedTile!.x &&
+        this.posY - this.clickedTile!.y == -1
+      ) {
+        this.player.setFlipX(false);
+        this.player.anims.play('down', true);
+        this.direction = 'down';
+        this.move(this.clickedTile!.y, 'y');
+        this.posY++;
+        // up
+      } else if (
+        this.posX == this.clickedTile!.x &&
+        this.posY - this.clickedTile!.y == 1
+      ) {
+        this.player.setFlipX(false);
+        this.player.anims.play('up', true);
+        this.direction = 'up';
+        this.move(this.clickedTile!.y, 'y');
+        this.posY--;
+      }
     }
-    // right
-    else if (
-      this.posY == this.clickedTile!.y &&
-      this.posX - this.clickedTile!.x == -1
-    ) {
-      this.player.setFlipX(false);
-      this.player.anims.play('right', true);
-      this.direction = "right";
-      this.move(this.clickedTile!.x, 'x');
-      this.posX++;
-      // down
-    } else if (
-      this.posX == this.clickedTile!.x &&
-      this.posY - this.clickedTile!.y == -1
-    ) {
-      this.player.setFlipX(false);
-      this.player.anims.play('down', true);
-      this.direction = "down";
-      this.move(this.clickedTile!.y, 'y');
-      this.posY++;
-      // up
-    } else if (
-      this.posX == this.clickedTile!.x &&
-      this.posY - this.clickedTile!.y == 1
-    ) {
-      this.player.setFlipX(false);
-      this.player.anims.play('up', true);
-      this.direction = "up";
-      this.move(this.clickedTile!.y, 'y');
-      this.posY--;
-    }
   }
 
-  override update(time: number, delta: number): void {
-  }
+  override update(time: number, delta: number): void {}
 
-  wake() {
-    this.cursors.left.reset();
-    this.cursors.right.reset();
-    this.cursors.up.reset();
-    this.cursors.down.reset();
-  }
-
+  // convert a tile position (index) to actual pixel position
+  // for a character
   tilePosToPixelsX(x: number) {
     return this.tileWidth * x + this.player.width / 2;
   }
 
   tilePosToPixelsY(y: number) {
     return this.map.tileWidth * y + this.player.height / 3;
+  }
+
+  // check if clicked tile is an obstacle
+  isObstacle(): boolean {
+    let collides = this.obstacles!.getTileAt(this.clickedTile!.x, this.clickedTile!.y);
+    if(collides) {
+      return collides.properties.collide;
+    } else {
+      return false;
+    }
   }
 }
