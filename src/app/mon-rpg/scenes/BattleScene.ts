@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
 import { Unit } from '../classes/Unit';
 import findPath from '../utils/findPath';
+import { Npc } from '../classes/Npc';
 
 export class BattleScene extends Phaser.Scene {
   player!: Unit;
+  enemy!: Unit;
   clickedTile!: Phaser.Tilemaps.Tile | null;
   tileWidth!: number;
   tileHeight!: number;
@@ -13,10 +15,6 @@ export class BattleScene extends Phaser.Scene {
   tileset!: Phaser.Tilemaps.Tileset | null;
   obstacles!: Phaser.Tilemaps.TilemapLayer | null;
   background!: Phaser.Tilemaps.TilemapLayer | null;
-  moveChain: any = {};
-  prevIndX!: number;
-  prevIndY!: number;
-  prevPM!: number;
 
   constructor() {
     super({
@@ -37,7 +35,7 @@ export class BattleScene extends Phaser.Scene {
     // get the tileset
     this.tileset = this.map.addTilesetImage('forest_tilemap', 'tiles');
 
-    // create layers and player sprite
+    // create layers and characters sprites
     this.background = this.map.createLayer(
       'calque_background',
       this.tileset!,
@@ -51,11 +49,14 @@ export class BattleScene extends Phaser.Scene {
       0
     );
 
+    // add units
     // starting position (grid index)
-    let startX = 5;
-    let startY = 6;
-    this.player = new Unit(this, 0, 0, 'player', 6, startX, startY, 6);
-    this.add.existing(this.player);
+    let playerStartX = 5;
+    let playerStartY = 6;
+    this.player = this.addCharacter('player', 6, playerStartX, playerStartY, 6);
+    let enemyStartX = 18;
+    let enemyStartY = 2;
+    this.enemy = this.addCharacter('player', 30, enemyStartX, enemyStartY, 6, true);
 
     // layer for tall items appearing on top of the player like trees
     let overPlayer = this.map.createLayer(
@@ -67,15 +68,8 @@ export class BattleScene extends Phaser.Scene {
     // transparent to see player beneath tall items
     overPlayer?.setAlpha(0.5);
 
-    this.player.scale = 1.5;
-
-    // set player start position
-    let initialPlayerX = this.tilePosToPixelsX(this.player.indX);
-    let initialPlayerY = this.tilePosToPixelsY(this.player.indY);
-    this.player.setPosition(initialPlayerX, initialPlayerY);
-
     // camera settings
-    let zoom = 6;
+    let zoom = 4;
     this.cameras.main.setZoom(zoom);
     this.cameras.main.setBounds(
       0,
@@ -83,15 +77,14 @@ export class BattleScene extends Phaser.Scene {
       this.map.widthInPixels,
       this.map.heightInPixels
     );
-    this.cameras.main.startFollow(this.player);
     this.cameras.main.roundPixels = true;
 
     // game grid
     this.add.grid(
       0,
       0,
-      this.map.widthInPixels * zoom,
-      this.map.heightInPixels * zoom,
+      (this.map.widthInPixels * zoom) / 2,
+      (this.map.heightInPixels * zoom) / 2,
       this.map.tileWidth,
       this.map.tileHeight,
       0xffffff,
@@ -100,9 +93,128 @@ export class BattleScene extends Phaser.Scene {
       0.1
     );
 
-    // animation for 'left' move, we don't need left and right
-    // as we will use one and flip the sprite
-    let framerate = 5;
+    // create player animations with framerate
+    this.createAnimations(5);
+
+    // on clicking on a tile
+    this.input.on(
+      Phaser.Input.Events.POINTER_UP,
+      (pointer: Phaser.Input.Pointer) => {
+        if (!this.isMoving) {
+          const { worldX, worldY } = pointer;
+
+          const startVec = new Phaser.Math.Vector2(this.player.indX, this.player.indY);
+          const targetVec = this.background!.worldToTileXY(worldX, worldY);
+
+          // pathfinding
+          let path = findPath(
+            startVec,
+            targetVec,
+            this.background!,
+            this.obstacles!
+          );
+
+          if(!this.player.isMoving) {
+            this.player.moveAlong(path);
+          }
+        }
+      }
+    );
+
+    this.highlightAccessibleTiles(this.player);
+
+    // remember to clean up on Scene shutdown
+    this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.off(Phaser.Input.Events.POINTER_UP);
+    });
+
+    this.scene.run('UIScene');
+  }
+
+  endTurn = () => {
+    if (!this.isMoving) {
+      this.player.refillPoints();
+      this.enemy.refillPoints();
+      (this.enemy as Npc).playTurn();
+      this.clearAccessibleTiles();
+      // this.highlightAccessibleTiles();
+    }
+  };
+
+  override update(time: number, delta: number): void {}
+
+  // checks if the unit can access this tile with their remaining PMs
+  isAccessible(x: number, y: number, unit:Unit) {
+    const startVec = new Phaser.Math.Vector2(
+      unit.indX,
+      unit.indY
+    );
+    const targetVec = new Phaser.Math.Vector2(x, y);
+
+    // pathfinding
+    let path = findPath(startVec, targetVec, this.background!, this.obstacles!);
+
+    if (path.length > 0 && path.length <= unit.pm) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  // highlight tiles accessible to the player
+  // according to their remaining PMs
+  highlightAccessibleTiles = (unit: Unit) => {
+    // add tile under player's feet
+    this.background
+      ?.getTileAt(unit.indX, unit.indY)
+      .setAlpha(0.5);
+
+    let tilesAround = this.background?.getTilesWithin(
+      unit.indX - unit.pm,
+      unit.indY - unit.pm,
+      unit.pm * 2 + 1,
+      unit.pm * 2 + 1
+    );
+    if (tilesAround) {
+      tilesAround.forEach((tile) => {
+        if (this.isAccessible(tile.x, tile.y, unit)) {
+          tile.setAlpha(0.5);
+        }
+      });
+    }
+  }
+
+  // clear highlighted tiles
+  clearAccessibleTiles = () => {
+    this.background?.forEachTile((tile) => {tile.setAlpha(1);});
+  }
+
+  addCharacter(
+    key: string,
+    frame: number,
+    startX: number,
+    startY: number,
+    maxPm: number,
+    npc:boolean = false
+  ) {
+    let unit;
+    if(npc) {
+      unit = new Npc(this, 0, 0, key, frame, startX, startY, maxPm);
+    } else {
+      unit = new Unit(this, 0, 0, key, frame, startX, startY, maxPm);
+    }
+    this.add.existing(unit);
+    // set player start position
+    let initialPlayerX = unit.tilePosToPixelsX();
+    let initialPlayerY = unit.tilePosToPixelsY();
+    unit.setPosition(initialPlayerX, initialPlayerY);
+    unit.scale = 1.5;
+    return unit;
+  }
+
+  // animation for 'left' move, we don't need left and right
+  // as we will use one and flip the sprite
+  createAnimations = (framerate: number) => {
     this.anims.create({
       key: 'left',
       frames: this.anims.generateFrameNumbers('player', {
@@ -141,216 +253,5 @@ export class BattleScene extends Phaser.Scene {
       frameRate: framerate,
       repeat: -1,
     });
-
-    // on clicking on a tile
-    this.input.on(
-      Phaser.Input.Events.POINTER_UP,
-      (pointer: Phaser.Input.Pointer) => {
-        if (!this.isMoving) {
-          const { worldX, worldY } = pointer;
-
-          const startVec = this.background!.worldToTileXY(
-            this.player.x,
-            this.player.y
-          );
-          const targetVec = this.background!.worldToTileXY(worldX, worldY);
-
-          if (this.isAccessible(targetVec.x, targetVec.y)) {
-            this.prevIndX = this.player.indX;
-            this.prevIndY = this.player.indY;
-            this.prevPM = this.player.pm;
-
-            // pathfinding
-            let path = findPath(
-              startVec,
-              targetVec,
-              this.background!,
-              this.obstacles!
-            );
-
-            if (path.length > 0) {
-              // fixes problem of stopping before last tile...
-              path.pop();
-              path.push(targetVec);
-
-              // chain of movements (tweens)
-              this.moveChain.targets = this.player;
-              this.moveChain.onStart = () => {
-                this.isMoving = true;
-              };
-              this.moveChain.onComplete = this.stop;
-              this.moveChain.tweens = [];
-
-              path.forEach((position) => {
-                this.checkDirection(position.x, position.y);
-              });
-              this.tweens.chain(this.moveChain);
-            }
-          }
-        }
-      }
-    );
-
-    this.highlightAccessibleTiles();
-
-    // remember to clean up on Scene shutdown
-    this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.input.off(Phaser.Input.Events.POINTER_UP);
-    });
-  }
-
-  // actual moving of the player
-  // via tweens
-  move(tilePos: number, direction: string) {
-    this.isMoving = true;
-    if (direction == 'left' || direction == 'right') {
-      this.moveChain.tweens.push({
-        x: this.tilePosToPixelsX(tilePos),
-        ease: 'Linear',
-        onStart: () => {
-          this.startAnim(direction);
-        },
-        duration: 300,
-        repeat: 0,
-        yoyo: false,
-      });
-    } else {
-      this.moveChain.tweens.push({
-        y: this.tilePosToPixelsY(tilePos),
-        ease: 'Linear',
-        onStart: () => {
-          this.startAnim(direction);
-        },
-        duration: 300,
-        repeat: 0,
-        yoyo: false,
-      });
-    }
-  }
-
-  // stop player movement
-  // and their animation too
-  stop = () => {
-    this.isMoving = false;
-    this.player.anims.stop();
-    switch (this.direction) {
-      case 'left':
-        this.player.setTexture('player', 7);
-        break;
-      case 'right':
-        this.player.setTexture('player', 7);
-        break;
-      case 'up':
-        this.player.setTexture('player', 8);
-        break;
-      case 'down':
-        this.player.setTexture('player', 6);
-        break;
-      default:
-        break;
-    }
-    this.direction = '';
-    this.clearAccessibleTiles(this.prevIndX, this.prevIndY, this.prevPM);
-    this.highlightAccessibleTiles();
-  };
-
-  // called before actual move to check direction
-  checkDirection(x: number, y: number) {
-    // left
-    if (this.player.indX - x == 1) {
-      this.direction = 'left';
-      this.move(x, this.direction);
-      this.player.indX--;
-      this.player.pm--;
-    }
-    // right
-    else if (this.player.indX - x == -1) {
-      this.direction = 'right';
-      this.move(x, this.direction);
-      this.player.indX++;
-      this.player.pm--;
-      // down
-    } else if (this.player.indY - y == -1) {
-      this.direction = 'down';
-      this.move(y, this.direction);
-      this.player.indY++;
-      this.player.pm--;
-      // up
-    } else if (this.player.indY - y == 1) {
-      this.direction = 'up';
-      this.move(y, this.direction);
-      this.player.indY--;
-      this.player.pm--;
-    }
-  }
-
-  override update(time: number, delta: number): void {}
-
-  // convert a tile position (index) to actual pixel position
-  // for a character
-  tilePosToPixelsX(x: number) {
-    return this.tileWidth * x + this.player.width / 2;
-  }
-
-  tilePosToPixelsY(y: number) {
-    return this.map.tileWidth * y + this.player.height / 6;
-  }
-
-  startAnim(direction: string) {
-    this.player.setFlipX(direction == 'left');
-    this.player.anims.play(direction, true);
-  }
-
-  // checks if the player can access this tile with their remaining PMs
-  isAccessible(x: number, y: number) {
-    const startVec = new Phaser.Math.Vector2(
-      this.player.indX,
-      this.player.indY
-    );
-    const targetVec = new Phaser.Math.Vector2(x, y);
-
-    // pathfinding
-    let path = findPath(startVec, targetVec, this.background!, this.obstacles!);
-
-    if (path.length > 0 && path.length <= this.player.pm) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  // highlight tiles accessible to the player
-  // according to their remaining PMs
-  highlightAccessibleTiles() {
-    // add tile under player's feet
-    this.background?.getTileAt(this.player.indX, this.player.indY).setAlpha(0.5);
-
-    let tilesAround = this.background?.getTilesWithin(
-      this.player.indX - this.player.pm,
-      this.player.indY - this.player.pm,
-      this.player.pm * 2 + 1,
-      this.player.pm * 2 + 1
-    );
-    if (tilesAround) {
-      tilesAround.forEach((tile) => {
-        if (this.isAccessible(tile.x, tile.y)) {
-          tile.setAlpha(0.5);
-        }
-      });
-    }
-  }
-
-  // clear highlighted tiles
-  clearAccessibleTiles(indX: number, indY: number, pm: number) {
-    this.background?.filterTiles(
-      (tile: Phaser.Tilemaps.Tile) => {
-        tile.setAlpha(1);
-      },
-      this,
-      indX - pm,
-      indY - pm,
-      pm * 2 + 1,
-      pm * 2 + 1
-    );
   }
 }

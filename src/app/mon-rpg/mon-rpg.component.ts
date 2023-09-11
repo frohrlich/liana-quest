@@ -4,6 +4,7 @@ import { WorldScene } from './scenes/WorldScene';
 import { BootScene } from './scenes/BootScene';
 import { DialogueScene } from './scenes/DialogueScene';
 import { BattleScene } from './scenes/BattleScene';
+import { UIScene } from './scenes/UIScene';
 
 @Component({
   selector: 'app-mon-rpg',
@@ -33,6 +34,7 @@ export class MonRpgComponent implements OnInit {
       scene: [
           BootScene,
           BattleScene,
+          UIScene,
           DialogueScene,
           WorldScene
       ]

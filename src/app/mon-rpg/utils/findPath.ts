@@ -98,7 +98,10 @@ const findPath = (
     currentPos = position;
   }
 
-  return path.reverse();
+  let pathReturn = path.reverse();
+  pathReturn.pop();
+  pathReturn.push(target);
+  return pathReturn;
 };
 
 export default findPath;
