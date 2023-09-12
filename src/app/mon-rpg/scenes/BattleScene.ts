@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Unit } from '../classes/Unit';
 import findPath from '../utils/findPath';
 import { Npc } from '../classes/Npc';
+import { Player } from '../classes/Player';
 
 export class BattleScene extends Phaser.Scene {
   player!: Unit;
@@ -53,10 +54,31 @@ export class BattleScene extends Phaser.Scene {
     // starting position (grid index)
     let playerStartX = 5;
     let playerStartY = 6;
-    this.player = this.addCharacter('player', 6, playerStartX, playerStartY, 6);
+    let playerFrame = 6;
+    this.player = this.addCharacter(
+      'player',
+      playerFrame,
+      playerStartX,
+      playerStartY,
+      6,
+      'amazon',
+      false
+    );
+    // create player animations with base sprite and framerate
+    this.createAnimations(playerFrame, 5, 'amazon');
     let enemyStartX = 18;
     let enemyStartY = 2;
-    this.enemy = this.addCharacter('player', 30, enemyStartX, enemyStartY, 6, true);
+    let enemyFrame = 30;
+    this.enemy = this.addCharacter(
+      'player',
+      enemyFrame,
+      enemyStartX,
+      enemyStartY,
+      6,
+      'snowman',
+      true
+    );
+    this.createAnimations(enemyFrame, 5, 'snowman');
 
     // layer for tall items appearing on top of the player like trees
     let overPlayer = this.map.createLayer(
@@ -65,6 +87,8 @@ export class BattleScene extends Phaser.Scene {
       0,
       0
     );
+    // always on top
+    overPlayer?.setDepth(9999);
     // transparent to see player beneath tall items
     overPlayer?.setAlpha(0.5);
 
@@ -93,9 +117,6 @@ export class BattleScene extends Phaser.Scene {
       0.1
     );
 
-    // create player animations with framerate
-    this.createAnimations(5);
-
     // on clicking on a tile
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
@@ -103,7 +124,10 @@ export class BattleScene extends Phaser.Scene {
         if (!this.isMoving) {
           const { worldX, worldY } = pointer;
 
-          const startVec = new Phaser.Math.Vector2(this.player.indX, this.player.indY);
+          const startVec = new Phaser.Math.Vector2(
+            this.player.indX,
+            this.player.indY
+          );
           const targetVec = this.background!.worldToTileXY(worldX, worldY);
 
           // pathfinding
@@ -114,7 +138,7 @@ export class BattleScene extends Phaser.Scene {
             this.obstacles!
           );
 
-          if(!this.player.isMoving) {
+          if (!this.player.isMoving) {
             this.player.moveAlong(path);
           }
         }
@@ -134,21 +158,16 @@ export class BattleScene extends Phaser.Scene {
   endTurn = () => {
     if (!this.isMoving) {
       this.player.refillPoints();
-      this.enemy.refillPoints();
-      (this.enemy as Npc).playTurn();
       this.clearAccessibleTiles();
-      // this.highlightAccessibleTiles();
+      (this.enemy as Npc).playTurn();
     }
   };
 
   override update(time: number, delta: number): void {}
 
   // checks if the unit can access this tile with their remaining PMs
-  isAccessible(x: number, y: number, unit:Unit) {
-    const startVec = new Phaser.Math.Vector2(
-      unit.indX,
-      unit.indY
-    );
+  isAccessible(x: number, y: number, unit: Unit) {
+    const startVec = new Phaser.Math.Vector2(unit.indX, unit.indY);
     const targetVec = new Phaser.Math.Vector2(x, y);
 
     // pathfinding
@@ -165,9 +184,7 @@ export class BattleScene extends Phaser.Scene {
   // according to their remaining PMs
   highlightAccessibleTiles = (unit: Unit) => {
     // add tile under player's feet
-    this.background
-      ?.getTileAt(unit.indX, unit.indY)
-      .setAlpha(0.5);
+    this.background?.getTileAt(unit.indX, unit.indY).setAlpha(0.5);
 
     let tilesAround = this.background?.getTilesWithin(
       unit.indX - unit.pm,
@@ -182,12 +199,14 @@ export class BattleScene extends Phaser.Scene {
         }
       });
     }
-  }
+  };
 
   // clear highlighted tiles
   clearAccessibleTiles = () => {
-    this.background?.forEachTile((tile) => {tile.setAlpha(1);});
-  }
+    this.background?.forEachTile((tile) => {
+      tile.setAlpha(1);
+    });
+  };
 
   addCharacter(
     key: string,
@@ -195,14 +214,16 @@ export class BattleScene extends Phaser.Scene {
     startX: number,
     startY: number,
     maxPm: number,
-    npc:boolean = false
+    name: string,
+    npc: boolean = false,
   ) {
     let unit;
-    if(npc) {
+    if (npc) {
       unit = new Npc(this, 0, 0, key, frame, startX, startY, maxPm);
     } else {
-      unit = new Unit(this, 0, 0, key, frame, startX, startY, maxPm);
+      unit = new Player(this, 0, 0, key, frame, startX, startY, maxPm);
     }
+    unit.type = name;
     this.add.existing(unit);
     // set player start position
     let initialPlayerX = unit.tilePosToPixelsX();
@@ -212,46 +233,59 @@ export class BattleScene extends Phaser.Scene {
     return unit;
   }
 
-  // animation for 'left' move, we don't need left and right
-  // as we will use one and flip the sprite
-  createAnimations = (framerate: number) => {
+  // create a set of animations from a framerate and a base sprite
+  createAnimations = (baseSprite: number, framerate: number, name: string) => {
+    // animation for 'left' move, we don't need left and right
+    // as we will use one and flip the sprite
     this.anims.create({
-      key: 'left',
+      key: 'left' + name,
       frames: this.anims.generateFrameNumbers('player', {
-        frames: [7, 16, 7, 25],
+        frames: [
+          baseSprite + 1,
+          baseSprite + 10,
+          baseSprite + 1,
+          baseSprite + 19,
+        ],
       }),
       frameRate: framerate,
       repeat: -1,
     });
-
     // animation for 'right'
     this.anims.create({
-      key: 'right',
+      key: 'right' + name,
       frames: this.anims.generateFrameNumbers('player', {
-        frames: [7, 16, 7, 25],
+        frames: [
+          baseSprite + 1,
+          baseSprite + 10,
+          baseSprite + 1,
+          baseSprite + 19,
+        ],
       }),
       frameRate: framerate,
       repeat: -1,
     });
-
     // animation for 'up'
     this.anims.create({
-      key: 'up',
+      key: 'up' + name,
       frames: this.anims.generateFrameNumbers('player', {
-        frames: [8, 17, 8, 26],
+        frames: [
+          baseSprite + 2,
+          baseSprite + 11,
+          baseSprite + 2,
+          baseSprite + 20,
+        ],
       }),
       frameRate: framerate,
       repeat: -1,
     });
-
     // animation for 'down'
     this.anims.create({
-      key: 'down',
+      key: 'down' + name,
       frames: this.anims.generateFrameNumbers('player', {
-        frames: [6, 15, 6, 24],
+        frames: [baseSprite, baseSprite + 9, baseSprite, baseSprite + 18],
       }),
       frameRate: framerate,
       repeat: -1,
     });
-  }
+  };
 }

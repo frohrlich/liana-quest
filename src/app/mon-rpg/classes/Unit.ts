@@ -13,6 +13,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   direction: string;
   isMoving: boolean;
   moveChain: any = {};
+  frameNumber: number;
 
   constructor(
     scene: Phaser.Scene,
@@ -31,6 +32,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.pm = maxPm;
     this.direction = '';
     this.isMoving = false;
+    this.frameNumber = frame;
 
     this.moveChain.targets = this;
     this.moveChain.onStart = () => {
@@ -38,7 +40,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
     };
     this.moveChain.onComplete = this.stopMovement;
     this.moveChain.tweens = [];
-
   }
 
   // refills movement points at turn beginning
@@ -48,7 +49,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   moveAlong(path: Phaser.Math.Vector2[]) {
     if (!path || path.length <= 0 || path.length > this.pm) {
-      if(this.isMoving) {
+      if (this.isMoving) {
         this.scene.tweens.chain(this.moveChain);
       }
       return;
@@ -113,6 +114,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
         ease: 'Linear',
         onStart: () => {
           this.startAnim(direction);
+          this.depth = this.y;
         },
         duration: 300,
         repeat: 0,
@@ -123,44 +125,55 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   // stop player movement
   // and their animations too
-  // also update highlighted tiles
   stopMovement = () => {
+    this.depth = this.y;
     this.isMoving = false;
     this.anims.stop();
     switch (this.direction) {
       case 'left':
-        this.setTexture('player', 7);
+        this.setTexture('player', this.frameNumber + 1);
         break;
       case 'right':
-        this.setTexture('player', 7);
+        this.setTexture('player', this.frameNumber + 1);
         break;
       case 'up':
-        this.setTexture('player', 8);
+        this.setTexture('player', this.frameNumber + 2);
         break;
       case 'down':
-        this.setTexture('player', 6);
+        this.setTexture('player', this.frameNumber);
         break;
       default:
         break;
     }
-
     this.direction = '';
-    (this.scene as BattleScene).clearAccessibleTiles();
-    (this.scene as BattleScene).highlightAccessibleTiles(this);
     this.moveChain.tweens = [];
+    this.updateMoveRange();
   };
 
   // convert the tile position (index) of the character to actual pixel position
-  tilePosToPixelsX(delta:number=0) {
-    return (this.scene as BattleScene).tileWidth * (this.indX + delta) + this.width / 2;
+  tilePosToPixelsX(delta: number = 0) {
+    return (
+      (this.scene as BattleScene).tileWidth * (this.indX + delta) +
+      this.width / 2
+    );
   }
 
-  tilePosToPixelsY(delta:number=0) {
-    return (this.scene as BattleScene).tileHeight * (this.indY + delta) + this.height / 6;
+  tilePosToPixelsY(delta: number = 0) {
+    return (
+      (this.scene as BattleScene).tileHeight * (this.indY + delta) +
+      this.height / 6
+    );
   }
 
   startAnim = (direction: string) => {
-    this.setFlipX(direction == 'left');
-    this.play(direction, true);
+    this.setFlipX(direction.startsWith('left'));
+    this.play(direction + this.type, true);
   };
+  
+  // update accessible tiles display for the player
+  updateMoveRange() {
+    let myScene = this.scene as BattleScene;
+    myScene.clearAccessibleTiles();
+    myScene.highlightAccessibleTiles(myScene.player);
+  }
 }

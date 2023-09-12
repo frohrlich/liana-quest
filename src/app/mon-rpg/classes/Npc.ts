@@ -18,6 +18,10 @@ export class Npc extends Unit {
   }
 
   playTurn() {
+    if (this.pm == 0) {
+      return;
+    }
+
     let randX, randY;
     do {
       randX = this.indX + Phaser.Math.Between(-this.pm, this.pm);
@@ -37,6 +41,11 @@ export class Npc extends Unit {
       );
 
       this.moveAlong(path);
+      this.endTurn();
     }
+  }
+
+  endTurn() {
+    this.refillPoints();
   }
 }
