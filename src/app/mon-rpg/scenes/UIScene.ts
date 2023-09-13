@@ -39,7 +39,11 @@ export class UIScene extends Phaser.Scene {
       )
       .setOrigin(0.5, 0.5);
     nextTurnButton.setInteractive();
-    nextTurnButton.on('pointerup', this.battleScene.endTurn);
+    nextTurnButton.on('pointerup', () => {
+      if (this.battleScene.isPlayerTurn && !this.battleScene.player.isMoving) {
+        this.battleScene.endTurn();
+      }
+    });
   }
 
   // draw the outline of the UI

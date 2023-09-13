@@ -147,7 +147,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     }
     this.direction = '';
     this.moveChain.tweens = [];
-    this.updateMoveRange();
+    this.nextAction();
   };
 
   // convert the tile position (index) of the character to actual pixel position
@@ -170,10 +170,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.play(direction + this.type, true);
   };
   
-  // update accessible tiles display for the player
-  updateMoveRange() {
-    let myScene = this.scene as BattleScene;
-    myScene.clearAccessibleTiles();
-    myScene.highlightAccessibleTiles(myScene.player);
+  playTurn() {
+  }
+
+  nextAction() {
   }
 }

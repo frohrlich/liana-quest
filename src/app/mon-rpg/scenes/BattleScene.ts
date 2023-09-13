@@ -3,10 +3,13 @@ import { Unit } from '../classes/Unit';
 import findPath from '../utils/findPath';
 import { Npc } from '../classes/Npc';
 import { Player } from '../classes/Player';
+import { max } from 'rxjs';
+import { Vector } from 'matter';
 
 export class BattleScene extends Phaser.Scene {
   player!: Unit;
-  enemy!: Unit;
+  allies: Unit[] = [];
+  enemies: Unit[] = [];
   clickedTile!: Phaser.Tilemaps.Tile | null;
   tileWidth!: number;
   tileHeight!: number;
@@ -16,6 +19,10 @@ export class BattleScene extends Phaser.Scene {
   tileset!: Phaser.Tilemaps.Tileset | null;
   obstacles!: Phaser.Tilemaps.TilemapLayer | null;
   background!: Phaser.Tilemaps.TilemapLayer | null;
+  turnIndex: number = 0;
+  timeline: Unit[] = [];
+  isPlayerTurn: boolean = true;
+  accessibleTiles: Phaser.Math.Vector2[] = [];
 
   constructor() {
     super({
@@ -62,21 +69,82 @@ export class BattleScene extends Phaser.Scene {
       playerStartY,
       6,
       'amazon',
-      false
+      false,
+      true
     );
     // create player animations with base sprite and framerate
     this.createAnimations(playerFrame, 5, 'amazon');
+
+    // ally 1
+    playerStartX = 1;
+    playerStartY = 9;
+    playerFrame = 0;
+    this.addCharacter(
+      'player',
+      playerFrame,
+      playerStartX,
+      playerStartY,
+      6,
+      'dude',
+      true,
+      true
+    );
+    this.createAnimations(playerFrame, 5, 'dude');
+    // ally 2
+    playerStartX = 3;
+    playerStartY = 2;
+    playerFrame = 0;
+    this.addCharacter(
+      'player',
+      playerFrame,
+      playerStartX,
+      playerStartY,
+      6,
+      'dude',
+      true,
+      true
+    );
+    // enemy 1
     let enemyStartX = 18;
     let enemyStartY = 2;
     let enemyFrame = 30;
-    this.enemy = this.addCharacter(
+    this.addCharacter(
       'player',
       enemyFrame,
       enemyStartX,
       enemyStartY,
       6,
       'snowman',
-      true
+      true,
+      false
+    );
+    // enemy 2
+    enemyStartX = 15;
+    enemyStartY = 4;
+    enemyFrame = 30;
+    this.addCharacter(
+      'player',
+      enemyFrame,
+      enemyStartX,
+      enemyStartY,
+      6,
+      'snowman',
+      true,
+      false
+    );
+    // enemy 3
+    enemyStartX = 10;
+    enemyStartY = 3;
+    enemyFrame = 30;
+    this.addCharacter(
+      'player',
+      enemyFrame,
+      enemyStartX,
+      enemyStartY,
+      6,
+      'snowman',
+      true,
+      false
     );
     this.createAnimations(enemyFrame, 5, 'snowman');
 
@@ -121,7 +189,7 @@ export class BattleScene extends Phaser.Scene {
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
       (pointer: Phaser.Input.Pointer) => {
-        if (!this.isMoving) {
+        if (!this.player.isMoving && this.isPlayerTurn) {
           const { worldX, worldY } = pointer;
 
           const startVec = new Phaser.Math.Vector2(
@@ -138,14 +206,23 @@ export class BattleScene extends Phaser.Scene {
             this.obstacles!
           );
 
-          if (!this.player.isMoving) {
+          if (!this.player.isMoving && path && path.length > 0) {
+            this.accessibleTiles = this.calculateAccessibleTiles(
+              targetVec,
+              this.player.pm - path.length
+            );
             this.player.moveAlong(path);
           }
         }
       }
     );
 
-    this.highlightAccessibleTiles(this.player);
+    this.timeline = createTimeline(this.allies, this.enemies);
+
+    let playerPos = new Phaser.Math.Vector2(this.player.indX, this.player.indY);
+    this.highlightAccessibleTiles(
+      this.calculateAccessibleTiles(playerPos, this.player.pm)
+    );
 
     // remember to clean up on Scene shutdown
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -156,24 +233,36 @@ export class BattleScene extends Phaser.Scene {
   }
 
   endTurn = () => {
-    if (!this.isMoving) {
-      this.player.refillPoints();
+    if (this.isPlayerTurn) {
       this.clearAccessibleTiles();
-      (this.enemy as Npc).playTurn();
+    }
+    this.isPlayerTurn = false;
+    this.turnIndex++;
+    if (this.turnIndex == this.timeline.length) {
+      this.turnIndex = 0;
+    }
+    let currentPlayer = this.timeline[this.turnIndex];
+    if (currentPlayer instanceof Npc) {
+      currentPlayer.playTurn();
+    } else {
+      this.isPlayerTurn = true;
+      currentPlayer.refillPoints();
+      this.refreshAccessibleTiles();
+      currentPlayer.nextAction();
     }
   };
 
   override update(time: number, delta: number): void {}
 
   // checks if the unit can access this tile with their remaining PMs
-  isAccessible(x: number, y: number, unit: Unit) {
-    const startVec = new Phaser.Math.Vector2(unit.indX, unit.indY);
+  isAccessible(x: number, y: number, unitX: number, unitY: number, pm: number) {
+    const startVec = new Phaser.Math.Vector2(unitX, unitY);
     const targetVec = new Phaser.Math.Vector2(x, y);
 
     // pathfinding
     let path = findPath(startVec, targetVec, this.background!, this.obstacles!);
 
-    if (path.length > 0 && path.length <= unit.pm) {
+    if (path.length > 0 && path.length <= pm) {
       return true;
     } else {
       return false;
@@ -182,24 +271,42 @@ export class BattleScene extends Phaser.Scene {
 
   // highlight tiles accessible to the player
   // according to their remaining PMs
-  highlightAccessibleTiles = (unit: Unit) => {
+  highlightAccessibleTiles = (positions: Phaser.Math.Vector2[]) => {
     // add tile under player's feet
-    this.background?.getTileAt(unit.indX, unit.indY).setAlpha(0.5);
+    // this.background?.getTileAt(unit.indX, unit.indY).setAlpha(0.5);
+    positions.forEach((pos) => {
+      this.background?.getTileAt(pos.x, pos.y).setAlpha(0.5);
+    });
+  };
 
+  calculateAccessibleTiles = (
+    pos: Phaser.Math.Vector2,
+    pm: number
+  ): Phaser.Math.Vector2[] => {
+    let { x, y } = pos;
+    let tablePos: Phaser.Math.Vector2[] = [];
     let tilesAround = this.background?.getTilesWithin(
-      unit.indX - unit.pm,
-      unit.indY - unit.pm,
-      unit.pm * 2 + 1,
-      unit.pm * 2 + 1
+      x - pm,
+      y - pm,
+      pm * 2 + 1,
+      pm * 2 + 1
     );
     if (tilesAround) {
       tilesAround.forEach((tile) => {
-        if (this.isAccessible(tile.x, tile.y, unit)) {
-          tile.setAlpha(0.5);
+        if (this.isAccessible(tile.x, tile.y, x, y, pm)) {
+          tablePos.push(new Phaser.Math.Vector2(tile.x, tile.y));
         }
       });
     }
+    return tablePos;
   };
+
+  refreshAccessibleTiles() {
+    this.accessibleTiles = this.calculateAccessibleTiles(
+      new Phaser.Math.Vector2(this.player.indX, this.player.indY),
+      this.player.pm
+    );
+  }
 
   // clear highlighted tiles
   clearAccessibleTiles = () => {
@@ -215,7 +322,8 @@ export class BattleScene extends Phaser.Scene {
     startY: number,
     maxPm: number,
     name: string,
-    npc: boolean = false,
+    npc: boolean,
+    allied: boolean
   ) {
     let unit;
     if (npc) {
@@ -230,6 +338,11 @@ export class BattleScene extends Phaser.Scene {
     let initialPlayerY = unit.tilePosToPixelsY();
     unit.setPosition(initialPlayerX, initialPlayerY);
     unit.scale = 1.5;
+    if (allied) {
+      this.allies.push(unit);
+    } else {
+      this.enemies.push(unit);
+    }
     return unit;
   }
 
@@ -289,3 +402,18 @@ export class BattleScene extends Phaser.Scene {
     });
   };
 }
+
+// play order : alternate between allies and enemies
+let createTimeline = (allies: Unit[], enemies: Unit[]) => {
+  let maxSize = Math.max(allies.length, enemies.length);
+  let timeline: Unit[] = [];
+  for (let i = 0; i < maxSize; i++) {
+    if (allies.length > i) {
+      timeline.push(allies[i]);
+    }
+    if (enemies.length > i) {
+      timeline.push(enemies[i]);
+    }
+  }
+  return timeline;
+};
