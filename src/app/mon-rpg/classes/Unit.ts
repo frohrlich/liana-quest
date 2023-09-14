@@ -36,6 +36,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
     this.moveChain.targets = this;
     this.moveChain.onStart = () => {
+      this.depth = this.y;
       this.isMoving = true;
     };
     this.moveChain.onComplete = this.stopMovement;
@@ -61,6 +62,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   // called before actual move to check direction
   moveTo(target: Phaser.Math.Vector2) {
+    (this.scene as BattleScene).removeFromObstacleLayer(this);
     let { x, y } = target;
     // left
     if (this.indX - x == 1) {
@@ -88,6 +90,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
       this.indY--;
       this.pm--;
     }
+    (this.scene as BattleScene).addToObstacleLayer(new Phaser.Math.Vector2(this.indX, this.indY));
     this.moveAlong(this.movePath);
   }
 
@@ -102,6 +105,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
         ease: 'Linear',
         onStart: () => {
           this.startAnim(direction);
+          this.depth = this.y;
         },
         duration: 300,
         repeat: 0,

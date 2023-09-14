@@ -76,7 +76,7 @@ export class BattleScene extends Phaser.Scene {
     this.createAnimations(playerFrame, 5, 'amazon');
 
     // ally 1
-    playerStartX = 1;
+    playerStartX = 0;
     playerStartY = 9;
     playerFrame = 0;
     this.addCharacter(
@@ -91,7 +91,7 @@ export class BattleScene extends Phaser.Scene {
     );
     this.createAnimations(playerFrame, 5, 'dude');
     // ally 2
-    playerStartX = 3;
+    playerStartX = 0;
     playerStartY = 2;
     playerFrame = 0;
     this.addCharacter(
@@ -105,7 +105,7 @@ export class BattleScene extends Phaser.Scene {
       true
     );
     // enemy 1
-    let enemyStartX = 18;
+    let enemyStartX = 19;
     let enemyStartY = 2;
     let enemyFrame = 30;
     this.addCharacter(
@@ -119,7 +119,7 @@ export class BattleScene extends Phaser.Scene {
       false
     );
     // enemy 2
-    enemyStartX = 15;
+    enemyStartX = 19;
     enemyStartY = 4;
     enemyFrame = 30;
     this.addCharacter(
@@ -133,7 +133,7 @@ export class BattleScene extends Phaser.Scene {
       false
     );
     // enemy 3
-    enemyStartX = 10;
+    enemyStartX = 19;
     enemyStartY = 3;
     enemyFrame = 30;
     this.addCharacter(
@@ -197,6 +197,7 @@ export class BattleScene extends Phaser.Scene {
             this.player.indY
           );
           const targetVec = this.background!.worldToTileXY(worldX, worldY);
+          console.log(this.obstacles?.getTileAt(targetVec.x, targetVec.y));
 
           // pathfinding
           let path = findPath(
@@ -207,11 +208,8 @@ export class BattleScene extends Phaser.Scene {
           );
 
           if (!this.player.isMoving && path && path.length > 0) {
-            this.accessibleTiles = this.calculateAccessibleTiles(
-              targetVec,
-              this.player.pm - path.length
-            );
             this.player.moveAlong(path);
+            this.refreshAccessibleTiles();
           }
         }
       }
@@ -235,6 +233,7 @@ export class BattleScene extends Phaser.Scene {
   endTurn = () => {
     if (this.isPlayerTurn) {
       this.clearAccessibleTiles();
+      this.player.refillPoints();
     }
     this.isPlayerTurn = false;
     this.turnIndex++;
@@ -246,9 +245,8 @@ export class BattleScene extends Phaser.Scene {
       currentPlayer.playTurn();
     } else {
       this.isPlayerTurn = true;
-      currentPlayer.refillPoints();
       this.refreshAccessibleTiles();
-      currentPlayer.nextAction();
+      this.highlightAccessibleTiles(this.accessibleTiles);
     }
   };
 
@@ -293,7 +291,8 @@ export class BattleScene extends Phaser.Scene {
     );
     if (tilesAround) {
       tilesAround.forEach((tile) => {
-        if (this.isAccessible(tile.x, tile.y, x, y, pm)) {
+        let isPlayerTile = tile.x == x && tile.y == y;
+        if (!isPlayerTile && this.isAccessible(tile.x, tile.y, x, y, pm)) {
           tablePos.push(new Phaser.Math.Vector2(tile.x, tile.y));
         }
       });
@@ -343,6 +342,8 @@ export class BattleScene extends Phaser.Scene {
     } else {
       this.enemies.push(unit);
     }
+    this.addToObstacleLayer(new Phaser.Math.Vector2(unit.indX, unit.indY));
+    unit.depth = unit.y;
     return unit;
   }
 
@@ -401,6 +402,30 @@ export class BattleScene extends Phaser.Scene {
       repeat: -1,
     });
   };
+
+  findPath(start: Phaser.Math.Vector2, target: Phaser.Math.Vector2) {
+    return findPath(start, target, this.background!, this.obstacles!);
+  }
+
+  // update position of Unit as an obstacle for the others
+  updateObstacleLayer(unit: Unit, target: Phaser.Math.Vector2) {
+    this.removeFromObstacleLayer(unit);
+    this.addToObstacleLayer(target);
+  }
+
+  removeFromObstacleLayer(unit: Unit) {
+    this.obstacles?.removeTileAt(unit.indX, unit.indY);
+  }
+
+  addToObstacleLayer(target: Phaser.Math.Vector2) {
+    let targetTile = this.background?.getTileAt(target.x, target.y);
+    let newObstacle = this.obstacles?.putTileAt(
+      targetTile!,
+      target.x,
+      target.y
+    );
+    newObstacle?.setAlpha(0);
+  }
 }
 
 // play order : alternate between allies and enemies

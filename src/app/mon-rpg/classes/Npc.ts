@@ -18,30 +18,18 @@ export class Npc extends Unit {
   }
 
   override playTurn() {
-    let maxAttempts = 999;
-    let attempts = 0;
     const startVec = new Phaser.Math.Vector2(this.indX, this.indY);
-    let path: Phaser.Math.Vector2[] = [];
-    if (this.pm > 0) {
-      do {
-        const randX = this.indX + Phaser.Math.Between(-this.pm, this.pm);
-        const randY = this.indY + Phaser.Math.Between(-this.pm, this.pm);
-        const targetVec = new Phaser.Math.Vector2(randX, randY);
-        // pathfinding
-        path = findPath(
-          startVec,
-          targetVec,
-          (this.scene as BattleScene).background!,
-          (this.scene as BattleScene).obstacles!
-        );
-        attempts++;
-      } while (
-        (path.length <= 0 || path.length > this.pm) &&
-        attempts < maxAttempts
-      );
+    let accessibleTiles = (this.scene as BattleScene).calculateAccessibleTiles(
+      startVec,
+      this.pm
+    );
+    const randMove = Phaser.Math.Between(0, accessibleTiles.length - 1);
+    let targetVec = accessibleTiles[randMove];
+    let path = (this.scene as BattleScene).findPath(startVec, targetVec);
+    if (path) {
       this.moveAlong(path);
     } else {
-      this.endTurn();
+      this.stopMovement();
     }
   }
 
