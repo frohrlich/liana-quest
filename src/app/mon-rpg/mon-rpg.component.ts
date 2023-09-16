@@ -9,7 +9,7 @@ import { UIScene } from './scenes/UIScene';
 @Component({
   selector: 'app-mon-rpg',
   templateUrl: './mon-rpg.component.html',
-  styleUrls: ['./mon-rpg.component.sass']
+  styleUrls: ['./mon-rpg.component.sass'],
 })
 export class MonRpgComponent implements OnInit {
   phaserGame!: Phaser.Game;
@@ -23,26 +23,19 @@ export class MonRpgComponent implements OnInit {
       height: 1080,
       zoom: 0.55,
       pixelArt: true,
-      backgroundColor: '#282C31',
+      backgroundColor: '#FFFFFF',
       physics: {
-          default: 'arcade',
-          arcade: {
-              gravity: { y: 0 },
-              debug: false
-          }
+        default: 'arcade',
+        arcade: {
+          gravity: { y: 0 },
+          debug: false,
+        },
       },
-      scene: [
-          BootScene,
-          BattleScene,
-          UIScene,
-          DialogueScene,
-          WorldScene
-      ]
+      scene: [BootScene, BattleScene, UIScene, DialogueScene, WorldScene],
     };
   }
 
   ngOnInit() {
     this.phaserGame = new Phaser.Game(this.config);
   }
-
 }

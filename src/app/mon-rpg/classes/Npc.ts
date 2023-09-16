@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { Unit } from './Unit';
 import { BattleScene } from '../scenes/BattleScene';
-import findPath from '../utils/findPath';
 
 export class Npc extends Unit {
   constructor(
@@ -12,23 +11,30 @@ export class Npc extends Unit {
     frame: number,
     indX: number,
     indY: number,
-    maxPm: number
+    maxPm: number,
+    isAlly: boolean
   ) {
-    super(scene, x, y, texture, frame, indX, indY, maxPm);
+    super(scene, x, y, texture, frame, indX, indY, maxPm, isAlly);
   }
 
+  // plays npc turn
   override playTurn() {
     const startVec = new Phaser.Math.Vector2(this.indX, this.indY);
-    let accessibleTiles = (this.scene as BattleScene).calculateAccessibleTiles(
+    // first calculate the accessible tiles around npc
+    let accessibleTiles = this.myScene.calculateAccessibleTiles(
       startVec,
       this.pm
     );
+    // then chooses one randomly
     const randMove = Phaser.Math.Between(0, accessibleTiles.length - 1);
     let targetVec = accessibleTiles[randMove];
-    let path = (this.scene as BattleScene).findPath(startVec, targetVec);
+    // then finds the path to it
+    let path = this.myScene.findPath(startVec, targetVec);
     if (path) {
+      // then move along it
       this.moveAlong(path);
     } else {
+      // if no path found, do nothing
       this.stopMovement();
     }
   }
@@ -39,6 +45,6 @@ export class Npc extends Unit {
 
   endTurn() {
     this.refillPoints();
-    (this.scene as BattleScene).endTurn();
+    this.myScene.endTurn();
   }
 }

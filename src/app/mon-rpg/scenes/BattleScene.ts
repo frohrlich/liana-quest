@@ -3,8 +3,6 @@ import { Unit } from '../classes/Unit';
 import findPath from '../utils/findPath';
 import { Npc } from '../classes/Npc';
 import { Player } from '../classes/Player';
-import { max } from 'rxjs';
-import { Vector } from 'matter';
 
 export class BattleScene extends Phaser.Scene {
   player!: Unit;
@@ -62,7 +60,7 @@ export class BattleScene extends Phaser.Scene {
     let playerStartX = 5;
     let playerStartY = 6;
     let playerFrame = 6;
-    this.player = this.addCharacter(
+    this.player = this.addUnit(
       'player',
       playerFrame,
       playerStartX,
@@ -76,10 +74,10 @@ export class BattleScene extends Phaser.Scene {
     this.createAnimations(playerFrame, 5, 'amazon');
 
     // ally 1
-    playerStartX = 0;
-    playerStartY = 9;
+    playerStartX = 2;
+    playerStartY = 5;
     playerFrame = 0;
-    this.addCharacter(
+    this.addUnit(
       'player',
       playerFrame,
       playerStartX,
@@ -91,10 +89,10 @@ export class BattleScene extends Phaser.Scene {
     );
     this.createAnimations(playerFrame, 5, 'dude');
     // ally 2
-    playerStartX = 0;
+    playerStartX = 4;
     playerStartY = 2;
     playerFrame = 0;
-    this.addCharacter(
+    this.addUnit(
       'player',
       playerFrame,
       playerStartX,
@@ -105,10 +103,10 @@ export class BattleScene extends Phaser.Scene {
       true
     );
     // enemy 1
-    let enemyStartX = 19;
+    let enemyStartX = 14;
     let enemyStartY = 2;
     let enemyFrame = 30;
-    this.addCharacter(
+    this.addUnit(
       'player',
       enemyFrame,
       enemyStartX,
@@ -119,10 +117,10 @@ export class BattleScene extends Phaser.Scene {
       false
     );
     // enemy 2
-    enemyStartX = 19;
-    enemyStartY = 4;
+    enemyStartX = 18;
+    enemyStartY = 6;
     enemyFrame = 30;
-    this.addCharacter(
+    this.addUnit(
       'player',
       enemyFrame,
       enemyStartX,
@@ -133,10 +131,10 @@ export class BattleScene extends Phaser.Scene {
       false
     );
     // enemy 3
-    enemyStartX = 19;
+    enemyStartX = 17;
     enemyStartY = 3;
     enemyFrame = 30;
-    this.addCharacter(
+    this.addUnit(
       'player',
       enemyFrame,
       enemyStartX,
@@ -185,10 +183,12 @@ export class BattleScene extends Phaser.Scene {
       0.1
     );
 
-    // on clicking on a tile
+    // on clicking on a tile, check if movement is possible
+    // if it is, moves
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
       (pointer: Phaser.Input.Pointer) => {
+        // only if player turn and not already moving
         if (!this.player.isMoving && this.isPlayerTurn) {
           const { worldX, worldY } = pointer;
 
@@ -197,7 +197,6 @@ export class BattleScene extends Phaser.Scene {
             this.player.indY
           );
           const targetVec = this.background!.worldToTileXY(worldX, worldY);
-          console.log(this.obstacles?.getTileAt(targetVec.x, targetVec.y));
 
           // pathfinding
           let path = findPath(
@@ -215,8 +214,10 @@ export class BattleScene extends Phaser.Scene {
       }
     );
 
+    // create the timeline
     this.timeline = createTimeline(this.allies, this.enemies);
 
+    // highlight the accessible tiles around the player
     let playerPos = new Phaser.Math.Vector2(this.player.indX, this.player.indY);
     this.highlightAccessibleTiles(
       this.calculateAccessibleTiles(playerPos, this.player.pm)
@@ -230,6 +231,7 @@ export class BattleScene extends Phaser.Scene {
     this.scene.run('UIScene');
   }
 
+  // end unit turn (works for player and npc)
   endTurn = () => {
     if (this.isPlayerTurn) {
       this.clearAccessibleTiles();
@@ -256,10 +258,8 @@ export class BattleScene extends Phaser.Scene {
   isAccessible(x: number, y: number, unitX: number, unitY: number, pm: number) {
     const startVec = new Phaser.Math.Vector2(unitX, unitY);
     const targetVec = new Phaser.Math.Vector2(x, y);
-
     // pathfinding
     let path = findPath(startVec, targetVec, this.background!, this.obstacles!);
-
     if (path.length > 0 && path.length <= pm) {
       return true;
     } else {
@@ -270,13 +270,12 @@ export class BattleScene extends Phaser.Scene {
   // highlight tiles accessible to the player
   // according to their remaining PMs
   highlightAccessibleTiles = (positions: Phaser.Math.Vector2[]) => {
-    // add tile under player's feet
-    // this.background?.getTileAt(unit.indX, unit.indY).setAlpha(0.5);
     positions.forEach((pos) => {
-      this.background?.getTileAt(pos.x, pos.y).setAlpha(0.5);
+      this.background?.getTileAt(pos.x, pos.y).setAlpha(0.6);
     });
   };
 
+  // calculate the accessible tiles around a position with a pm radius
   calculateAccessibleTiles = (
     pos: Phaser.Math.Vector2,
     pm: number
@@ -300,6 +299,7 @@ export class BattleScene extends Phaser.Scene {
     return tablePos;
   };
 
+  // refresh the accessible tiles around the player
   refreshAccessibleTiles() {
     this.accessibleTiles = this.calculateAccessibleTiles(
       new Phaser.Math.Vector2(this.player.indX, this.player.indY),
@@ -311,10 +311,12 @@ export class BattleScene extends Phaser.Scene {
   clearAccessibleTiles = () => {
     this.background?.forEachTile((tile) => {
       tile.setAlpha(1);
+      tile.tint = 0xffffff;
     });
   };
 
-  addCharacter(
+  // add a unit to the scene
+  addUnit(
     key: string,
     frame: number,
     startX: number,
@@ -326,9 +328,9 @@ export class BattleScene extends Phaser.Scene {
   ) {
     let unit;
     if (npc) {
-      unit = new Npc(this, 0, 0, key, frame, startX, startY, maxPm);
+      unit = new Npc(this, 0, 0, key, frame, startX, startY, maxPm, allied);
     } else {
-      unit = new Player(this, 0, 0, key, frame, startX, startY, maxPm);
+      unit = new Player(this, 0, 0, key, frame, startX, startY, maxPm, allied);
     }
     unit.type = name;
     this.add.existing(unit);
@@ -403,6 +405,7 @@ export class BattleScene extends Phaser.Scene {
     });
   };
 
+  // find a path with start and target vectors
   findPath(start: Phaser.Math.Vector2, target: Phaser.Math.Vector2) {
     return findPath(start, target, this.background!, this.obstacles!);
   }
@@ -413,10 +416,12 @@ export class BattleScene extends Phaser.Scene {
     this.addToObstacleLayer(target);
   }
 
+  // remove a unit from the obstacle layer
   removeFromObstacleLayer(unit: Unit) {
     this.obstacles?.removeTileAt(unit.indX, unit.indY);
   }
 
+  // add a position to the obstacle layer
   addToObstacleLayer(target: Phaser.Math.Vector2) {
     let targetTile = this.background?.getTileAt(target.x, target.y);
     let newObstacle = this.obstacles?.putTileAt(

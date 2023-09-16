@@ -11,14 +11,15 @@ export class Player extends Unit {
     frame: number,
     indX: number,
     indY: number,
-    maxPm: number
+    maxPm: number,
+    isAlly: boolean
   ) {
-    super(scene, x, y, texture, frame, indX, indY, maxPm);
+    super(scene, x, y, texture, frame, indX, indY, maxPm, isAlly);
   }
 
+  // plays at the end of deplacement
   override nextAction(): void {
-    let myScene = this.scene as BattleScene;
-    myScene.clearAccessibleTiles();
-    myScene.highlightAccessibleTiles(myScene.accessibleTiles);
+    this.myScene.clearAccessibleTiles();
+    this.myScene.highlightAccessibleTiles(this.myScene.accessibleTiles);
   }
 }
