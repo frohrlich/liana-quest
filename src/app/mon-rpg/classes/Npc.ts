@@ -12,9 +12,10 @@ export class Npc extends Unit {
     indX: number,
     indY: number,
     maxPm: number,
+    maxHp: number,
     isAlly: boolean
   ) {
-    super(scene, x, y, texture, frame, indX, indY, maxPm, isAlly);
+    super(scene, x, y, texture, frame, indX, indY, maxPm, maxHp, isAlly);
   }
 
   // plays npc turn

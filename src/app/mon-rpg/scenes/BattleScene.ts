@@ -12,7 +12,6 @@ export class BattleScene extends Phaser.Scene {
   tileWidth!: number;
   tileHeight!: number;
   map!: Phaser.Tilemaps.Tilemap;
-  isMoving: boolean = false;
   direction!: string;
   tileset!: Phaser.Tilemaps.Tileset | null;
   obstacles!: Phaser.Tilemaps.TilemapLayer | null;
@@ -66,6 +65,7 @@ export class BattleScene extends Phaser.Scene {
       playerStartX,
       playerStartY,
       6,
+      100,
       'amazon',
       false,
       true
@@ -83,6 +83,7 @@ export class BattleScene extends Phaser.Scene {
       playerStartX,
       playerStartY,
       6,
+      100,
       'dude',
       true,
       true
@@ -98,6 +99,7 @@ export class BattleScene extends Phaser.Scene {
       playerStartX,
       playerStartY,
       6,
+      100,
       'dude',
       true,
       true
@@ -112,6 +114,7 @@ export class BattleScene extends Phaser.Scene {
       enemyStartX,
       enemyStartY,
       6,
+      100,
       'snowman',
       true,
       false
@@ -126,6 +129,7 @@ export class BattleScene extends Phaser.Scene {
       enemyStartX,
       enemyStartY,
       6,
+      100,
       'snowman',
       true,
       false
@@ -140,6 +144,7 @@ export class BattleScene extends Phaser.Scene {
       enemyStartX,
       enemyStartY,
       6,
+      100,
       'snowman',
       true,
       false
@@ -219,9 +224,11 @@ export class BattleScene extends Phaser.Scene {
 
     // highlight the accessible tiles around the player
     let playerPos = new Phaser.Math.Vector2(this.player.indX, this.player.indY);
-    this.highlightAccessibleTiles(
-      this.calculateAccessibleTiles(playerPos, this.player.pm)
+    this.accessibleTiles = this.calculateAccessibleTiles(
+      playerPos,
+      this.player.pm
     );
+    this.highlightAccessibleTiles(this.accessibleTiles);
 
     // remember to clean up on Scene shutdown
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -322,15 +329,38 @@ export class BattleScene extends Phaser.Scene {
     startX: number,
     startY: number,
     maxPm: number,
+    maxHp: number,
     name: string,
     npc: boolean,
     allied: boolean
   ) {
     let unit;
     if (npc) {
-      unit = new Npc(this, 0, 0, key, frame, startX, startY, maxPm, allied);
+      unit = new Npc(
+        this,
+        0,
+        0,
+        key,
+        frame,
+        startX,
+        startY,
+        maxPm,
+        maxHp,
+        allied
+      );
     } else {
-      unit = new Player(this, 0, 0, key, frame, startX, startY, maxPm, allied);
+      unit = new Player(
+        this,
+        0,
+        0,
+        key,
+        frame,
+        startX,
+        startY,
+        maxPm,
+        maxHp,
+        allied
+      );
     }
     unit.type = name;
     this.add.existing(unit);
@@ -430,6 +460,45 @@ export class BattleScene extends Phaser.Scene {
       target.y
     );
     newObstacle?.setAlpha(0);
+  }
+
+  displaySpellRange(range: number) {
+    this.calculateSpellRange(range).forEach((pos) => {
+      let tile = this.background?.getTileAt(pos.x, pos.y);
+      if (tile) {
+        tile.setAlpha(0.6);
+        tile.tint = 0x0000ff;
+      }
+    });
+  }
+
+  // calculate spell range
+  calculateSpellRange(range: number) {
+    let tablePos: Phaser.Math.Vector2[] = [];
+    let tilesAround = this.background?.getTilesWithin(
+      this.player.indX - range,
+      this.player.indY - range,
+      range * 2 + 1,
+      range * 2 + 1
+    );
+    if (tilesAround) {
+      tilesAround.forEach((tile) => {
+        if (!this.obstacles?.getTileAt(tile.x, tile.y)) {
+          let distance =
+            Math.abs(tile.x - this.player.indX) +
+            Math.abs(tile.y - this.player.indY);
+          if (distance <= range) {
+            tablePos.push(new Phaser.Math.Vector2(tile.x, tile.y));
+          }
+        }
+      });
+    }
+    return tablePos;
+  }
+
+  clearSpellRange() {
+    this.clearAccessibleTiles();
+    this.highlightAccessibleTiles(this.accessibleTiles);
   }
 }
 

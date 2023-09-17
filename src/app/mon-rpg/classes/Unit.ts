@@ -9,6 +9,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
   // movement points
   maxPm: number;
   pm: number;
+  // health points
+  maxHp: number;
+  hp: number;
   // pathfinding
   movePath: Phaser.Math.Vector2[] = [];
   direction: string;
@@ -26,6 +29,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     indX: number,
     indY: number,
     maxPm: number,
+    maxHp: number,
     isAlly: boolean
   ) {
     super(scene, x, y, texture, frame);
@@ -34,6 +38,8 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.indY = indY;
     this.maxPm = maxPm;
     this.pm = maxPm;
+    this.maxHp = maxHp;
+    this.hp = maxHp;
     this.direction = '';
     this.isMoving = false;
     this.frameNumber = frame;
@@ -182,6 +188,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   // polymorphic methods
   playTurn() {}
-
   nextAction() {}
+
+  isDead(): boolean {
+    return this.hp <= 0;
+  }
 }

@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
 import { BattleScene } from './BattleScene';
+import { UIElement } from '../classes/UIElement';
+import { Spell } from '../classes/Spell';
+import { UISpell } from '../classes/UISpell';
 
 export class UIScene extends Phaser.Scene {
   graphics!: Phaser.GameObjects.Graphics;
@@ -8,6 +11,7 @@ export class UIScene extends Phaser.Scene {
   // y coordinates of the top of the UI
   topY!: number;
   uiTabHeight!: number;
+  uiElements: UIElement[] = [];
 
   constructor() {
     super({
@@ -23,7 +27,16 @@ export class UIScene extends Phaser.Scene {
     this.battleScene = this.scene.get('BattleScene') as BattleScene;
     this.drawOutline();
     this.createEndTurnButton();
+    // spells
+    let javelin = new Spell(5, 25, 'Deadly Javelin');
+    this.addSpell(1, 0, javelin);
   }
+
+  addSpell(tab: number, posY: number, spell: Spell) {
+    let mySpell = new UISpell(this, tab, posY, spell);
+    this.add.existing(mySpell);
+  }
+
   createEndTurnButton() {
     let fontSize = this.uiTabWidth / 8;
     const nextTurnButton = this.add
@@ -33,6 +46,7 @@ export class UIScene extends Phaser.Scene {
         'End turn',
         {
           color: '#00FF40',
+          backgroundColor: '#000066',
           fontSize: fontSize,
           fontFamily: 'Noto Sans',
         }
@@ -56,7 +70,6 @@ export class UIScene extends Phaser.Scene {
     let uiTabWidth = (width - offset * 2) / 3;
     let height = 150;
 
-    // draw some background for the menu
     this.graphics = this.add.graphics();
     this.graphics.lineStyle(4, 0x79ae55);
     this.graphics.fillStyle(0x1d233c, 1);
