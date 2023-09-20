@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { BattleScene } from '../scenes/BattleScene';
+import { Spell } from './Spell';
 
 export class Unit extends Phaser.GameObjects.Sprite {
   myScene: BattleScene;
@@ -149,22 +150,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.depth = this.y;
     this.isMoving = false;
     this.anims.stop();
-    switch (this.direction) {
-      case 'left':
-        this.setTexture('player', this.frameNumber + 1);
-        break;
-      case 'right':
-        this.setTexture('player', this.frameNumber + 1);
-        break;
-      case 'up':
-        this.setTexture('player', this.frameNumber + 2);
-        break;
-      case 'down':
-        this.setTexture('player', this.frameNumber);
-        break;
-      default:
-        break;
-    }
+    this.changeDirection(this.direction);
     this.direction = '';
     this.moveChain.tweens = [];
     this.nextAction();
@@ -192,5 +178,70 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   isDead(): boolean {
     return this.hp <= 0;
+  }
+
+  // launch a spell at specified position
+  launchSpell(currentSpell: Spell, targetVec: Phaser.Math.Vector2) {
+    let direction = '';
+    this.lookAtTile(targetVec, direction);
+  }
+
+  // look at a position (change player direction)
+  lookAtTile(targetVec: Phaser.Math.Vector2, direction: string) {
+    // upper right corner
+    if (targetVec.x >= this.indX && targetVec.y <= this.indY) {
+      if (targetVec.x + targetVec.y < this.indX + this.indY) {
+        direction = 'up';
+      } else {
+        direction = 'right';
+      }
+      // lower right corner
+    } else if (targetVec.x >= this.indX && targetVec.y > this.indY) {
+      if (targetVec.x - targetVec.y < this.indX - this.indY) {
+        direction = 'down';
+      } else {
+        direction = 'right';
+      }
+      // lower left corner
+    } else if (targetVec.x < this.indX && targetVec.y >= this.indY) {
+      if (targetVec.x + targetVec.y < this.indX + this.indY) {
+        direction = 'left';
+      } else {
+        direction = 'down';
+      }
+      // upper left corner
+    } else if (targetVec.x < this.indX && targetVec.y < this.indY) {
+      if (targetVec.x - targetVec.y < this.indX - this.indY) {
+        direction = 'left';
+      } else {
+        direction = 'up';
+      }
+    }
+    this.changeDirection(direction);
+  }
+
+  // change player direction
+  changeDirection(direction: string) {
+    switch (direction) {
+      case 'left':
+        // if direction is left, just flip the image for right
+        this.setFlipX(true);
+        this.setTexture('player', this.frameNumber + 1);
+        break;
+      case 'right':
+        this.setFlipX(false);
+        this.setTexture('player', this.frameNumber + 1);
+        break;
+      case 'up':
+        this.setFlipX(false);
+        this.setTexture('player', this.frameNumber + 2);
+        break;
+      case 'down':
+        this.setFlipX(false);
+        this.setTexture('player', this.frameNumber);
+        break;
+      default:
+        break;
+    }
   }
 }

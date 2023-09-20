@@ -20,7 +20,7 @@ export class UISpell extends UIElement {
     this.text.on('pointerup', () => {
       if (this.battleScene.isPlayerTurn && !this.battleScene.player.isMoving) {
         if (!this.isVisible) {
-          this.battleScene.displaySpellRange(this.spell.range);
+          this.battleScene.displaySpellRange(this.spell);
           this.isVisible = true;
         } else {
           this.battleScene.clearSpellRange();

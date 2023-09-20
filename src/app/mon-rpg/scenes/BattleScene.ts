@@ -3,6 +3,7 @@ import { Unit } from '../classes/Unit';
 import findPath from '../utils/findPath';
 import { Npc } from '../classes/Npc';
 import { Player } from '../classes/Player';
+import { Spell } from '../classes/Spell';
 
 export class BattleScene extends Phaser.Scene {
   player!: Unit;
@@ -20,6 +21,9 @@ export class BattleScene extends Phaser.Scene {
   timeline: Unit[] = [];
   isPlayerTurn: boolean = true;
   accessibleTiles: Phaser.Math.Vector2[] = [];
+  spellVisible: boolean = false;
+  spellRange: Phaser.Math.Vector2[] = [];
+  currentSpell!: Spell;
 
   constructor() {
     super({
@@ -193,6 +197,7 @@ export class BattleScene extends Phaser.Scene {
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
       (pointer: Phaser.Input.Pointer) => {
+        // else try to move the player
         // only if player turn and not already moving
         if (!this.player.isMoving && this.isPlayerTurn) {
           const { worldX, worldY } = pointer;
@@ -203,17 +208,29 @@ export class BattleScene extends Phaser.Scene {
           );
           const targetVec = this.background!.worldToTileXY(worldX, worldY);
 
-          // pathfinding
-          let path = findPath(
-            startVec,
-            targetVec,
-            this.background!,
-            this.obstacles!
-          );
+          // if in spell mode, try to launch spell
+          if (this.spellVisible) {
+            if (
+              this.spellRange.some((e) => {
+                return e.x == targetVec.x && e.y == targetVec.y;
+              })
+            ) {
+              this.player.launchSpell(this.currentSpell, targetVec);
+            }
+            // else try to move player
+          } else {
+            // pathfinding
+            let path = findPath(
+              startVec,
+              targetVec,
+              this.background!,
+              this.obstacles!
+            );
 
-          if (!this.player.isMoving && path && path.length > 0) {
-            this.player.moveAlong(path);
-            this.refreshAccessibleTiles();
+            if (!this.player.isMoving && path && path.length > 0) {
+              this.player.moveAlong(path);
+              this.refreshAccessibleTiles();
+            }
           }
         }
       }
@@ -243,6 +260,7 @@ export class BattleScene extends Phaser.Scene {
     if (this.isPlayerTurn) {
       this.clearAccessibleTiles();
       this.player.refillPoints();
+      this.spellVisible = false;
     }
     this.isPlayerTurn = false;
     this.turnIndex++;
@@ -462,8 +480,12 @@ export class BattleScene extends Phaser.Scene {
     newObstacle?.setAlpha(0);
   }
 
-  displaySpellRange(range: number) {
-    this.calculateSpellRange(range).forEach((pos) => {
+  displaySpellRange(spell: Spell) {
+    this.spellVisible = true;
+    this.currentSpell = spell;
+    let range = spell.range;
+    this.spellRange = this.calculateSpellRange(range);
+    this.spellRange.forEach((pos) => {
       let tile = this.background?.getTileAt(pos.x, pos.y);
       if (tile) {
         tile.setAlpha(0.6);
@@ -497,6 +519,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   clearSpellRange() {
+    this.spellVisible = false;
     this.clearAccessibleTiles();
     this.highlightAccessibleTiles(this.accessibleTiles);
   }
