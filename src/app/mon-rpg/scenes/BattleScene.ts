@@ -4,6 +4,7 @@ import findPath from '../utils/findPath';
 import { Npc } from '../classes/Npc';
 import { Player } from '../classes/Player';
 import { Spell } from '../classes/Spell';
+import { UIScene } from './UIScene';
 
 export class BattleScene extends Phaser.Scene {
   player!: Unit;
@@ -24,6 +25,7 @@ export class BattleScene extends Phaser.Scene {
   spellVisible: boolean = false;
   spellRange: Phaser.Math.Vector2[] = [];
   currentSpell!: Spell;
+  uiScene!: UIScene;
 
   constructor() {
     super({
@@ -253,6 +255,7 @@ export class BattleScene extends Phaser.Scene {
     });
 
     this.scene.run('UIScene');
+    this.uiScene = this.scene.get('UIScene') as UIScene;
   }
 
   // end unit turn (works for player and npc)
@@ -261,6 +264,7 @@ export class BattleScene extends Phaser.Scene {
       this.clearAccessibleTiles();
       this.player.refillPoints();
       this.spellVisible = false;
+      this.uiScene.endTurn();
     }
     this.isPlayerTurn = false;
     this.turnIndex++;

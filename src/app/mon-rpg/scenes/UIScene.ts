@@ -34,7 +34,7 @@ export class UIScene extends Phaser.Scene {
 
   addSpell(tab: number, posY: number, spell: Spell) {
     let mySpell = new UISpell(this, tab, posY, spell);
-    this.add.existing(mySpell);
+    this.uiElements.push(this.add.existing(mySpell));
   }
 
   createEndTurnButton() {
@@ -88,5 +88,11 @@ export class UIScene extends Phaser.Scene {
     this.uiTabWidth = uiTabWidth;
     this.topY = bottom;
     this.uiTabHeight = height;
+  }
+
+  endTurn() {
+    this.uiElements.forEach((element) => {
+      (element as UISpell).isVisible = false;
+    });
   }
 }
