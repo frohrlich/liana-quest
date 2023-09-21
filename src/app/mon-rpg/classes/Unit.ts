@@ -181,13 +181,32 @@ export class Unit extends Phaser.GameObjects.Sprite {
   }
 
   // launch a spell at specified position
-  launchSpell(currentSpell: Spell, targetVec: Phaser.Math.Vector2) {
-    let direction = '';
-    this.lookAtTile(targetVec, direction);
+  launchSpell(spell: Spell, targetVec: Phaser.Math.Vector2) {
+    this.lookAtTile(targetVec);
+    if (this.myScene.isUnitThere(targetVec.x, targetVec.y)) {
+      let targetedUnit = this.myScene.getUnitAtPos(targetVec.x, targetVec.y);
+      if (targetedUnit) {
+        targetedUnit.undergoSpell(spell);
+      }
+    }
+  }
+
+  // Receive spell effects
+  undergoSpell(spell: Spell) {
+    this.hp -= spell.damage;
+    this.checkDead();
+  }
+
+  checkDead() {
+    if (this.isDead()) {
+      this.myScene.removeUnitFromBattle(this);
+      this.destroy();
+    }
   }
 
   // look at a position (change player direction)
-  lookAtTile(targetVec: Phaser.Math.Vector2, direction: string) {
+  lookAtTile(targetVec: Phaser.Math.Vector2) {
+    let direction = '';
     // upper right corner
     if (targetVec.x >= this.indX && targetVec.y <= this.indY) {
       if (targetVec.x + targetVec.y < this.indX + this.indY) {

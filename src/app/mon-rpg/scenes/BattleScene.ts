@@ -194,13 +194,11 @@ export class BattleScene extends Phaser.Scene {
       0.1
     );
 
-    // on clicking on a tile, check if movement is possible
-    // if it is, moves
+    // on clicking on a tile
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
       (pointer: Phaser.Input.Pointer) => {
-        // else try to move the player
-        // only if player turn and not already moving
+        // continue only if player turn and not already moving
         if (!this.player.isMoving && this.isPlayerTurn) {
           const { worldX, worldY } = pointer;
 
@@ -213,14 +211,20 @@ export class BattleScene extends Phaser.Scene {
           // if in spell mode, try to launch spell
           if (this.spellVisible) {
             if (
-              this.spellRange.some((e) => {
-                return e.x == targetVec.x && e.y == targetVec.y;
+              // check if clicked tile inside spell range
+              this.spellRange.some((tile) => {
+                return tile.x == targetVec.x && tile.y == targetVec.y;
               })
             ) {
               this.player.launchSpell(this.currentSpell, targetVec);
             }
             // else try to move player
-          } else {
+          } else if (
+            // check if clicked tile is accessible to player
+            this.accessibleTiles.some((tile) => {
+              return tile.x == targetVec.x && tile.y == targetVec.y;
+            })
+          ) {
             // pathfinding
             let path = findPath(
               startVec,
@@ -288,7 +292,12 @@ export class BattleScene extends Phaser.Scene {
     const startVec = new Phaser.Math.Vector2(unitX, unitY);
     const targetVec = new Phaser.Math.Vector2(x, y);
     // pathfinding
-    let path = findPath(startVec, targetVec, this.background!, this.obstacles!);
+    const path = findPath(
+      startVec,
+      targetVec,
+      this.background!,
+      this.obstacles!
+    );
     if (path.length > 0 && path.length <= pm) {
       return true;
     } else {
@@ -309,9 +318,9 @@ export class BattleScene extends Phaser.Scene {
     pos: Phaser.Math.Vector2,
     pm: number
   ): Phaser.Math.Vector2[] => {
-    let { x, y } = pos;
+    const { x, y } = pos;
     let tablePos: Phaser.Math.Vector2[] = [];
-    let tilesAround = this.background?.getTilesWithin(
+    const tilesAround = this.background?.getTilesWithin(
       x - pm,
       y - pm,
       pm * 2 + 1,
@@ -319,7 +328,7 @@ export class BattleScene extends Phaser.Scene {
     );
     if (tilesAround) {
       tilesAround.forEach((tile) => {
-        let isPlayerTile = tile.x == x && tile.y == y;
+        const isPlayerTile = tile.x == x && tile.y == y;
         if (!isPlayerTile && this.isAccessible(tile.x, tile.y, x, y, pm)) {
           tablePos.push(new Phaser.Math.Vector2(tile.x, tile.y));
         }
@@ -473,6 +482,12 @@ export class BattleScene extends Phaser.Scene {
     this.obstacles?.removeTileAt(unit.indX, unit.indY);
   }
 
+  removeUnitFromBattle(unit: Unit) {
+    this.removeFromObstacleLayer(unit);
+    this.removeUnitFromTimeline(unit);
+    this.refreshAccessibleTiles();
+  }
+
   // add a position to the obstacle layer
   addToObstacleLayer(target: Phaser.Math.Vector2) {
     let targetTile = this.background?.getTileAt(target.x, target.y);
@@ -485,6 +500,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   displaySpellRange(spell: Spell) {
+    this.clearAccessibleTiles();
     this.spellVisible = true;
     this.currentSpell = spell;
     let range = spell.range;
@@ -501,7 +517,7 @@ export class BattleScene extends Phaser.Scene {
   // calculate spell range
   calculateSpellRange(range: number) {
     let tablePos: Phaser.Math.Vector2[] = [];
-    let tilesAround = this.background?.getTilesWithin(
+    const tilesAround = this.background?.getTilesWithin(
       this.player.indX - range,
       this.player.indY - range,
       range * 2 + 1,
@@ -509,8 +525,12 @@ export class BattleScene extends Phaser.Scene {
     );
     if (tilesAround) {
       tilesAround.forEach((tile) => {
-        if (!this.obstacles?.getTileAt(tile.x, tile.y)) {
-          let distance =
+        // if free tile OR a unit is there
+        if (
+          !this.obstacles?.getTileAt(tile.x, tile.y) ||
+          this.isUnitThere(tile.x, tile.y)
+        ) {
+          const distance =
             Math.abs(tile.x - this.player.indX) +
             Math.abs(tile.y - this.player.indY);
           if (distance <= range) {
@@ -522,6 +542,25 @@ export class BattleScene extends Phaser.Scene {
     return tablePos;
   }
 
+  // return true if there is a unit at the specified position
+  isUnitThere(x: number, y: number): boolean {
+    return this.timeline.some((unit) => unit.indX == x && unit.indY == y);
+  }
+
+  // return unit at the specified position
+  getUnitAtPos(x: number, y: number) {
+    return this.timeline.find((unit) => unit.indX == x && unit.indY == y);
+  }
+
+  removeUnitFromTimeline(unit: Unit) {
+    const index = this.timeline.findIndex(
+      (timelineUnit) => timelineUnit == unit
+    );
+    if (index !== -1) {
+      this.timeline.splice(index, 1);
+    }
+  }
+
   clearSpellRange() {
     this.spellVisible = false;
     this.clearAccessibleTiles();
@@ -531,7 +570,7 @@ export class BattleScene extends Phaser.Scene {
 
 // play order : alternate between allies and enemies
 let createTimeline = (allies: Unit[], enemies: Unit[]) => {
-  let maxSize = Math.max(allies.length, enemies.length);
+  const maxSize = Math.max(allies.length, enemies.length);
   let timeline: Unit[] = [];
   for (let i = 0; i < maxSize; i++) {
     if (allies.length > i) {
