@@ -70,7 +70,7 @@ export class BattleScene extends Phaser.Scene {
       playerFrame,
       playerStartX,
       playerStartY,
-      6,
+      3,
       100,
       'amazon',
       false,
@@ -88,7 +88,7 @@ export class BattleScene extends Phaser.Scene {
       playerFrame,
       playerStartX,
       playerStartY,
-      6,
+      3,
       100,
       'dude',
       true,
@@ -104,7 +104,7 @@ export class BattleScene extends Phaser.Scene {
       playerFrame,
       playerStartX,
       playerStartY,
-      6,
+      3,
       100,
       'dude',
       true,
@@ -119,7 +119,7 @@ export class BattleScene extends Phaser.Scene {
       enemyFrame,
       enemyStartX,
       enemyStartY,
-      6,
+      3,
       100,
       'snowman',
       true,
@@ -134,7 +134,7 @@ export class BattleScene extends Phaser.Scene {
       enemyFrame,
       enemyStartX,
       enemyStartY,
-      6,
+      3,
       100,
       'snowman',
       true,
@@ -149,7 +149,7 @@ export class BattleScene extends Phaser.Scene {
       enemyFrame,
       enemyStartX,
       enemyStartY,
-      6,
+      3,
       100,
       'snowman',
       true,
@@ -329,7 +329,12 @@ export class BattleScene extends Phaser.Scene {
     if (tilesAround) {
       tilesAround.forEach((tile) => {
         const isPlayerTile = tile.x == x && tile.y == y;
-        if (!isPlayerTile && this.isAccessible(tile.x, tile.y, x, y, pm)) {
+        const distance = Math.abs(tile.x - pos.x) + Math.abs(tile.y - pos.y);
+        if (
+          !isPlayerTile &&
+          pm >= distance &&
+          this.isAccessible(tile.x, tile.y, x, y, pm)
+        ) {
           tablePos.push(new Phaser.Math.Vector2(tile.x, tile.y));
         }
       });

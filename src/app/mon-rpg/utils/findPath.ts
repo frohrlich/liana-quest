@@ -1,11 +1,17 @@
 import Phaser from 'phaser';
+import { PriorityQueue } from './PriorityQueue';
 
-// path finding algorithm
+// A* path finding algorithm
 // https://blog.ourcade.co/posts/2020/phaser-3-point-click-pathfinding-movement-tilemap/
+// https://www.youtube.com/watch?v=nFAvgeYPwZc
 
-interface TilePosition {
+export interface TilePosition {
   x: number;
   y: number;
+}
+
+interface CostValues {
+  [key: string]: number;
 }
 
 const toKey = (x: number, y: number) => `${x}x${y}`;
@@ -26,11 +32,12 @@ const findPath = (
     return [];
   }
 
-  const queue: TilePosition[] = [];
+  const queue = new PriorityQueue();
   const parentForKey: {
     [key: string]: { key: string; position: TilePosition };
   } = {};
-
+  const costFromStart: CostValues = {};
+  const costToTarget: CostValues = {};
   const startKey = toKey(start.x, start.y);
   const targetKey = toKey(target.x, target.y);
 
@@ -38,11 +45,12 @@ const findPath = (
     key: '',
     position: { x: -1, y: -1 },
   };
+  costFromStart[startKey] = 0;
 
-  queue.push(start);
+  queue.enqueue(start, 0);
 
-  while (queue.length > 0) {
-    const { x, y } = queue.shift()!;
+  while (!queue.isEmpty()) {
+    const { x, y } = queue.dequeue()!.element;
     const currentKey = toKey(x, y);
 
     if (currentKey === targetKey) {
@@ -70,16 +78,29 @@ const findPath = (
 
       const key = toKey(neighbor.x, neighbor.y);
 
-      if (key in parentForKey) {
-        continue;
+      // replace '1' with cost from the movement costs grid
+      // if you want to implement one...
+      const cost = costFromStart[currentKey] + 1;
+
+      if (!(key in costFromStart) || cost < costFromStart[key]) {
+        parentForKey[key] = {
+          key: currentKey,
+          position: { x, y },
+        };
+
+        costFromStart[key] = cost;
+
+        // y distance (manhattan distance)
+        const dr = Math.abs(target.y - neighbor.y);
+        // x distance
+        const dc = Math.abs(target.x - neighbor.x);
+        const distance = dr + dc;
+        const totalCost = cost + distance;
+
+        costToTarget[key] = totalCost;
+
+        queue.enqueue(neighbor, totalCost);
       }
-
-      parentForKey[key] = {
-        key: currentKey,
-        position: { x, y },
-      };
-
-      queue.push(neighbor);
     }
   }
 
