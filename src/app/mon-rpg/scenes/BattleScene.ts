@@ -5,6 +5,8 @@ import { Npc } from '../classes/Npc';
 import { Player } from '../classes/Player';
 import { Spell } from '../classes/Spell';
 import { UIScene } from './UIScene';
+import plotLine from '../utils/lineOfSight';
+import isVisible from '../utils/lineOfSight';
 
 export class BattleScene extends Phaser.Scene {
   player!: Unit;
@@ -70,7 +72,7 @@ export class BattleScene extends Phaser.Scene {
       playerFrame,
       playerStartX,
       playerStartY,
-      3,
+      5,
       100,
       'amazon',
       false,
@@ -491,6 +493,9 @@ export class BattleScene extends Phaser.Scene {
     this.removeFromObstacleLayer(unit);
     this.removeUnitFromTimeline(unit);
     this.refreshAccessibleTiles();
+    if (this.spellVisible) {
+      this.displaySpellRange(this.currentSpell);
+    }
   }
 
   // add a position to the obstacle layer
@@ -530,16 +535,22 @@ export class BattleScene extends Phaser.Scene {
     );
     if (tilesAround) {
       tilesAround.forEach((tile) => {
-        // if free tile OR a unit is there
+        const playerPos = new Phaser.Math.Vector2(
+          this.player.indX,
+          this.player.indY
+        );
+        const target = new Phaser.Math.Vector2(tile.x, tile.y);
+        // if free tile OR a unit is there AND there is a line of sight
         if (
-          !this.obstacles?.getTileAt(tile.x, tile.y) ||
-          this.isUnitThere(tile.x, tile.y)
+          (!this.obstacles?.getTileAt(tile.x, tile.y) ||
+            this.isUnitThere(tile.x, tile.y)) &&
+          this.isVisible(playerPos, target)
         ) {
           const distance =
             Math.abs(tile.x - this.player.indX) +
             Math.abs(tile.y - this.player.indY);
           if (distance <= range) {
-            tablePos.push(new Phaser.Math.Vector2(tile.x, tile.y));
+            tablePos.push(target);
           }
         }
       });
@@ -570,6 +581,11 @@ export class BattleScene extends Phaser.Scene {
     this.spellVisible = false;
     this.clearAccessibleTiles();
     this.highlightAccessibleTiles(this.accessibleTiles);
+  }
+
+  // return true if there is a line of sight between start and target positions
+  isVisible(startVec: Phaser.Math.Vector2, targetVec: Phaser.Math.Vector2) {
+    return isVisible(startVec, targetVec, this.obstacles!, this);
   }
 }
 
