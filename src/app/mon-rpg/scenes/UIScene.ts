@@ -3,6 +3,8 @@ import { BattleScene } from './BattleScene';
 import { UIElement } from '../classes/UIElement';
 import { Spell } from '../classes/Spell';
 import { UISpell } from '../classes/UISpell';
+import { Unit } from '../classes/Unit';
+import { UnitStatDisplay } from '../classes/UnitStatDisplay';
 
 export class UIScene extends Phaser.Scene {
   graphics!: Phaser.GameObjects.Graphics;
@@ -27,14 +29,20 @@ export class UIScene extends Phaser.Scene {
     this.battleScene = this.scene.get('BattleScene') as BattleScene;
     this.drawOutline();
     this.createEndTurnButton();
+    this.addStats(0, 0, this.battleScene.player);
     // spells
-    let javelin = new Spell(5, 25, 'Deadly Javelin');
+    let javelin = new Spell(5, 25, 3, 'Deadly Javelin');
     this.addSpell(1, 0, javelin);
   }
 
   addSpell(tab: number, posY: number, spell: Spell) {
     let mySpell = new UISpell(this, tab, posY, spell);
     this.uiElements.push(this.add.existing(mySpell));
+  }
+
+  addStats(tab: number, posY: number, unit: Unit) {
+    let myStats = new UnitStatDisplay(this, tab, posY, unit);
+    this.uiElements.push(this.add.existing(myStats));
   }
 
   createEndTurnButton() {
@@ -93,6 +101,13 @@ export class UIScene extends Phaser.Scene {
   endTurn() {
     this.uiElements.forEach((element) => {
       (element as UISpell).isVisible = false;
+    });
+    this.refreshUI();
+  }
+
+  refreshUI() {
+    this.uiElements.forEach((element) => {
+      element.refresh();
     });
   }
 }

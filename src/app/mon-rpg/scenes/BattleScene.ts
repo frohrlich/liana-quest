@@ -73,6 +73,7 @@ export class BattleScene extends Phaser.Scene {
       playerStartX,
       playerStartY,
       5,
+      6,
       100,
       'amazon',
       false,
@@ -91,6 +92,7 @@ export class BattleScene extends Phaser.Scene {
       playerStartX,
       playerStartY,
       3,
+      6,
       100,
       'dude',
       true,
@@ -107,6 +109,7 @@ export class BattleScene extends Phaser.Scene {
       playerStartX,
       playerStartY,
       3,
+      6,
       100,
       'dude',
       true,
@@ -122,6 +125,7 @@ export class BattleScene extends Phaser.Scene {
       enemyStartX,
       enemyStartY,
       3,
+      6,
       100,
       'snowman',
       true,
@@ -137,6 +141,7 @@ export class BattleScene extends Phaser.Scene {
       enemyStartX,
       enemyStartY,
       3,
+      6,
       100,
       'snowman',
       true,
@@ -152,6 +157,7 @@ export class BattleScene extends Phaser.Scene {
       enemyStartX,
       enemyStartY,
       3,
+      6,
       100,
       'snowman',
       true,
@@ -367,6 +373,7 @@ export class BattleScene extends Phaser.Scene {
     startX: number,
     startY: number,
     maxPm: number,
+    maxPa: number,
     maxHp: number,
     name: string,
     npc: boolean,
@@ -383,6 +390,7 @@ export class BattleScene extends Phaser.Scene {
         startX,
         startY,
         maxPm,
+        maxPa,
         maxHp,
         allied
       );
@@ -396,6 +404,7 @@ export class BattleScene extends Phaser.Scene {
         startX,
         startY,
         maxPm,
+        maxPa,
         maxHp,
         allied
       );
@@ -413,7 +422,9 @@ export class BattleScene extends Phaser.Scene {
       this.enemies.push(unit);
     }
     this.addToObstacleLayer(new Phaser.Math.Vector2(unit.indX, unit.indY));
+    unit.updateHealthBar();
     unit.depth = unit.y;
+    unit.setInteractive();
     return unit;
   }
 

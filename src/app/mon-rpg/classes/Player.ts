@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import { Unit } from './Unit';
-import { BattleScene } from '../scenes/BattleScene';
 
 export class Player extends Unit {
   constructor(
@@ -12,10 +11,11 @@ export class Player extends Unit {
     indX: number,
     indY: number,
     maxPm: number,
+    maxPa: number,
     maxHp: number,
     isAlly: boolean
   ) {
-    super(scene, x, y, texture, frame, indX, indY, maxPm, maxHp, isAlly);
+    super(scene, x, y, texture, frame, indX, indY, maxPm, maxPa, maxHp, isAlly);
   }
 
   // plays at the end of deplacement

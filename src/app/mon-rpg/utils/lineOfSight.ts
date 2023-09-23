@@ -18,10 +18,13 @@ const isVisible = (
   let error = dx + dy;
 
   while (true) {
+    // if not starter position and we encounter an obstacle : not visible, stop
     if (
       !(x0 == startVec.x && y0 == startVec.y) &&
       obstacleLayer.getTileAt(x0, y0)
     ) {
+      // if we reached destination and there is a unit there : it's visible
+      // if it's a regular obstacle, it's not visible
       if (x0 == x1 && y0 == y1 && myScene.isUnitThere(x0, y0)) return true;
       return false;
     }

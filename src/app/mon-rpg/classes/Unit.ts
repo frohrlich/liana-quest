@@ -10,16 +10,21 @@ export class Unit extends Phaser.GameObjects.Sprite {
   // movement points
   maxPm: number;
   pm: number;
+  // action points
+  maxPa: number;
+  pa: number;
   // health points
   maxHp: number;
   hp: number;
   // pathfinding
   movePath: Phaser.Math.Vector2[] = [];
+
   direction: string;
   isMoving: boolean;
   moveChain: any = {};
   frameNumber: number;
   isAlly: boolean;
+  healthBar!: Phaser.GameObjects.Graphics;
 
   constructor(
     scene: Phaser.Scene,
@@ -30,6 +35,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     indX: number,
     indY: number,
     maxPm: number,
+    maxPa: number,
     maxHp: number,
     isAlly: boolean
   ) {
@@ -38,6 +44,8 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.indX = indX;
     this.indY = indY;
     this.maxPm = maxPm;
+    this.maxPa = maxPa;
+    this.pa = maxPa;
     this.pm = maxPm;
     this.maxHp = maxHp;
     this.hp = maxHp;
@@ -55,11 +63,20 @@ export class Unit extends Phaser.GameObjects.Sprite {
     };
     this.moveChain.onComplete = this.stopMovement;
     this.moveChain.tweens = [];
+
+    // health bar visible only on hover
+    this.on('pointerover', () => {
+      this.healthBar.setVisible(true);
+    });
+    this.on('pointerout', () => {
+      this.healthBar.setVisible(false);
+    });
   }
 
   // refills movement points at turn beginning
   refillPoints() {
     this.pm = this.maxPm;
+    this.pa = this.maxPa;
   }
 
   // move along a path
@@ -124,6 +141,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
           this.startAnim(direction);
           this.depth = this.y;
         },
+        onUpdate: () => {
+          this.moveHealthBar();
+        },
         duration: 300,
         repeat: 0,
         yoyo: false,
@@ -137,11 +157,21 @@ export class Unit extends Phaser.GameObjects.Sprite {
           this.startAnim(direction);
           this.depth = this.y;
         },
+        onUpdate: () => {
+          this.moveHealthBar();
+        },
         duration: 300,
         repeat: 0,
         yoyo: false,
       });
     }
+  }
+
+  moveHealthBar() {
+    let isOnTop = this.y < this.myScene.tileHeight * 2;
+    let barWidth = this.displayWidth * 0.8;
+    this.healthBar.x = this.x - barWidth / 2;
+    this.healthBar.y = isOnTop ? this.y + 15 : this.y - this.displayHeight + 5;
   }
 
   // stop player movement
@@ -153,6 +183,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.changeDirection(this.direction);
     this.direction = '';
     this.moveChain.tweens = [];
+    this.refreshUI();
     this.nextAction();
   };
 
@@ -180,27 +211,79 @@ export class Unit extends Phaser.GameObjects.Sprite {
     return this.hp <= 0;
   }
 
+  isInjured(): boolean {
+    return this.hp < this.maxHp;
+  }
+
   // launch a spell at specified position
   launchSpell(spell: Spell, targetVec: Phaser.Math.Vector2) {
     this.lookAtTile(targetVec);
+    this.pa -= spell.cost;
     if (this.myScene.isUnitThere(targetVec.x, targetVec.y)) {
       let targetedUnit = this.myScene.getUnitAtPos(targetVec.x, targetVec.y);
       if (targetedUnit) {
         targetedUnit.undergoSpell(spell);
+        targetedUnit.updateHealthBar();
       }
     }
+    // if not enough pa to launch the spell again : quit spell mode
+    if (this.pa < spell.cost) {
+      this.myScene.clearSpellRange();
+    }
+    this.refreshUI();
   }
 
   // Receive spell effects
   undergoSpell(spell: Spell) {
     this.hp -= spell.damage;
+    this.displayDamage(spell);
     this.checkDead();
+  }
+
+  // display damage animation when unit is hit
+  displayDamage(spell: Spell) {
+    // turn red
+    this.tint = 0xff0000;
+    // display damage value
+    let isOnTop = this.indY < 2;
+    let damage = this.scene.add.text(
+      this.x,
+      isOnTop ? this.y + 20 : this.y - this.displayHeight + 5,
+      spell.damage.toString(),
+      {
+        font: '16px monospace',
+        color: '#ff0000',
+        align: 'center',
+      }
+    );
+    damage.setDepth(10001);
+    damage.setOrigin(0.5);
+    // disappears after short time
+    this.scene.time.delayedCall(
+      300,
+      () => {
+        damage.destroy();
+        this.tint = 0xffffff;
+      },
+      undefined,
+      damage
+    );
   }
 
   checkDead() {
     if (this.isDead()) {
       this.myScene.removeUnitFromBattle(this);
-      this.destroy();
+      // turn black before dying...
+      this.tint = 0x000000;
+      this.scene.time.delayedCall(
+        300,
+        () => {
+          this.healthBar.destroy();
+          this.destroy();
+        },
+        undefined,
+        this
+      );
     }
   }
 
@@ -261,6 +344,56 @@ export class Unit extends Phaser.GameObjects.Sprite {
         break;
       default:
         break;
+    }
+    this.direction = direction;
+  }
+
+  refreshUI() {
+    this.myScene.uiScene.refreshUI();
+  }
+
+  // create health bar
+  makeBar(unit: Unit, color: number) {
+    //draw the bar
+    let bar = this.scene.add.graphics();
+    //color the bar
+    bar.fillStyle(color, 0.8);
+    //fill the bar with a rectangle
+    let barWidth = unit.displayWidth * 0.8;
+    bar.fillRect(0, 0, barWidth, 5);
+    //position the bar
+    bar.x = unit.x - barWidth / 2;
+    bar.y = unit.y - unit.displayHeight + 5;
+    //return the bar
+    bar.setDepth(10000);
+    return bar;
+  }
+
+  setBarValue(bar: Phaser.GameObjects.Graphics, percentage: number) {
+    //scale the bar
+    bar.scaleX = percentage / 100;
+  }
+
+  updateHealthBar() {
+    if (!this.healthBar) {
+      this.healthBar = this.makeBar(this, 0x2ecc71);
+      this.setBarValue(this.healthBar, 100);
+      this.healthBar.setVisible(false);
+    } else {
+      const hpPercentage = (this.hp / this.maxHp) * 100;
+      this.setBarValue(this.healthBar, hpPercentage);
+      const barWidth = this.displayWidth * 0.8;
+      const barAlpha = 0.8;
+      if (hpPercentage <= 25) {
+        this.healthBar.fillStyle(0xff0000, barAlpha);
+        this.healthBar.fillRect(0, 0, barWidth, 5);
+      } else if (hpPercentage <= 50) {
+        this.healthBar.fillStyle(0xffc802, barAlpha);
+        this.healthBar.fillRect(0, 0, barWidth, 5);
+      } else {
+        this.healthBar.fillStyle(0x2ecc71, barAlpha);
+        this.healthBar.fillRect(0, 0, barWidth, 5);
+      }
     }
   }
 }

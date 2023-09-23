@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { UIScene } from '../scenes/UIScene';
 
-export class UIElement extends Phaser.GameObjects.Container {
+export abstract class UIElement extends Phaser.GameObjects.Container {
   // which UI tab does this container belong to
   // starting from 0 (leftmost)
   tab: number;
@@ -28,7 +28,7 @@ export class UIElement extends Phaser.GameObjects.Container {
     };
   }
 
-  addText(text: string): Phaser.GameObjects.Text {
+  addText(...text: string[]): Phaser.GameObjects.Text {
     let myText = new Phaser.GameObjects.Text(
       this.scene,
       0,
@@ -39,4 +39,6 @@ export class UIElement extends Phaser.GameObjects.Container {
     this.add(myText);
     return myText;
   }
+
+  abstract refresh(): void;
 }
