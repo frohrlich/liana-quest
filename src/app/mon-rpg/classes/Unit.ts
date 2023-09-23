@@ -380,7 +380,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
       this.setBarValue(this.healthBar, 100);
       this.healthBar.setVisible(false);
     } else {
-      const hpPercentage = (this.hp / this.maxHp) * 100;
+      const hpPercentage = Math.max(this.hp / this.maxHp, 0) * 100;
       this.setBarValue(this.healthBar, hpPercentage);
       const barWidth = this.displayWidth * 0.8;
       const barAlpha = 0.8;
