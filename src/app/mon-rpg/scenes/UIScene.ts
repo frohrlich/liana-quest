@@ -31,7 +31,7 @@ export class UIScene extends Phaser.Scene {
     this.createEndTurnButton();
     this.addStats(0, 0, this.battleScene.player);
     // spells
-    let javelin = new Spell(5, 25, 3, 'Deadly Javelin');
+    let javelin = new Spell(4, 25, 3, 'Deadly Javelin');
     this.addSpell(1, 0, javelin);
     let punch = new Spell(1, 55, 4, 'Punch');
     this.addSpell(1, 1, punch);

@@ -218,13 +218,16 @@ export class BattleScene extends Phaser.Scene {
 
           // if in spell mode, try to launch spell
           if (this.spellVisible) {
+            // check if clicked tile inside spell range
             if (
-              // check if clicked tile inside spell range
               this.spellRange.some((tile) => {
                 return tile.x == targetVec.x && tile.y == targetVec.y;
               })
             ) {
               this.player.launchSpell(this.currentSpell, targetVec);
+              // if cliked outside spell range, deselect spell
+            } else {
+              this.clearSpellRange();
             }
             // else try to move player
           } else if (

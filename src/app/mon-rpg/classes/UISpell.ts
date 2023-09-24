@@ -19,12 +19,13 @@ export class UISpell extends UIElement {
     this.isVisible = false;
     this.text.on('pointerup', () => {
       if (this.battleScene.isPlayerTurn && !this.battleScene.player.isMoving) {
-        if (!this.isVisible && this.battleScene.player.pa >= this.spell.cost) {
+        if (
+          !this.battleScene.spellVisible &&
+          this.battleScene.player.pa >= this.spell.cost
+        ) {
           this.battleScene.displaySpellRange(this.spell);
-          this.isVisible = true;
         } else {
           this.battleScene.clearSpellRange();
-          this.isVisible = false;
         }
       }
     });
