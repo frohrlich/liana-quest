@@ -25,6 +25,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   frameNumber: number;
   isAlly: boolean;
   healthBar!: Phaser.GameObjects.Graphics;
+  identifier!: Phaser.GameObjects.Image;
 
   constructor(
     scene: Phaser.Scene,
@@ -143,6 +144,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
         },
         onUpdate: () => {
           this.moveHealthBar();
+          this.moveTeamIdentifier();
         },
         duration: 300,
         repeat: 0,
@@ -159,6 +161,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
         },
         onUpdate: () => {
           this.moveHealthBar();
+          this.moveTeamIdentifier();
         },
         duration: 300,
         repeat: 0,
@@ -172,6 +175,11 @@ export class Unit extends Phaser.GameObjects.Sprite {
     let barWidth = this.displayWidth * 0.8;
     this.healthBar.x = this.x - barWidth / 2;
     this.healthBar.y = isOnTop ? this.y + 15 : this.y - this.displayHeight + 5;
+  }
+
+  moveTeamIdentifier() {
+    this.identifier.x = this.x;
+    this.identifier.y = this.y;
   }
 
   // stop player movement
@@ -279,6 +287,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
         300,
         () => {
           this.healthBar.destroy();
+          this.identifier.destroy();
           this.destroy();
         },
         undefined,
@@ -348,8 +357,22 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.direction = direction;
   }
 
+  // refresh UI infos like player stats
   refreshUI() {
     this.myScene.uiScene.refreshUI();
+  }
+
+  // create team identifier (circle under unit's feet)
+  createTeamIdentifier(scale: number) {
+    // identifier frame on the spritesheet (red circle or blue circle)
+    let identifierFrame = this.isAlly ? 34 : 33;
+    this.identifier = this.scene.add.image(
+      this.x,
+      this.y,
+      'player',
+      identifierFrame
+    );
+    this.identifier.setScale(scale);
   }
 
   // create health bar

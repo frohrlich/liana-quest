@@ -415,15 +415,20 @@ export class BattleScene extends Phaser.Scene {
     let initialPlayerX = unit.tilePosToPixelsX();
     let initialPlayerY = unit.tilePosToPixelsY();
     unit.setPosition(initialPlayerX, initialPlayerY);
-    unit.scale = 1.5;
+    const unitScale = 1.5;
+    unit.setScale(unitScale);
     if (allied) {
       this.allies.push(unit);
     } else {
       this.enemies.push(unit);
     }
+    // unit is now considered as an obstacle for other units
     this.addToObstacleLayer(new Phaser.Math.Vector2(unit.indX, unit.indY));
+    // initialize health bar
     unit.updateHealthBar();
     unit.depth = unit.y;
+    // create blue or red circle under unit's feet to identify its team
+    unit.createTeamIdentifier(unitScale);
     unit.setInteractive();
     return unit;
   }
