@@ -606,6 +606,11 @@ export class BattleScene extends Phaser.Scene {
   isVisible(startVec: Phaser.Math.Vector2, targetVec: Phaser.Math.Vector2) {
     return isVisible(startVec, targetVec, this.obstacles!, this);
   }
+
+  gameOver() {
+    this.scene.stop('UIScene');
+    this.scene.start('GameOverScene');
+  }
 }
 
 // play order : alternate between allies and enemies

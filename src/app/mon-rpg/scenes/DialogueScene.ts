@@ -8,12 +8,12 @@ export class DialogueScene extends Phaser.Scene {
   }
 
   create(): void {
-    
     let sprite = this.add.image(0, 0, 'guerriere');
     sprite.setOrigin(0);
-    let textDialogue = "Where am I ? I don't recognize this part\nof the forest...";
+    let textDialogue =
+      "Where am I ? I don't recognize this part\nof the forest...";
     this.add.text(sprite.width + 50, 50, textDialogue, {
-      fontFamily: 'Scheherazade',
+      fontFamily: 'PublicPixel',
       color: '#FFFFFF',
       fontSize: 80,
     });
@@ -21,7 +21,7 @@ export class DialogueScene extends Phaser.Scene {
     // goes to next scene on click
     this.input.on(
       'pointerdown',
-       (/*pointer*/) => {
+      (/*pointer*/) => {
         this.scene.start('WorldScene');
       },
       this

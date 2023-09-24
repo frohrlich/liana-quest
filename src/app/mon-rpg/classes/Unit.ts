@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { BattleScene } from '../scenes/BattleScene';
 import { Spell } from './Spell';
+import { Player } from './Player';
 
 export class Unit extends Phaser.GameObjects.Sprite {
   myScene: BattleScene;
@@ -255,17 +256,18 @@ export class Unit extends Phaser.GameObjects.Sprite {
     // display damage value
     let isOnTop = this.indY < 2;
     let damage = this.scene.add.text(
-      this.x,
+      this.x + 1,
       isOnTop ? this.y + 20 : this.y - this.displayHeight + 5,
       spell.damage.toString(),
       {
-        font: '16px monospace',
+        fontSize: 8,
+        fontFamily: 'PublicPixel',
         color: '#ff0000',
         align: 'center',
       }
     );
     damage.setDepth(10001);
-    damage.setOrigin(0.5);
+    damage.setOrigin(0.5, 0.5);
     // disappears after short time
     this.scene.time.delayedCall(
       300,
@@ -288,6 +290,8 @@ export class Unit extends Phaser.GameObjects.Sprite {
         () => {
           this.healthBar.destroy();
           this.identifier.destroy();
+          // if it's the player that just died... game over
+          if (this.myScene.player === this) this.myScene.gameOver();
           this.destroy();
         },
         undefined,

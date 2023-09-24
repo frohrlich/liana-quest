@@ -1,10 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import Phaser from 'phaser';
-import { WorldScene } from './scenes/WorldScene';
 import { BootScene } from './scenes/BootScene';
-import { DialogueScene } from './scenes/DialogueScene';
 import { BattleScene } from './scenes/BattleScene';
 import { UIScene } from './scenes/UIScene';
+import { GameOverScene } from './scenes/GameOverScene';
 
 @Component({
   selector: 'app-mon-rpg',
@@ -31,7 +30,7 @@ export class MonRpgComponent implements OnInit {
           debug: false,
         },
       },
-      scene: [BootScene, BattleScene, UIScene, DialogueScene, WorldScene],
+      scene: [BootScene, BattleScene, UIScene, GameOverScene],
     };
   }
 

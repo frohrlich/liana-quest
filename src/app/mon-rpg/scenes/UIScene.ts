@@ -33,7 +33,7 @@ export class UIScene extends Phaser.Scene {
     // spells
     let javelin = new Spell(4, 25, 3, 'Deadly Javelin');
     this.addSpell(1, 0, javelin);
-    let punch = new Spell(1, 55, 4, 'Punch');
+    let punch = new Spell(1, 55, 2, 'Punch');
     this.addSpell(1, 1, punch);
   }
 
@@ -48,7 +48,7 @@ export class UIScene extends Phaser.Scene {
   }
 
   createEndTurnButton() {
-    let fontSize = this.uiTabWidth / 8;
+    let fontSize = this.uiTabWidth / 10;
     const nextTurnButton = this.add
       .text(
         this.uiTabWidth * 2.5,
@@ -56,9 +56,8 @@ export class UIScene extends Phaser.Scene {
         'End turn',
         {
           color: '#00FF40',
-          backgroundColor: '#000066',
           fontSize: fontSize,
-          fontFamily: 'Noto Sans',
+          fontFamily: 'PublicPixel',
         }
       )
       .setOrigin(0.5, 0.5);

@@ -16,15 +16,14 @@ export abstract class UIElement extends Phaser.GameObjects.Container {
     this.tab = tab;
     this.posY = posY;
     this.myScene = this.scene as UIScene;
-    this.fontSize = this.myScene.uiTabHeight / 5;
+    this.fontSize = this.myScene.uiTabHeight / 6;
     let margin = 10;
     this.x = this.myScene.uiTabWidth * this.tab + margin;
     this.y = this.myScene.topY + (this.fontSize + 10) * this.posY + margin;
     this.textStyle = {
       color: '#00FF00',
-      backgroundColor: '#000066',
       fontSize: this.fontSize,
-      fontFamily: 'Noto Sans',
+      fontFamily: 'PublicPixel',
     };
   }
 
