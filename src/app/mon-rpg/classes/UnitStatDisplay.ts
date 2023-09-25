@@ -15,8 +15,8 @@ export class UnitStatDisplay extends UIElement {
   displayStats() {
     this.removeAll(true);
     this.addText(
-      `PA : ${this.unit.pa}\n`,
-      `PM : ${this.unit.pm}\n`,
+      `${this.unit.type}\n`,
+      `PA : ${this.unit.pa} | PM : ${this.unit.pm}\n`,
       `HP : ${this.unit.hp}`
     );
   }

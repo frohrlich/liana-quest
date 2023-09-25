@@ -30,11 +30,7 @@ export class UIScene extends Phaser.Scene {
     this.drawOutline();
     this.createEndTurnButton();
     this.addStats(0, 0, this.battleScene.player);
-    // spells
-    let javelin = new Spell(4, 25, 3, 'Deadly Javelin');
-    this.addSpell(1, 0, javelin);
-    let punch = new Spell(1, 55, 2, 'Punch');
-    this.addSpell(1, 1, punch);
+    this.displaySpells(this.battleScene.player);
   }
 
   addSpell(tab: number, posY: number, spell: Spell) {
@@ -109,6 +105,30 @@ export class UIScene extends Phaser.Scene {
   refreshUI() {
     this.uiElements.forEach((element) => {
       element.refresh();
+    });
+  }
+
+  // display unit spells on the spell slot of the UI
+  displaySpells(unit: Unit) {
+    for (let i = 0; i < unit.spells.length; i++) {
+      const spell = unit.spells[i];
+      this.addSpell(1, i, spell);
+    }
+  }
+
+  clearSpellsHighlight() {
+    this.uiElements.forEach((element) => {
+      if (element instanceof UISpell) {
+        element.text.setColor('#00FF00');
+      }
+    });
+  }
+
+  hideInaccessibleSpells() {
+    this.uiElements.forEach((element) => {
+      if (element instanceof UISpell) {
+        element.hideIfInaccessible();
+      }
     });
   }
 }

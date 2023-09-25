@@ -62,6 +62,11 @@ export class BattleScene extends Phaser.Scene {
       0
     );
 
+    // create spells
+    let javelin = new Spell(4, 25, 3, 'Deadly Javelin');
+    let punch = new Spell(1, 55, 2, 'Punch');
+    let sting = new Spell(12, 5, 2, 'Sting');
+
     // add units
     // starting position (grid index)
     let playerStartX = 5;
@@ -75,12 +80,15 @@ export class BattleScene extends Phaser.Scene {
       5,
       6,
       100,
-      'amazon',
+      'Amazon',
       false,
-      true
+      true,
+      javelin,
+      punch,
+      sting
     );
     // create player animations with base sprite and framerate
-    this.createAnimations(playerFrame, 5, 'amazon');
+    this.createAnimations(playerFrame, 5, 'Amazon');
 
     // ally 1
     playerStartX = 2;
@@ -94,11 +102,11 @@ export class BattleScene extends Phaser.Scene {
       3,
       6,
       100,
-      'dude',
+      'Dude',
       true,
       true
     );
-    this.createAnimations(playerFrame, 5, 'dude');
+    this.createAnimations(playerFrame, 5, 'Dude');
     // ally 2
     playerStartX = 4;
     playerStartY = 2;
@@ -111,7 +119,7 @@ export class BattleScene extends Phaser.Scene {
       3,
       6,
       100,
-      'dude',
+      'Dude',
       true,
       true
     );
@@ -127,9 +135,10 @@ export class BattleScene extends Phaser.Scene {
       3,
       6,
       100,
-      'snowman',
+      'Snowman',
       true,
-      false
+      false,
+      javelin
     );
     // enemy 2
     enemyStartX = 18;
@@ -143,9 +152,10 @@ export class BattleScene extends Phaser.Scene {
       3,
       6,
       100,
-      'snowman',
+      'Snowman',
       true,
-      false
+      false,
+      javelin
     );
     // enemy 3
     enemyStartX = 17;
@@ -159,11 +169,12 @@ export class BattleScene extends Phaser.Scene {
       3,
       6,
       100,
-      'snowman',
+      'Snowman',
       true,
-      false
+      false,
+      javelin
     );
-    this.createAnimations(enemyFrame, 5, 'snowman');
+    this.createAnimations(enemyFrame, 5, 'Snowman');
 
     // layer for tall items appearing on top of the player like trees
     let overPlayer = this.map.createLayer(
@@ -225,6 +236,7 @@ export class BattleScene extends Phaser.Scene {
               })
             ) {
               this.player.launchSpell(this.currentSpell, targetVec);
+              this.uiScene.hideInaccessibleSpells();
               // if cliked outside spell range, deselect spell
             } else {
               this.clearSpellRange();
@@ -293,6 +305,7 @@ export class BattleScene extends Phaser.Scene {
       this.isPlayerTurn = true;
       this.refreshAccessibleTiles();
       this.highlightAccessibleTiles(this.accessibleTiles);
+      this.uiScene.hideInaccessibleSpells();
     }
   };
 
@@ -380,7 +393,8 @@ export class BattleScene extends Phaser.Scene {
     maxHp: number,
     name: string,
     npc: boolean,
-    allied: boolean
+    allied: boolean,
+    ...spells: Spell[]
   ) {
     let unit;
     if (npc) {
@@ -425,6 +439,8 @@ export class BattleScene extends Phaser.Scene {
     } else {
       this.enemies.push(unit);
     }
+    // add spells
+    unit.addSpells.apply(unit, spells);
     // unit is now considered as an obstacle for other units
     this.addToObstacleLayer(new Phaser.Math.Vector2(unit.indX, unit.indY));
     // initialize health bar
@@ -598,6 +614,7 @@ export class BattleScene extends Phaser.Scene {
 
   clearSpellRange() {
     this.spellVisible = false;
+    this.uiScene.clearSpellsHighlight();
     this.clearAccessibleTiles();
     this.highlightAccessibleTiles(this.accessibleTiles);
   }

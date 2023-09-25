@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { BattleScene } from '../scenes/BattleScene';
 import { Spell } from './Spell';
-import { Player } from './Player';
 
 export class Unit extends Phaser.GameObjects.Sprite {
   myScene: BattleScene;
@@ -27,6 +26,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   isAlly: boolean;
   healthBar!: Phaser.GameObjects.Graphics;
   identifier!: Phaser.GameObjects.Image;
+  spells: Spell[] = [];
 
   constructor(
     scene: Phaser.Scene,
@@ -422,5 +422,10 @@ export class Unit extends Phaser.GameObjects.Sprite {
         this.healthBar.fillRect(0, 0, barWidth, 5);
       }
     }
+  }
+
+  // add spells to a unit
+  addSpells(...spells: Spell[]) {
+    this.spells = this.spells.concat(spells);
   }
 }
