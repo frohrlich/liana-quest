@@ -24,7 +24,7 @@ export class BattleScene extends Phaser.Scene {
   isPlayerTurn: boolean = true;
   accessibleTiles: Phaser.Math.Vector2[] = [];
   spellVisible: boolean = false;
-  spellRange: Phaser.Math.Vector2[] = [];
+  spellRange: Phaser.Tilemaps.Tile[] = [];
   currentSpell!: Spell;
   uiScene!: UIScene;
 
@@ -62,9 +62,9 @@ export class BattleScene extends Phaser.Scene {
     );
 
     // create spells
-    let javelin = new Spell(4, 25, 3, 'Deadly Javelin');
-    let punch = new Spell(1, 55, 2, 'Punch');
-    let sting = new Spell(12, 5, 2, 'Sting');
+    let javelin = new Spell(0, 4, 25, 3, 'Deadly Javelin');
+    let punch = new Spell(1, 1, 55, 2, 'Punch');
+    let sting = new Spell(4, 12, 10, 2, 'Sting');
 
     // add units
     // starting position (grid index)
@@ -90,7 +90,7 @@ export class BattleScene extends Phaser.Scene {
     this.createAnimations(playerFrame, 5, 'Amazon');
 
     // ally 1
-    playerStartX = 2;
+    playerStartX = 12;
     playerStartY = 5;
     playerFrame = 0;
     this.addUnit(
@@ -104,7 +104,7 @@ export class BattleScene extends Phaser.Scene {
       'Dude',
       true,
       true,
-      punch
+      sting
     );
     this.createAnimations(playerFrame, 5, 'Dude');
     // ally 2
@@ -122,7 +122,7 @@ export class BattleScene extends Phaser.Scene {
       'Dude',
       true,
       true,
-      punch
+      sting
     );
     // enemy 1
     let enemyStartX = 14;
@@ -470,6 +470,15 @@ export class BattleScene extends Phaser.Scene {
       frameRate: framerate,
       repeat: -1,
     });
+    // animation for 'left attack'
+    this.anims.create({
+      key: 'leftAttack' + name,
+      frames: this.anims.generateFrameNumbers('player', {
+        frames: [baseSprite + 10, baseSprite + 1],
+      }),
+      frameRate: framerate,
+      repeat: 0,
+    });
     // animation for 'right'
     this.anims.create({
       key: 'right' + name,
@@ -483,6 +492,15 @@ export class BattleScene extends Phaser.Scene {
       }),
       frameRate: framerate,
       repeat: -1,
+    });
+    // animation for 'right attack'
+    this.anims.create({
+      key: 'rightAttack' + name,
+      frames: this.anims.generateFrameNumbers('player', {
+        frames: [baseSprite + 10, baseSprite + 1],
+      }),
+      frameRate: framerate,
+      repeat: 0,
     });
     // animation for 'up'
     this.anims.create({
@@ -498,6 +516,15 @@ export class BattleScene extends Phaser.Scene {
       frameRate: framerate,
       repeat: -1,
     });
+    // animation for 'up attack'
+    this.anims.create({
+      key: 'upAttack' + name,
+      frames: this.anims.generateFrameNumbers('player', {
+        frames: [baseSprite + 11, baseSprite + 2],
+      }),
+      frameRate: framerate,
+      repeat: 0,
+    });
     // animation for 'down'
     this.anims.create({
       key: 'down' + name,
@@ -506,6 +533,15 @@ export class BattleScene extends Phaser.Scene {
       }),
       frameRate: framerate,
       repeat: -1,
+    });
+    // animation for 'down attack'
+    this.anims.create({
+      key: 'downAttack' + name,
+      frames: this.anims.generateFrameNumbers('player', {
+        frames: [baseSprite + 9, baseSprite],
+      }),
+      frameRate: framerate,
+      repeat: 0,
     });
   };
 
@@ -549,10 +585,9 @@ export class BattleScene extends Phaser.Scene {
     this.clearAccessibleTiles();
     this.spellVisible = true;
     this.currentSpell = spell;
-    let range = spell.range;
-    this.spellRange = this.calculateSpellRange(range);
-    this.spellRange.forEach((pos) => {
-      let tile = this.background?.getTileAt(pos.x, pos.y);
+    let range = spell.maxRange;
+    this.spellRange = this.calculateSpellRange(this.player, spell)!;
+    this.spellRange.forEach((tile) => {
       if (tile) {
         tile.setAlpha(0.6);
         tile.tint = 0x0000ff;
@@ -561,37 +596,33 @@ export class BattleScene extends Phaser.Scene {
   }
 
   // calculate spell range
-  calculateSpellRange(range: number) {
-    let tablePos: Phaser.Math.Vector2[] = [];
-    const tilesAround = this.background?.getTilesWithin(
-      this.player.indX - range,
-      this.player.indY - range,
-      range * 2 + 1,
-      range * 2 + 1
+  calculateSpellRange(unit: Unit, spell: Spell) {
+    return this.background?.filterTiles(
+      (tile: Phaser.Tilemaps.Tile) => this.isVisible(unit, spell, tile),
+      this,
+      unit.indX - spell.maxRange,
+      unit.indY - spell.maxRange,
+      spell.maxRange * 2 + 1,
+      spell.maxRange * 2 + 1
     );
-    if (tilesAround) {
-      tilesAround.forEach((tile) => {
-        const playerPos = new Phaser.Math.Vector2(
-          this.player.indX,
-          this.player.indY
-        );
-        const target = new Phaser.Math.Vector2(tile.x, tile.y);
-        // if free tile OR a unit is there AND there is a line of sight
-        if (
-          (!this.obstacles?.getTileAt(tile.x, tile.y) ||
-            this.isUnitThere(tile.x, tile.y)) &&
-          this.isVisible(playerPos, target)
-        ) {
-          const distance =
-            Math.abs(tile.x - this.player.indX) +
-            Math.abs(tile.y - this.player.indY);
-          if (distance <= range) {
-            tablePos.push(target);
-          }
-        }
-      });
+  }
+
+  // return true if tile is visible for a given unit and spell
+  isVisible(unit: Unit, spell: Spell, tile: Phaser.Tilemaps.Tile) {
+    let startVec = new Phaser.Math.Vector2(unit.indX, unit.indY);
+    let targetVec = new Phaser.Math.Vector2(tile.x, tile.y);
+    let distance =
+      Math.abs(startVec.x - targetVec.x) + Math.abs(startVec.y - targetVec.y);
+    if (
+      distance <= spell.maxRange &&
+      distance >= spell.minRange &&
+      (!this.obstacles?.getTileAt(tile.x, tile.y) ||
+        this.isUnitThere(tile.x, tile.y)) &&
+      isVisible(startVec, targetVec, this.obstacles!, this)
+    ) {
+      return true;
     }
-    return tablePos;
+    return false;
   }
 
   // return true if there is a unit at the specified position
@@ -618,11 +649,6 @@ export class BattleScene extends Phaser.Scene {
     this.uiScene.clearSpellsHighlight();
     this.clearAccessibleTiles();
     this.highlightAccessibleTiles(this.accessibleTiles);
-  }
-
-  // return true if there is a line of sight between start and target positions
-  isVisible(startVec: Phaser.Math.Vector2, targetVec: Phaser.Math.Vector2) {
-    return isVisible(startVec, targetVec, this.obstacles!, this);
   }
 
   gameOver() {

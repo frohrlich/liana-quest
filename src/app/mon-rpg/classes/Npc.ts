@@ -27,8 +27,19 @@ export class Npc extends Unit {
     if (target) {
       let targetVec = new Phaser.Math.Vector2(target.x, target.y);
       this.launchSpell(this.spells[0], targetVec);
+      // wait till attack animation is finished
+      this.scene.time.addEvent({
+        delay: 400,
+        callback: this.tryToMove,
+        callbackScope: this,
+      });
+    } else {
+      this.tryToMove();
     }
+  }
 
+  // attempts to find an accessible tile and move to it
+  tryToMove() {
     const startVec = new Phaser.Math.Vector2(this.indX, this.indY);
     // first calculate the accessible tiles around npc
     let accessibleTiles = this.myScene.calculateAccessibleTiles(
@@ -66,19 +77,7 @@ export class Npc extends Unit {
         // then it's a valid target
         this.myScene.isUnitThere(tile.x, tile.y) &&
         this.isEnemy(this.myScene.getUnitAtPos(tile.x, tile.y)!) &&
-        this.isVisible(spell, tile)
-    );
-  }
-
-  // return true if tile is visible for a given spell
-  isVisible(spell: Spell, tile: Phaser.Tilemaps.Tile) {
-    let startVec = new Phaser.Math.Vector2(this.indX, this.indY);
-    let targetVec = new Phaser.Math.Vector2(tile.x, tile.y);
-    let distance =
-      Math.abs(startVec.x - targetVec.x) + Math.abs(startVec.y - targetVec.y);
-    return (
-      distance <= spell.range &&
-      isVisible(startVec, targetVec, this.myScene.obstacles!, this.myScene)
+        this.myScene.isVisible(this, spell, tile)
     );
   }
 

@@ -140,7 +140,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
         x: this.tilePosToPixelsX(deltaX),
         ease: 'Linear',
         onStart: () => {
-          this.startAnim(direction);
+          this.startMovingAnim(direction);
           this.depth = this.y;
         },
         onUpdate: () => {
@@ -157,7 +157,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
         y: this.tilePosToPixelsY(deltaY),
         ease: 'Linear',
         onStart: () => {
-          this.startAnim(direction);
+          this.startMovingAnim(direction);
           this.depth = this.y;
         },
         onUpdate: () => {
@@ -205,11 +205,18 @@ export class Unit extends Phaser.GameObjects.Sprite {
     return this.myScene.tileHeight * (this.indY + delta) + this.height / 6;
   }
 
-  startAnim = (direction: string) => {
+  startMovingAnim = (direction: string) => {
     // if direction is left, just flip the image for right
     this.setFlipX(direction.startsWith('left'));
     // if unit has type 'amazon', animation for left is 'leftamazon'
     this.play(direction + this.type, true);
+  };
+
+  startAttackAnim = (direction: string) => {
+    // if direction is left, just flip the image for right
+    this.setFlipX(direction.startsWith('left'));
+    // if unit has type 'amazon', animation for left is 'leftamazon'
+    this.play(direction + 'Attack' + this.type, true);
   };
 
   // polymorphic methods
@@ -227,12 +234,12 @@ export class Unit extends Phaser.GameObjects.Sprite {
   // launch a spell at specified position
   launchSpell(spell: Spell, targetVec: Phaser.Math.Vector2) {
     this.lookAtTile(targetVec);
+    this.startAttackAnim(this.direction);
     this.pa -= spell.cost;
     if (this.myScene.isUnitThere(targetVec.x, targetVec.y)) {
       let targetedUnit = this.myScene.getUnitAtPos(targetVec.x, targetVec.y);
       if (targetedUnit) {
         targetedUnit.undergoSpell(spell);
-        targetedUnit.updateHealthBar();
       }
     }
     // if not enough pa to launch the spell again : quit spell mode
@@ -246,6 +253,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   undergoSpell(spell: Spell) {
     this.hp -= spell.damage;
     this.displayDamage(spell);
+    this.updateHealthBar();
     this.checkDead();
   }
 
