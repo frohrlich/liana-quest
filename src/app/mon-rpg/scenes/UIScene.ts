@@ -5,6 +5,7 @@ import { Spell } from '../classes/Spell';
 import { UISpell } from '../classes/UISpell';
 import { Unit } from '../classes/Unit';
 import { UnitStatDisplay } from '../classes/UnitStatDisplay';
+import { UITimelineSlot } from '../classes/UITimelineSlot';
 
 export class UIScene extends Phaser.Scene {
   graphics!: Phaser.GameObjects.Graphics;
@@ -14,6 +15,9 @@ export class UIScene extends Phaser.Scene {
   topY!: number;
   uiTabHeight!: number;
   uiElements: UIElement[] = [];
+  uiTimeline: UITimelineSlot[] = [];
+  uiTimelineBackgrounds: Phaser.GameObjects.Rectangle[] = [];
+  handle!: Phaser.GameObjects.Rectangle;
 
   constructor() {
     super({
@@ -29,6 +33,7 @@ export class UIScene extends Phaser.Scene {
     this.battleScene = this.scene.get('BattleScene') as BattleScene;
     this.drawOutline();
     this.createEndTurnButton();
+    this.updateTimeline(this.battleScene.timeline);
     this.addStats(0, 0, this.battleScene.player);
     this.displaySpells(this.battleScene.player);
   }
@@ -63,6 +68,100 @@ export class UIScene extends Phaser.Scene {
         this.battleScene.endTurn();
       }
     });
+  }
+
+  updateTimeline(timeline: Unit[]) {
+    // scale factor for the timeline
+    let timelineSize = 5;
+    let topMargin = 10;
+    let leftMargin = 10;
+    // first add handle on the left of the timeline
+    let handleWidth = 30;
+    let unitHeight = timeline[0].height;
+    let unitWidth = timeline[0].width;
+    // first we get the handle current position if it's already initialized
+    let offsetX = 0;
+    let offsetY = 0;
+    if (this.handle) {
+      // the offset corresponding to the position of the timeline once user dragged it
+      // substracting initial position of the handle
+      offsetX = this.handle.x - leftMargin - handleWidth / 2;
+      offsetY = this.handle.y - (unitHeight * timelineSize) / 2 - topMargin;
+    }
+    this.uiTimeline.forEach((slot) => {
+      slot.destroy();
+    });
+    this.uiTimelineBackgrounds.forEach((border) => {
+      border.destroy();
+    });
+    this.handle?.destroy();
+    this.uiTimelineBackgrounds = [];
+    this.uiTimeline = [];
+    this.handle = this.add.rectangle(
+      offsetX + leftMargin + handleWidth / 2,
+      offsetY + (unitHeight * timelineSize) / 2 + topMargin,
+      handleWidth,
+      unitHeight * timelineSize,
+      0x888888
+    );
+    for (let i = 0; i < timeline.length; i++) {
+      const unit = timeline[i];
+      // each slot represents a tiny unit portrait in the timeline
+      let slot = new UITimelineSlot(
+        this,
+        offsetX +
+          handleWidth +
+          leftMargin +
+          (i + 0.5) * unitWidth * timelineSize,
+        offsetY + (unitHeight * timelineSize) / 2 + topMargin,
+        unit,
+        timelineSize
+      );
+      // on hover, highlight the timeline slot and its corresponding unit
+      slot.setInteractive();
+      slot.on('pointerover', () => {
+        slot.tint = 0x777777;
+        slot.unit.tint = 0x777777;
+        slot.unit.healthBar.setVisible(true);
+      });
+      slot.on('pointerout', () => {
+        slot.tint = 0xffffff;
+        slot.unit.tint = 0xffffff;
+        slot.unit.healthBar.setVisible(false);
+      });
+      // add background color to identify team
+      let background = this.add.rectangle(
+        offsetX +
+          handleWidth +
+          leftMargin +
+          (i + 0.5) * unitWidth * timelineSize,
+        offsetY + (unitHeight * timelineSize) / 2 + topMargin,
+        unitWidth * timelineSize,
+        unitHeight * timelineSize,
+        unit.isAlly ? 0x0000ff : 0xff0000,
+        0.3
+      );
+      this.uiTimelineBackgrounds.push(background);
+      this.uiTimeline.push(slot);
+      this.add.existing(slot);
+    }
+
+    // move the timeline around by grabbing the handle
+    this.handle.setInteractive({ draggable: true });
+    this.handle.on(
+      'drag',
+      (pointer: Phaser.Input.Pointer, dragX: number, dragY: number) => {
+        this.handle.setPosition(dragX, dragY);
+        for (let i = 0; i < this.uiTimeline.length; i++) {
+          const slot = this.uiTimeline[i];
+          const background = this.uiTimelineBackgrounds[i];
+          let posX =
+            (i + 0.5) * unitWidth * timelineSize + handleWidth / 2 + dragX;
+          slot.setPosition(posX, dragY);
+          background.setPosition(posX, dragY);
+        }
+      }
+    );
   }
 
   // draw the outline of the UI

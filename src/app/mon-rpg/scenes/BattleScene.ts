@@ -296,7 +296,7 @@ export class BattleScene extends Phaser.Scene {
     }
     this.isPlayerTurn = false;
     this.turnIndex++;
-    if (this.turnIndex == this.timeline.length) {
+    if (this.turnIndex >= this.timeline.length) {
       this.turnIndex = 0;
     }
     let currentPlayer = this.timeline[this.turnIndex];
@@ -641,6 +641,9 @@ export class BattleScene extends Phaser.Scene {
     );
     if (index !== -1) {
       this.timeline.splice(index, 1);
+      if (this.timeline.length > 0) {
+        this.uiScene.updateTimeline(this.timeline);
+      }
     }
   }
 

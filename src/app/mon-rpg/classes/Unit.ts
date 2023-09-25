@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { BattleScene } from '../scenes/BattleScene';
 import { Spell } from './Spell';
+import { UITimelineSlot } from './UITimelineSlot';
 
 export class Unit extends Phaser.GameObjects.Sprite {
   myScene: BattleScene;
@@ -27,6 +28,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   healthBar!: Phaser.GameObjects.Graphics;
   identifier!: Phaser.GameObjects.Image;
   spells: Spell[] = [];
+  timelineSlot!: UITimelineSlot;
 
   constructor(
     scene: Phaser.Scene,
@@ -67,10 +69,15 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.moveChain.tweens = [];
 
     // health bar visible only on hover
+    // also change color of unit and its timeline icon
     this.on('pointerover', () => {
+      this.tint = 0x777777;
+      this.timelineSlot.tint = 0x777777;
       this.healthBar.setVisible(true);
     });
     this.on('pointerout', () => {
+      this.tint = 0xffffff;
+      this.timelineSlot.tint = 0xffffff;
       this.healthBar.setVisible(false);
     });
   }
@@ -298,6 +305,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
         () => {
           this.healthBar.destroy();
           this.identifier.destroy();
+          this.timelineSlot.destroy();
           // if it's the player that just died... game over
           if (this.myScene.player === this) this.myScene.gameOver();
           this.destroy();
@@ -435,5 +443,10 @@ export class Unit extends Phaser.GameObjects.Sprite {
   // add spells to a unit
   addSpells(...spells: Spell[]) {
     this.spells = this.spells.concat(spells);
+  }
+
+  // links unit to its timeline slot on the UI
+  addTimelineSlot(slot: UITimelineSlot) {
+    this.timelineSlot = slot;
   }
 }
