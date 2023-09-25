@@ -5,7 +5,6 @@ import { Npc } from '../classes/Npc';
 import { Player } from '../classes/Player';
 import { Spell } from '../classes/Spell';
 import { UIScene } from './UIScene';
-import plotLine from '../utils/lineOfSight';
 import isVisible from '../utils/lineOfSight';
 
 export class BattleScene extends Phaser.Scene {
@@ -104,11 +103,12 @@ export class BattleScene extends Phaser.Scene {
       100,
       'Dude',
       true,
-      true
+      true,
+      punch
     );
     this.createAnimations(playerFrame, 5, 'Dude');
     // ally 2
-    playerStartX = 4;
+    playerStartX = 13;
     playerStartY = 2;
     playerFrame = 0;
     this.addUnit(
@@ -121,7 +121,8 @@ export class BattleScene extends Phaser.Scene {
       100,
       'Dude',
       true,
-      true
+      true,
+      punch
     );
     // enemy 1
     let enemyStartX = 14;
@@ -299,7 +300,7 @@ export class BattleScene extends Phaser.Scene {
       this.turnIndex = 0;
     }
     let currentPlayer = this.timeline[this.turnIndex];
-    if (currentPlayer instanceof Npc) {
+    if (currentPlayer instanceof Npc && !currentPlayer.isDead()) {
       currentPlayer.playTurn();
     } else {
       this.isPlayerTurn = true;

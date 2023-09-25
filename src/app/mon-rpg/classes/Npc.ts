@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { Unit } from './Unit';
+import { Spell } from './Spell';
+import isVisible from '../utils/lineOfSight';
 
 export class Npc extends Unit {
   constructor(
@@ -20,6 +22,13 @@ export class Npc extends Unit {
 
   // plays npc turn
   override playTurn() {
+    // first try to launch spell if there is a target available
+    let target = this.locateTarget(this.spells[0]);
+    if (target) {
+      let targetVec = new Phaser.Math.Vector2(target.x, target.y);
+      this.launchSpell(this.spells[0], targetVec);
+    }
+
     const startVec = new Phaser.Math.Vector2(this.indX, this.indY);
     // first calculate the accessible tiles around npc
     let accessibleTiles = this.myScene.calculateAccessibleTiles(
@@ -47,5 +56,34 @@ export class Npc extends Unit {
   endTurn() {
     this.refillPoints();
     this.myScene.endTurn();
+  }
+
+  // locates an accessible target for a given spell
+  locateTarget(spell: Spell) {
+    return this.myScene.background?.findTile(
+      (tile) =>
+        // if there is a unit there, and it's an enemy, and there is a line of sight
+        // then it's a valid target
+        this.myScene.isUnitThere(tile.x, tile.y) &&
+        this.isEnemy(this.myScene.getUnitAtPos(tile.x, tile.y)!) &&
+        this.isVisible(spell, tile)
+    );
+  }
+
+  // return true if tile is visible for a given spell
+  isVisible(spell: Spell, tile: Phaser.Tilemaps.Tile) {
+    let startVec = new Phaser.Math.Vector2(this.indX, this.indY);
+    let targetVec = new Phaser.Math.Vector2(tile.x, tile.y);
+    let distance =
+      Math.abs(startVec.x - targetVec.x) + Math.abs(startVec.y - targetVec.y);
+    return (
+      distance <= spell.range &&
+      isVisible(startVec, targetVec, this.myScene.obstacles!, this.myScene)
+    );
+  }
+
+  // return true if the given unit is a foe for this npc
+  isEnemy(unit: Unit) {
+    return this.isAlly ? !unit.isAlly : unit.isAlly;
   }
 }

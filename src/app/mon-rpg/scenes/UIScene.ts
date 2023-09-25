@@ -96,13 +96,11 @@ export class UIScene extends Phaser.Scene {
   }
 
   endTurn() {
-    this.uiElements.forEach((element) => {
-      (element as UISpell).isVisible = false;
-    });
     this.refreshUI();
   }
 
   refreshUI() {
+    this.clearSpellsHighlight();
     this.uiElements.forEach((element) => {
       element.refresh();
     });
@@ -118,7 +116,7 @@ export class UIScene extends Phaser.Scene {
 
   clearSpellsHighlight() {
     this.uiElements.forEach((element) => {
-      if (element instanceof UISpell) {
+      if (element instanceof UISpell && !element.isInaccessible()) {
         element.text.setColor('#00FF00');
       }
     });
