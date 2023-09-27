@@ -1,7 +1,7 @@
-import Phaser from 'phaser';
-import { BattleScene } from '../scenes/BattleScene';
-import { Spell } from './Spell';
-import { UITimelineSlot } from './UITimelineSlot';
+import Phaser from "phaser";
+import { BattleScene } from "../scenes/BattleScene";
+import { Spell } from "./Spell";
+import { UITimelineSlot } from "./UITimelineSlot";
 
 export class Unit extends Phaser.GameObjects.Sprite {
   myScene: BattleScene;
@@ -53,7 +53,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.pm = maxPm;
     this.maxHp = maxHp;
     this.hp = maxHp;
-    this.direction = '';
+    this.direction = "";
     this.isMoving = false;
     this.frameNumber = frame;
     this.isAlly = isAlly;
@@ -70,16 +70,27 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
     // health bar visible only on hover
     // also change color of unit and its timeline icon
-    this.on('pointerover', () => {
-      this.tint = 0x777777;
-      this.timelineSlot.tint = 0x777777;
-      this.healthBar.setVisible(true);
+    // and display unit stats on the UI
+    this.on("pointerover", () => {
+      this.selectUnit();
     });
-    this.on('pointerout', () => {
-      this.tint = 0xffffff;
-      this.timelineSlot.tint = 0xffffff;
-      this.healthBar.setVisible(false);
+    this.on("pointerout", () => {
+      this.unselectUnit();
     });
+  }
+
+  unselectUnit() {
+    this.tint = 0xffffff;
+    this.timelineSlot.tint = 0xffffff;
+    this.healthBar.setVisible(false);
+    this.myScene.uiScene.changeStatsUnit(this.myScene.player);
+  }
+
+  selectUnit() {
+    this.tint = 0x777777;
+    this.timelineSlot.tint = 0x777777;
+    this.healthBar.setVisible(true);
+    this.myScene.uiScene.changeStatsUnit(this);
   }
 
   // refills movement points at turn beginning
@@ -107,26 +118,26 @@ export class Unit extends Phaser.GameObjects.Sprite {
     let { x, y } = target;
     // left
     if (this.indX - x == 1) {
-      this.direction = 'left';
+      this.direction = "left";
       this.move(x, this.direction);
       this.indX--;
       this.pm--;
     }
     // right
     else if (this.indX - x == -1) {
-      this.direction = 'right';
+      this.direction = "right";
       this.move(x, this.direction);
       this.indX++;
       this.pm--;
       // down
     } else if (this.indY - y == -1) {
-      this.direction = 'down';
+      this.direction = "down";
       this.move(y, this.direction);
       this.indY++;
       this.pm--;
       // up
     } else if (this.indY - y == 1) {
-      this.direction = 'up';
+      this.direction = "up";
       this.move(y, this.direction);
       this.indY--;
       this.pm--;
@@ -141,11 +152,11 @@ export class Unit extends Phaser.GameObjects.Sprite {
   // via tweens
   move(tilePos: number, direction: string) {
     this.isMoving = true;
-    if (direction == 'left' || direction == 'right') {
-      let deltaX = direction == 'left' ? -1 : 1;
+    if (direction == "left" || direction == "right") {
+      let deltaX = direction == "left" ? -1 : 1;
       this.moveChain.tweens.push({
         x: this.tilePosToPixelsX(deltaX),
-        ease: 'Linear',
+        ease: "Linear",
         onStart: () => {
           this.startMovingAnim(direction);
           this.depth = this.y;
@@ -159,10 +170,10 @@ export class Unit extends Phaser.GameObjects.Sprite {
         yoyo: false,
       });
     } else {
-      let deltaY = direction == 'up' ? -1 : 1;
+      let deltaY = direction == "up" ? -1 : 1;
       this.moveChain.tweens.push({
         y: this.tilePosToPixelsY(deltaY),
-        ease: 'Linear',
+        ease: "Linear",
         onStart: () => {
           this.startMovingAnim(direction);
           this.depth = this.y;
@@ -197,7 +208,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.isMoving = false;
     this.anims.stop();
     this.changeDirection(this.direction);
-    this.direction = '';
+    this.direction = "";
     this.moveChain.tweens = [];
     this.refreshUI();
     this.nextAction();
@@ -214,16 +225,16 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   startMovingAnim = (direction: string) => {
     // if direction is left, just flip the image for right
-    this.setFlipX(direction.startsWith('left'));
+    this.setFlipX(direction.startsWith("left"));
     // if unit has type 'amazon', animation for left is 'leftamazon'
     this.play(direction + this.type, true);
   };
 
   startAttackAnim = (direction: string) => {
     // if direction is left, just flip the image for right
-    this.setFlipX(direction.startsWith('left'));
+    this.setFlipX(direction.startsWith("left"));
     // if unit has type 'amazon', animation for left is 'leftamazon'
-    this.play(direction + 'Attack' + this.type, true);
+    this.play(direction + "Attack" + this.type, true);
   };
 
   // polymorphic methods
@@ -276,9 +287,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
       spell.damage.toString(),
       {
         fontSize: 8,
-        fontFamily: 'PublicPixel',
-        color: '#ff0000',
-        align: 'center',
+        fontFamily: "PublicPixel",
+        color: "#ff0000",
+        align: "center",
       }
     );
     damage.setDepth(10001);
@@ -297,6 +308,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   checkDead() {
     if (this.isDead()) {
+      this.unselectUnit();
       this.myScene.removeUnitFromBattle(this);
       // turn black before dying...
       this.tint = 0x000000;
@@ -318,34 +330,34 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   // look at a position (change player direction)
   lookAtTile(targetVec: Phaser.Math.Vector2) {
-    let direction = '';
+    let direction = "";
     // upper right corner
     if (targetVec.x >= this.indX && targetVec.y <= this.indY) {
       if (targetVec.x + targetVec.y < this.indX + this.indY) {
-        direction = 'up';
+        direction = "up";
       } else {
-        direction = 'right';
+        direction = "right";
       }
       // lower right corner
     } else if (targetVec.x >= this.indX && targetVec.y > this.indY) {
       if (targetVec.x - targetVec.y < this.indX - this.indY) {
-        direction = 'down';
+        direction = "down";
       } else {
-        direction = 'right';
+        direction = "right";
       }
       // lower left corner
     } else if (targetVec.x < this.indX && targetVec.y >= this.indY) {
       if (targetVec.x + targetVec.y < this.indX + this.indY) {
-        direction = 'left';
+        direction = "left";
       } else {
-        direction = 'down';
+        direction = "down";
       }
       // upper left corner
     } else if (targetVec.x < this.indX && targetVec.y < this.indY) {
       if (targetVec.x - targetVec.y < this.indX - this.indY) {
-        direction = 'left';
+        direction = "left";
       } else {
-        direction = 'up';
+        direction = "up";
       }
     }
     this.changeDirection(direction);
@@ -354,22 +366,22 @@ export class Unit extends Phaser.GameObjects.Sprite {
   // change player direction
   changeDirection(direction: string) {
     switch (direction) {
-      case 'left':
+      case "left":
         // if direction is left, just flip the image for right
         this.setFlipX(true);
-        this.setTexture('player', this.frameNumber + 1);
+        this.setTexture("player", this.frameNumber + 1);
         break;
-      case 'right':
+      case "right":
         this.setFlipX(false);
-        this.setTexture('player', this.frameNumber + 1);
+        this.setTexture("player", this.frameNumber + 1);
         break;
-      case 'up':
+      case "up":
         this.setFlipX(false);
-        this.setTexture('player', this.frameNumber + 2);
+        this.setTexture("player", this.frameNumber + 2);
         break;
-      case 'down':
+      case "down":
         this.setFlipX(false);
-        this.setTexture('player', this.frameNumber);
+        this.setTexture("player", this.frameNumber);
         break;
       default:
         break;
@@ -389,7 +401,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.identifier = this.scene.add.image(
       this.x,
       this.y,
-      'player',
+      "player",
       identifierFrame
     );
     this.identifier.setScale(scale);

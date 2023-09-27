@@ -1,11 +1,11 @@
-import Phaser from 'phaser';
-import { BattleScene } from './BattleScene';
-import { UIElement } from '../classes/UIElement';
-import { Spell } from '../classes/Spell';
-import { UISpell } from '../classes/UISpell';
-import { Unit } from '../classes/Unit';
-import { UnitStatDisplay } from '../classes/UnitStatDisplay';
-import { UITimelineSlot } from '../classes/UITimelineSlot';
+import Phaser from "phaser";
+import { BattleScene } from "./BattleScene";
+import { UIElement } from "../classes/UIElement";
+import { Spell } from "../classes/Spell";
+import { UISpell } from "../classes/UISpell";
+import { Unit } from "../classes/Unit";
+import { UnitStatDisplay } from "../classes/UnitStatDisplay";
+import { UITimelineSlot } from "../classes/UITimelineSlot";
 
 export class UIScene extends Phaser.Scene {
   graphics!: Phaser.GameObjects.Graphics;
@@ -18,10 +18,11 @@ export class UIScene extends Phaser.Scene {
   uiTimeline: UITimelineSlot[] = [];
   uiTimelineBackgrounds: Phaser.GameObjects.Rectangle[] = [];
   handle!: Phaser.GameObjects.Rectangle;
+  unitStats!: UnitStatDisplay;
 
   constructor() {
     super({
-      key: 'UIScene',
+      key: "UIScene",
     });
   }
 
@@ -30,11 +31,11 @@ export class UIScene extends Phaser.Scene {
   preload(): void {}
 
   create(): void {
-    this.battleScene = this.scene.get('BattleScene') as BattleScene;
+    this.battleScene = this.scene.get("BattleScene") as BattleScene;
     this.drawOutline();
     this.createEndTurnButton();
     this.updateTimeline(this.battleScene.timeline);
-    this.addStats(0, 0, this.battleScene.player);
+    this.unitStats = this.addStats(0, 0, this.battleScene.player);
     this.displaySpells(this.battleScene.player);
   }
 
@@ -46,6 +47,11 @@ export class UIScene extends Phaser.Scene {
   addStats(tab: number, posY: number, unit: Unit) {
     let myStats = new UnitStatDisplay(this, tab, posY, unit);
     this.uiElements.push(this.add.existing(myStats));
+    return myStats;
+  }
+
+  changeStatsUnit(unit: Unit) {
+    this.unitStats.changeUnit(unit);
   }
 
   createEndTurnButton() {
@@ -54,16 +60,16 @@ export class UIScene extends Phaser.Scene {
       .text(
         this.uiTabWidth * 2.5,
         this.topY + this.uiTabHeight / 2,
-        'End turn',
+        "End turn",
         {
-          color: '#00FF40',
+          color: "#00FF40",
           fontSize: fontSize,
-          fontFamily: 'PublicPixel',
+          fontFamily: "PublicPixel",
         }
       )
       .setOrigin(0.5, 0.5);
     nextTurnButton.setInteractive();
-    nextTurnButton.on('pointerup', () => {
+    nextTurnButton.on("pointerup", () => {
       if (this.battleScene.isPlayerTurn && !this.battleScene.player.isMoving) {
         this.battleScene.endTurn();
       }
@@ -119,12 +125,12 @@ export class UIScene extends Phaser.Scene {
       );
       // on hover, highlight the timeline slot and its corresponding unit
       slot.setInteractive();
-      slot.on('pointerover', () => {
+      slot.on("pointerover", () => {
         slot.tint = 0x777777;
         slot.unit.tint = 0x777777;
         slot.unit.healthBar.setVisible(true);
       });
-      slot.on('pointerout', () => {
+      slot.on("pointerout", () => {
         slot.tint = 0xffffff;
         slot.unit.tint = 0xffffff;
         slot.unit.healthBar.setVisible(false);
@@ -149,7 +155,7 @@ export class UIScene extends Phaser.Scene {
     // move the timeline around by grabbing the handle
     this.handle.setInteractive({ draggable: true });
     this.handle.on(
-      'drag',
+      "drag",
       (pointer: Phaser.Input.Pointer, dragX: number, dragY: number) => {
         this.handle.setPosition(dragX, dragY);
         for (let i = 0; i < this.uiTimeline.length; i++) {
@@ -216,7 +222,7 @@ export class UIScene extends Phaser.Scene {
   clearSpellsHighlight() {
     this.uiElements.forEach((element) => {
       if (element instanceof UISpell && !element.isInaccessible()) {
-        element.text.setColor('#00FF00');
+        element.text.setColor("#00FF00");
       }
     });
   }
