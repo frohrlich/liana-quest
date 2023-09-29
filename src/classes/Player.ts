@@ -1,5 +1,6 @@
-import Phaser from 'phaser';
-import { Unit } from './Unit';
+import Phaser from "phaser";
+import { Unit } from "./Unit";
+import { Spell } from "./Spell";
 
 export class Player extends Unit {
   constructor(
@@ -22,5 +23,13 @@ export class Player extends Unit {
   override nextAction(): void {
     this.myScene.clearAccessibleTiles();
     this.myScene.highlightAccessibleTiles(this.myScene.accessibleTiles);
+  }
+
+  override launchSpell(spell: Spell, targetVec: Phaser.Math.Vector2): void {
+    super.launchSpell(spell, targetVec);
+    // if not enough pa to launch the spell again : quit spell mode
+    if (this.pa < spell.cost) {
+      this.myScene.clearSpellRange();
+    }
   }
 }

@@ -260,49 +260,88 @@ export class Unit extends Phaser.GameObjects.Sprite {
         targetedUnit.undergoSpell(spell);
       }
     }
-    // if not enough pa to launch the spell again : quit spell mode
-    if (this.pa < spell.cost) {
-      this.myScene.clearSpellRange();
-    }
     this.refreshUI();
   }
 
   // Receive spell effects
   undergoSpell(spell: Spell) {
     this.hp -= spell.damage;
-    this.displayDamage(spell);
+    this.pm -= spell.malusPM;
+    this.pa -= spell.malusPA;
     this.updateHealthBar();
-    this.checkDead();
+    let totalDelay = this.displaySpellEffect(spell);
+    this.scene.time.delayedCall(totalDelay, () => {
+      this.checkDead();
+    });
+    return totalDelay;
   }
 
   // display damage animation when unit is hit
-  displayDamage(spell: Spell) {
-    // turn red
-    this.tint = 0xff0000;
-    // display damage value
+  displaySpellEffect(spell: Spell) {
+    let totalDelay = 0;
+    if (spell.damage > 0) {
+      // display damage with unit blinking red
+      this.displayEffect(spell.damage, "damage", true);
+      totalDelay += 300;
+    }
+    this.scene.time.delayedCall(totalDelay, () => {
+      let pmDelay = 0;
+      // display PM malus in green (no blinking)
+      if (spell.malusPM > 0) {
+        this.displayEffect(spell.malusPM, "pm");
+        totalDelay += 300;
+        pmDelay = 300;
+      }
+      this.scene.time.delayedCall(pmDelay, () => {
+        // display PA malus in blue (no blinking)
+        if (spell.malusPA > 0) {
+          this.displayEffect(spell.malusPA, "pa");
+          totalDelay += 300;
+        }
+      });
+    });
+    return totalDelay;
+  }
+
+  displayEffect(value: number, type: string, blink: boolean = false) {
+    let color = "";
+    if (blink) this.tint = 0xff0000;
+    switch (type) {
+      case "damage":
+        color = "#ff0000";
+        break;
+      case "pm":
+        color = "#00dd00";
+        break;
+      case "pa":
+        color = "#33c6f7";
+        break;
+      default:
+        break;
+    }
     let isOnTop = this.indY < 2;
-    let damage = this.scene.add.text(
-      this.x + 1,
+    let malus = this.scene.add.text(
+      this.x - 2,
       isOnTop ? this.y + 20 : this.y - this.displayHeight + 5,
-      spell.damage.toString(),
+      "-" + value.toString(),
       {
         fontSize: 8,
         fontFamily: "PublicPixel",
-        color: "#ff0000",
+        color: color,
         align: "center",
       }
     );
-    damage.setDepth(10001);
-    damage.setOrigin(0.5, 0.5);
+    malus.setDepth(10001);
+    malus.setOrigin(0.5, 0.5);
     // disappears after short time
     this.scene.time.delayedCall(
       300,
       () => {
-        damage.destroy();
-        this.tint = 0xffffff;
+        malus.destroy();
+        if (blink) this.tint = 0xffffff;
       },
       undefined,
-      damage
+      malus
     );
   }
 

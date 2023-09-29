@@ -1,7 +1,7 @@
-import Phaser from 'phaser';
-import { Unit } from './Unit';
-import { Spell } from './Spell';
-import isVisible from '../utils/lineOfSight';
+import Phaser from "phaser";
+import { Unit } from "./Unit";
+import { Spell } from "./Spell";
+import isVisible from "../utils/lineOfSight";
 
 export class Npc extends Unit {
   constructor(
@@ -23,16 +23,20 @@ export class Npc extends Unit {
   // plays npc turn
   override playTurn() {
     // first try to launch spell if there is a target available
-    let target = this.locateTarget(this.spells[0]);
-    if (target) {
-      let targetVec = new Phaser.Math.Vector2(target.x, target.y);
-      this.launchSpell(this.spells[0], targetVec);
-      // wait till attack animation is finished
-      this.scene.time.addEvent({
-        delay: 400,
-        callback: this.tryToMove,
-        callbackScope: this,
-      });
+    if (this.pa >= this.spells[0].cost) {
+      let target = this.locateTarget(this.spells[0]);
+      if (target) {
+        let targetVec = new Phaser.Math.Vector2(target.x, target.y);
+        this.launchSpell(this.spells[0], targetVec);
+        // wait till attack animation is finished
+        this.scene.time.addEvent({
+          delay: 400,
+          callback: this.tryToMove,
+          callbackScope: this,
+        });
+      } else {
+        this.tryToMove();
+      }
     } else {
       this.tryToMove();
     }
@@ -40,22 +44,26 @@ export class Npc extends Unit {
 
   // attempts to find an accessible tile and move to it
   tryToMove() {
-    const startVec = new Phaser.Math.Vector2(this.indX, this.indY);
-    // first calculate the accessible tiles around npc
-    let accessibleTiles = this.myScene.calculateAccessibleTiles(
-      startVec,
-      this.pm
-    );
-    // then chooses one randomly
-    const randMove = Phaser.Math.Between(0, accessibleTiles.length - 1);
-    let targetVec = accessibleTiles[randMove];
-    // then finds the path to it
-    let path = this.myScene.findPath(startVec, targetVec);
-    if (path) {
-      // then move along it
-      this.moveAlong(path);
+    if (this.pm > 0) {
+      const startVec = new Phaser.Math.Vector2(this.indX, this.indY);
+      // first calculate the accessible tiles around npc
+      let accessibleTiles = this.myScene.calculateAccessibleTiles(
+        startVec,
+        this.pm
+      );
+      // then chooses one randomly
+      const randMove = Phaser.Math.Between(0, accessibleTiles.length - 1);
+      let targetVec = accessibleTiles[randMove];
+      // then finds the path to it
+      let path = this.myScene.findPath(startVec, targetVec);
+      if (path) {
+        // then move along it
+        this.moveAlong(path);
+      } else {
+        // if no path found, do nothing
+        this.stopMovement();
+      }
     } else {
-      // if no path found, do nothing
       this.stopMovement();
     }
   }

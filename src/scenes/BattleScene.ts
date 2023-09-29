@@ -1,11 +1,11 @@
-import Phaser from 'phaser';
-import { Unit } from '../classes/Unit';
-import findPath from '../utils/findPath';
-import { Npc } from '../classes/Npc';
-import { Player } from '../classes/Player';
-import { Spell } from '../classes/Spell';
-import { UIScene } from './UIScene';
-import isVisible from '../utils/lineOfSight';
+import Phaser from "phaser";
+import { Unit } from "../classes/Unit";
+import findPath from "../utils/findPath";
+import { Npc } from "../classes/Npc";
+import { Player } from "../classes/Player";
+import { Spell } from "../classes/Spell";
+import { UIScene } from "./UIScene";
+import isVisible from "../utils/lineOfSight";
 
 export class BattleScene extends Phaser.Scene {
   player!: Unit;
@@ -30,7 +30,7 @@ export class BattleScene extends Phaser.Scene {
 
   constructor() {
     super({
-      key: 'BattleScene',
+      key: "BattleScene",
     });
   }
 
@@ -40,31 +40,31 @@ export class BattleScene extends Phaser.Scene {
 
   create(): void {
     // create tilemap and get tile dimensions
-    this.map = this.make.tilemap({ key: 'battlemap' });
+    this.map = this.make.tilemap({ key: "battlemap" });
     this.tileWidth = this.map.tileWidth;
     this.tileHeight = this.map.tileHeight;
 
     // get the tileset
-    this.tileset = this.map.addTilesetImage('forest_tilemap', 'tiles');
+    this.tileset = this.map.addTilesetImage("forest_tilemap", "tiles");
 
     // create layers and characters sprites
     this.background = this.map.createLayer(
-      'calque_background',
+      "calque_background",
       this.tileset!,
       0,
       0
     );
     this.obstacles = this.map.createLayer(
-      'calque_obstacles',
+      "calque_obstacles",
       this.tileset!,
       0,
       0
     );
 
     // create spells
-    let javelin = new Spell(0, 4, 25, 3, 'Deadly Javelin');
-    let punch = new Spell(1, 1, 55, 2, 'Punch');
-    let sting = new Spell(4, 12, 10, 2, 'Sting');
+    let javelin = new Spell(0, 4, 25, 3, "Deadly Javelin", true, 0, 2);
+    let punch = new Spell(1, 1, 55, 2, "Punch", true);
+    let sting = new Spell(4, 12, 15, 2, "Sting", false, 1, 1);
 
     // add units
     // starting position (grid index)
@@ -72,14 +72,14 @@ export class BattleScene extends Phaser.Scene {
     let playerStartY = 6;
     let playerFrame = 6;
     this.player = this.addUnit(
-      'player',
+      "player",
       playerFrame,
       playerStartX,
       playerStartY,
       5,
       6,
       100,
-      'Amazon',
+      "Amazon",
       false,
       true,
       javelin,
@@ -87,39 +87,39 @@ export class BattleScene extends Phaser.Scene {
       sting
     );
     // create player animations with base sprite and framerate
-    this.createAnimations(playerFrame, 5, 'Amazon');
+    this.createAnimations(playerFrame, 5, "Amazon");
 
     // ally 1
     playerStartX = 12;
     playerStartY = 5;
     playerFrame = 0;
     this.addUnit(
-      'player',
+      "player",
       playerFrame,
       playerStartX,
       playerStartY,
       3,
       6,
       100,
-      'Dude',
+      "Dude",
       true,
       true,
       sting
     );
-    this.createAnimations(playerFrame, 5, 'Dude');
+    this.createAnimations(playerFrame, 5, "Dude");
     // ally 2
     playerStartX = 13;
     playerStartY = 2;
     playerFrame = 0;
     this.addUnit(
-      'player',
+      "player",
       playerFrame,
       playerStartX,
       playerStartY,
       3,
       6,
       100,
-      'Dude',
+      "Dude",
       true,
       true,
       sting
@@ -129,14 +129,14 @@ export class BattleScene extends Phaser.Scene {
     let enemyStartY = 2;
     let enemyFrame = 30;
     this.addUnit(
-      'player',
+      "player",
       enemyFrame,
       enemyStartX,
       enemyStartY,
       3,
       6,
       100,
-      'Snowman',
+      "Snowman",
       true,
       false,
       javelin
@@ -146,14 +146,14 @@ export class BattleScene extends Phaser.Scene {
     enemyStartY = 6;
     enemyFrame = 30;
     this.addUnit(
-      'player',
+      "player",
       enemyFrame,
       enemyStartX,
       enemyStartY,
       3,
       6,
       100,
-      'Snowman',
+      "Snowman",
       true,
       false,
       javelin
@@ -163,23 +163,23 @@ export class BattleScene extends Phaser.Scene {
     enemyStartY = 3;
     enemyFrame = 30;
     this.addUnit(
-      'player',
+      "player",
       enemyFrame,
       enemyStartX,
       enemyStartY,
       3,
       6,
       100,
-      'Snowman',
+      "Snowman",
       true,
       false,
       javelin
     );
-    this.createAnimations(enemyFrame, 5, 'Snowman');
+    this.createAnimations(enemyFrame, 5, "Snowman");
 
     // layer for tall items appearing on top of the player like trees
     let overPlayer = this.map.createLayer(
-      'calque_devant_joueur',
+      "calque_devant_joueur",
       this.tileset!,
       0,
       0
@@ -237,7 +237,7 @@ export class BattleScene extends Phaser.Scene {
               })
             ) {
               this.player.launchSpell(this.currentSpell, targetVec);
-              this.uiScene.hideInaccessibleSpells();
+              this.uiScene.refreshUI();
               // if cliked outside spell range, deselect spell
             } else {
               this.clearSpellRange();
@@ -282,8 +282,8 @@ export class BattleScene extends Phaser.Scene {
       this.input.off(Phaser.Input.Events.POINTER_UP);
     });
 
-    this.scene.run('UIScene');
-    this.uiScene = this.scene.get('UIScene') as UIScene;
+    this.scene.run("UIScene");
+    this.uiScene = this.scene.get("UIScene") as UIScene;
   }
 
   // end unit turn (works for player and npc)
@@ -306,7 +306,6 @@ export class BattleScene extends Phaser.Scene {
       this.isPlayerTurn = true;
       this.refreshAccessibleTiles();
       this.highlightAccessibleTiles(this.accessibleTiles);
-      this.uiScene.hideInaccessibleSpells();
     }
   };
 
@@ -458,8 +457,8 @@ export class BattleScene extends Phaser.Scene {
     // animation for 'left' move, we don't need left and right
     // as we will use one and flip the sprite
     this.anims.create({
-      key: 'left' + name,
-      frames: this.anims.generateFrameNumbers('player', {
+      key: "left" + name,
+      frames: this.anims.generateFrameNumbers("player", {
         frames: [
           baseSprite + 1,
           baseSprite + 10,
@@ -472,8 +471,8 @@ export class BattleScene extends Phaser.Scene {
     });
     // animation for 'left attack'
     this.anims.create({
-      key: 'leftAttack' + name,
-      frames: this.anims.generateFrameNumbers('player', {
+      key: "leftAttack" + name,
+      frames: this.anims.generateFrameNumbers("player", {
         frames: [baseSprite + 10, baseSprite + 1],
       }),
       frameRate: framerate,
@@ -481,8 +480,8 @@ export class BattleScene extends Phaser.Scene {
     });
     // animation for 'right'
     this.anims.create({
-      key: 'right' + name,
-      frames: this.anims.generateFrameNumbers('player', {
+      key: "right" + name,
+      frames: this.anims.generateFrameNumbers("player", {
         frames: [
           baseSprite + 1,
           baseSprite + 10,
@@ -495,8 +494,8 @@ export class BattleScene extends Phaser.Scene {
     });
     // animation for 'right attack'
     this.anims.create({
-      key: 'rightAttack' + name,
-      frames: this.anims.generateFrameNumbers('player', {
+      key: "rightAttack" + name,
+      frames: this.anims.generateFrameNumbers("player", {
         frames: [baseSprite + 10, baseSprite + 1],
       }),
       frameRate: framerate,
@@ -504,8 +503,8 @@ export class BattleScene extends Phaser.Scene {
     });
     // animation for 'up'
     this.anims.create({
-      key: 'up' + name,
-      frames: this.anims.generateFrameNumbers('player', {
+      key: "up" + name,
+      frames: this.anims.generateFrameNumbers("player", {
         frames: [
           baseSprite + 2,
           baseSprite + 11,
@@ -518,8 +517,8 @@ export class BattleScene extends Phaser.Scene {
     });
     // animation for 'up attack'
     this.anims.create({
-      key: 'upAttack' + name,
-      frames: this.anims.generateFrameNumbers('player', {
+      key: "upAttack" + name,
+      frames: this.anims.generateFrameNumbers("player", {
         frames: [baseSprite + 11, baseSprite + 2],
       }),
       frameRate: framerate,
@@ -527,8 +526,8 @@ export class BattleScene extends Phaser.Scene {
     });
     // animation for 'down'
     this.anims.create({
-      key: 'down' + name,
-      frames: this.anims.generateFrameNumbers('player', {
+      key: "down" + name,
+      frames: this.anims.generateFrameNumbers("player", {
         frames: [baseSprite, baseSprite + 9, baseSprite, baseSprite + 18],
       }),
       frameRate: framerate,
@@ -536,8 +535,8 @@ export class BattleScene extends Phaser.Scene {
     });
     // animation for 'down attack'
     this.anims.create({
-      key: 'downAttack' + name,
-      frames: this.anims.generateFrameNumbers('player', {
+      key: "downAttack" + name,
+      frames: this.anims.generateFrameNumbers("player", {
         frames: [baseSprite + 9, baseSprite],
       }),
       frameRate: framerate,
@@ -617,10 +616,12 @@ export class BattleScene extends Phaser.Scene {
       distance <= spell.maxRange &&
       distance >= spell.minRange &&
       (!this.obstacles?.getTileAt(tile.x, tile.y) ||
-        this.isUnitThere(tile.x, tile.y)) &&
-      isVisible(startVec, targetVec, this.obstacles!, this)
+        this.isUnitThere(tile.x, tile.y))
     ) {
-      return true;
+      // if spell doesn't need line of sight we just need to ensure tile isn't an obstacle
+      if (!spell.lineOfSight) return true;
+      // else we use the line of sight algorithm
+      else return isVisible(startVec, targetVec, this.obstacles!, this);
     }
     return false;
   }
@@ -655,8 +656,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   gameOver() {
-    this.scene.stop('UIScene');
-    this.scene.start('GameOverScene');
+    this.scene.stop("UIScene");
+    this.scene.start("GameOverScene");
   }
 }
 

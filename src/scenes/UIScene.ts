@@ -202,10 +202,10 @@ export class UIScene extends Phaser.Scene {
 
   endTurn() {
     this.refreshUI();
+    this.clearSpellsHighlight();
   }
 
   refreshUI() {
-    this.clearSpellsHighlight();
     this.uiElements.forEach((element) => {
       element.refresh();
     });
@@ -221,16 +221,9 @@ export class UIScene extends Phaser.Scene {
 
   clearSpellsHighlight() {
     this.uiElements.forEach((element) => {
-      if (element instanceof UISpell && !element.isInaccessible()) {
-        element.text.setColor("#00FF00");
-      }
-    });
-  }
-
-  hideInaccessibleSpells() {
-    this.uiElements.forEach((element) => {
       if (element instanceof UISpell) {
-        element.hideIfInaccessible();
+        element.isHighlighted = false;
+        element.refresh();
       }
     });
   }
