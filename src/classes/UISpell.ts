@@ -2,36 +2,145 @@ import Phaser from "phaser";
 import { UIElement } from "./UIElement";
 import { Spell } from "./Spell";
 import { BattleScene } from "../scenes/BattleScene";
-import { UIScene } from "../scenes/UIScene";
 
 export class UISpell extends UIElement {
   spell: Spell;
-  text: Phaser.GameObjects.Text;
+  icon: Phaser.GameObjects.Image;
+  highlightIcon: Phaser.GameObjects.Image;
   battleScene: BattleScene;
   isHighlighted: boolean = false;
+  infoRectangle: Phaser.GameObjects.Rectangle;
+  infoText: Phaser.GameObjects.Text;
+  outlineRectangle: Phaser.GameObjects.Rectangle;
 
   constructor(scene: Phaser.Scene, tab: number, posY: number, spell: Spell) {
     super(scene, tab, posY);
     this.spell = spell;
     this.battleScene = this.myScene.battleScene;
-    this.text = this.addText(spell.name);
-    this.text.setInteractive();
-    this.text.on("pointerup", () => {
-      if (this.battleScene.isPlayerTurn && !this.battleScene.player.isMoving) {
-        if (this.battleScene.player.pa >= this.spell.cost) {
-          (this.scene as UIScene).clearSpellsHighlight();
-          this.text.setColor("#FFFFFF");
-          this.isHighlighted = true;
-          this.battleScene.displaySpellRange(this.spell);
-        }
-      }
+    this.addIcon();
+    this.addInfoText();
+  }
+
+  private showInfo(show: boolean) {
+    this.infoRectangle.visible = show;
+    this.outlineRectangle.visible = show;
+    this.infoText.visible = show;
+  }
+
+  addIcon() {
+    this.icon = this.myScene.add.image(
+      this.x,
+      this.y,
+      "player",
+      this.spell.frame
+    );
+    this.highlightIcon = this.myScene.add.image(
+      this.x,
+      this.y,
+      "player",
+      this.spell.frame + 1
+    );
+    this.icon.scale = this.highlightIcon.scale = 5;
+    this.icon.y += this.icon.displayHeight / 2;
+    this.icon.setInteractive();
+    this.highlightIcon.y += this.highlightIcon.displayHeight / 2;
+    this.highlightIcon.visible = false;
+    this.highlightIcon.setInteractive();
+
+    this.icon.on("pointerup", () => {
+      this.toggleSpellMode();
     });
+    this.highlightIcon.on("pointerup", () => {
+      this.toggleSpellMode();
+    });
+    this.icon.on("pointerover", () => {
+      this.showInfo(true);
+    });
+    this.icon.on("pointerout", () => {
+      this.showInfo(false);
+    });
+    this.highlightIcon.on("pointerover", () => {
+      this.showInfo(true);
+    });
+    this.highlightIcon.on("pointerout", () => {
+      this.showInfo(false);
+    });
+  }
+
+  private toggleSpellMode() {
+    if (this.battleScene.isPlayerTurn && !this.battleScene.player.isMoving) {
+      if (this.battleScene.player.pa >= this.spell.cost) {
+        this.myScene.clearSpellsHighlight();
+        this.isHighlighted = true;
+        this.refresh();
+        this.battleScene.displaySpellRange(this.spell);
+      }
+    }
+  }
+
+  addInfoText() {
+    let width = 300;
+    let height = 100;
+    const lineHeight = 35;
+    let text = `${this.spell.name}\n\ncost:${this.spell.cost}`;
+    text += `\n\n${this.spell.minRange}-${this.spell.maxRange} range`;
+    if (this.spell.damage > 0) {
+      text += `\n\ndmg:${this.spell.damage}`;
+      height += lineHeight;
+    }
+    if (this.spell.malusPA > 0) {
+      text += `\n\n-${this.spell.malusPA} PA`;
+      height += lineHeight;
+    }
+    if (this.spell.malusPM > 0) {
+      text += `\n\n-${this.spell.malusPM} PM`;
+      height += lineHeight;
+    }
+
+    this.infoRectangle = this.myScene.add.rectangle(
+      this.icon.x + this.icon.displayWidth + width / 4,
+      this.icon.y - height * 0.7,
+      width,
+      height,
+      0x31593b
+    );
+    this.infoRectangle.depth = 20000;
+    this.infoRectangle.alpha = 0.9;
+    this.infoRectangle.visible = false;
+
+    this.outlineRectangle = this.myScene.add.rectangle(
+      this.icon.x + this.icon.displayWidth + width / 4,
+      this.icon.y - height * 0.7,
+      width + 5,
+      height + 5
+    );
+    this.outlineRectangle.depth = 20000;
+    this.outlineRectangle.setStrokeStyle(5, 0xffffff);
+    this.outlineRectangle.isStroked = true;
+    this.outlineRectangle.alpha = 0.9;
+    this.outlineRectangle.visible = false;
+
+    this.infoText = this.myScene.add.text(
+      this.infoRectangle.x - this.infoRectangle.displayWidth / 2 + 5,
+      this.infoRectangle.y - this.infoRectangle.displayHeight / 2 + 5,
+      text,
+      {
+        color: "#00FF00",
+        fontSize: this.fontSize - 5,
+        fontFamily: "PublicPixel",
+      }
+    );
+    this.infoText.depth = 20001;
+    this.infoText.visible = false;
+    this.infoText.alpha = 0.9;
   }
 
   // disable spell visually if player cannot launch it
   hideIfInaccessible() {
     if (this.isInaccessible()) {
-      this.text.setColor("#00a025");
+      this.icon.tint = 0x00a025;
+    } else {
+      this.icon.tint = 0xffffff;
     }
   }
 
@@ -42,9 +151,11 @@ export class UISpell extends UIElement {
 
   override refresh(): void {
     if (this.isHighlighted) {
-      this.text.setColor("#ffffff");
+      this.icon.visible = false;
+      this.highlightIcon.visible = true;
     } else {
-      this.text.setColor("#00ff00");
+      this.icon.visible = true;
+      this.highlightIcon.visible = false;
     }
     this.hideIfInaccessible();
   }

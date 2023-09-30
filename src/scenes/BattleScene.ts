@@ -62,9 +62,9 @@ export class BattleScene extends Phaser.Scene {
     );
 
     // create spells
-    let javelin = new Spell(0, 4, 25, 3, "Deadly Javelin", true, 0, 2);
-    let punch = new Spell(1, 1, 55, 2, "Punch", true);
-    let sting = new Spell(4, 12, 15, 2, "Sting", false, 1, 1);
+    let javelin = new Spell(42, 0, 4, 25, 3, "Deadly Javelin", true, 0, 2);
+    let punch = new Spell(51, 1, 1, 55, 2, "Punch", true);
+    let sting = new Spell(60, 4, 12, 15, 2, "Sting", false, 1, 1);
 
     // add units
     // starting position (grid index)
@@ -396,7 +396,7 @@ export class BattleScene extends Phaser.Scene {
     allied: boolean,
     ...spells: Spell[]
   ) {
-    let unit;
+    let unit: Unit;
     if (npc) {
       unit = new Npc(
         this,

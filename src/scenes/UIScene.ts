@@ -6,6 +6,7 @@ import { UISpell } from "../classes/UISpell";
 import { Unit } from "../classes/Unit";
 import { UnitStatDisplay } from "../classes/UnitStatDisplay";
 import { UITimelineSlot } from "../classes/UITimelineSlot";
+import { UIText } from "../classes/UIText";
 
 export class UIScene extends Phaser.Scene {
   graphics!: Phaser.GameObjects.Graphics;
@@ -40,13 +41,12 @@ export class UIScene extends Phaser.Scene {
   }
 
   addSpell(tab: number, posY: number, spell: Spell) {
-    let mySpell = new UISpell(this, tab, posY, spell);
-    this.uiElements.push(this.add.existing(mySpell));
+    this.uiElements.push(new UISpell(this, tab, posY, spell));
   }
 
   addStats(tab: number, posY: number, unit: Unit) {
-    let myStats = new UnitStatDisplay(this, tab, posY, unit);
-    this.uiElements.push(this.add.existing(myStats));
+    const myStats = new UnitStatDisplay(this, tab, posY, unit);
+    this.uiElements.push(myStats);
     return myStats;
   }
 
@@ -126,13 +126,11 @@ export class UIScene extends Phaser.Scene {
       // on hover, highlight the timeline slot and its corresponding unit
       slot.setInteractive();
       slot.on("pointerover", () => {
-        slot.tint = 0x777777;
-        slot.unit.tint = 0x777777;
+        slot.unit.selectUnit();
         slot.unit.healthBar.setVisible(true);
       });
       slot.on("pointerout", () => {
-        slot.tint = 0xffffff;
-        slot.unit.tint = 0xffffff;
+        slot.unit.unselectUnit();
         slot.unit.healthBar.setVisible(false);
       });
       // add background color to identify team
@@ -213,9 +211,10 @@ export class UIScene extends Phaser.Scene {
 
   // display unit spells on the spell slot of the UI
   displaySpells(unit: Unit) {
+    this.uiElements.push(new UIText(this, 1.5, 0, "Spells"));
     for (let i = 0; i < unit.spells.length; i++) {
       const spell = unit.spells[i];
-      this.addSpell(1, i, spell);
+      this.addSpell(1.15 + 0.33 * i, 1.35, spell);
     }
   }
 

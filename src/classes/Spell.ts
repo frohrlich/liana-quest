@@ -1,4 +1,5 @@
 export class Spell {
+  frame: number;
   minRange: number;
   maxRange: number;
   damage: number;
@@ -10,6 +11,7 @@ export class Spell {
   malusPA: number;
 
   constructor(
+    frame: number,
     minRange: number,
     maxRange: number,
     damage: number,
@@ -19,6 +21,7 @@ export class Spell {
     malusPM: number = 0,
     malusPA: number = 0
   ) {
+    this.frame = frame;
     this.minRange = minRange;
     this.maxRange = maxRange;
     this.damage = damage;

@@ -1,8 +1,8 @@
-import Phaser from 'phaser';
-import { UIScene } from '../scenes/UIScene';
+import Phaser from "phaser";
+import { UIScene } from "../scenes/UIScene";
 
-export abstract class UIElement extends Phaser.GameObjects.Container {
-  // which UI tab does this container belong to
+export abstract class UIElement {
+  // which UI tab does this element belong to
   // starting from 0 (leftmost)
   tab: number;
   // vertical position in the tab (0-4)
@@ -10,33 +10,26 @@ export abstract class UIElement extends Phaser.GameObjects.Container {
   myScene: UIScene;
   fontSize: number;
   textStyle: Phaser.Types.GameObjects.Text.TextStyle;
+  x: number;
+  y: number;
 
   constructor(scene: Phaser.Scene, tab: number, posY: number) {
-    super(scene);
     this.tab = tab;
     this.posY = posY;
-    this.myScene = this.scene as UIScene;
+    this.myScene = scene as UIScene;
     this.fontSize = this.myScene.uiTabHeight / 6;
     let margin = 10;
     this.x = this.myScene.uiTabWidth * this.tab + margin;
     this.y = this.myScene.topY + (this.fontSize + 10) * this.posY + margin;
     this.textStyle = {
-      color: '#00FF00',
+      color: "#00FF00",
       fontSize: this.fontSize,
-      fontFamily: 'PublicPixel',
+      fontFamily: "PublicPixel",
     };
   }
 
   addText(...text: string[]): Phaser.GameObjects.Text {
-    let myText = new Phaser.GameObjects.Text(
-      this.scene,
-      0,
-      0,
-      text,
-      this.textStyle
-    );
-    this.add(myText);
-    return myText;
+    return this.myScene.add.text(this.x, this.y, text, this.textStyle);
   }
 
   abstract refresh(): void;
