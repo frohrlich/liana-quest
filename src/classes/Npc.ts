@@ -73,6 +73,7 @@ export class Npc extends Unit {
   }
 
   endTurn() {
+    this.timelineSlot.tint = 0xffffff;
     this.refillPoints();
     this.myScene.endTurn();
   }

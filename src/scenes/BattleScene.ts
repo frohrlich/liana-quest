@@ -288,6 +288,11 @@ export class BattleScene extends Phaser.Scene {
 
   // end unit turn (works for player and npc)
   endTurn = () => {
+    // clear previous player highlight on the timeline
+    let prevPlayer = this.timeline[this.turnIndex];
+    this.uiScene.uiTimelineBackgrounds[this.turnIndex].fillColor =
+      prevPlayer.isAlly ? 0x0000ff : 0xff0000;
+
     if (this.isPlayerTurn) {
       this.clearAccessibleTiles();
       this.player.refillPoints();
@@ -300,6 +305,8 @@ export class BattleScene extends Phaser.Scene {
       this.turnIndex = 0;
     }
     let currentPlayer = this.timeline[this.turnIndex];
+    // highlight current unit on the timeline
+    this.uiScene.uiTimelineBackgrounds[this.turnIndex].fillColor = 0xffffff;
     if (currentPlayer instanceof Npc && !currentPlayer.isDead()) {
       currentPlayer.playTurn();
     } else {
