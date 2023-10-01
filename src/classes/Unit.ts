@@ -249,17 +249,19 @@ export class Unit extends Phaser.GameObjects.Sprite {
     return this.hp < this.maxHp;
   }
 
-  // launch a spell at specified position
-  launchSpell(spell: Spell, targetVec: Phaser.Math.Vector2) {
+  // cast a spell at specified position
+  castSpell(spell: Spell, targetVec: Phaser.Math.Vector2) {
     this.lookAtTile(targetVec);
     this.startAttackAnim(this.direction);
     this.pa -= spell.cost;
-    if (this.myScene.isUnitThere(targetVec.x, targetVec.y)) {
-      let targetedUnit = this.myScene.getUnitAtPos(targetVec.x, targetVec.y);
-      if (targetedUnit) {
-        targetedUnit.undergoSpell(spell);
-      }
-    }
+    const affectedUnits = this.myScene.getUnitsInsideAoe(
+      targetVec.x,
+      targetVec.y,
+      spell
+    );
+    affectedUnits.forEach((unit) => {
+      unit.undergoSpell(spell);
+    });
     this.refreshUI();
   }
 

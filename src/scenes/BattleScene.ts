@@ -27,6 +27,8 @@ export class BattleScene extends Phaser.Scene {
   spellRange: Phaser.Tilemaps.Tile[] = [];
   currentSpell!: Spell;
   uiScene!: UIScene;
+  overlays: Phaser.GameObjects.Rectangle[] = [];
+  spellAoeOverlay: Phaser.GameObjects.Rectangle[] = [];
 
   constructor() {
     super({
@@ -62,7 +64,19 @@ export class BattleScene extends Phaser.Scene {
     );
 
     // create spells
-    let javelin = new Spell(42, 0, 4, 25, 3, "Deadly Javelin", true, 0, 2);
+    let javelin = new Spell(
+      42,
+      0,
+      4,
+      25,
+      3,
+      "Deadly Javelin",
+      true,
+      0,
+      2,
+      "star",
+      2
+    );
     let punch = new Spell(51, 1, 1, 55, 2, "Punch", true);
     let sting = new Spell(60, 4, 12, 15, 2, "Sting", false, 1, 1);
 
@@ -236,7 +250,7 @@ export class BattleScene extends Phaser.Scene {
                 return tile.x == targetVec.x && tile.y == targetVec.y;
               })
             ) {
-              this.player.launchSpell(this.currentSpell, targetVec);
+              this.player.castSpell(this.currentSpell, targetVec);
               this.uiScene.refreshUI();
               // if cliked outside spell range, deselect spell
             } else {
@@ -295,6 +309,8 @@ export class BattleScene extends Phaser.Scene {
 
     if (this.isPlayerTurn) {
       this.clearAccessibleTiles();
+      this.clearOverlay();
+      this.clearAoeZone();
       this.player.refillPoints();
       this.spellVisible = false;
       this.uiScene.endTurn();
@@ -591,14 +607,116 @@ export class BattleScene extends Phaser.Scene {
     this.clearAccessibleTiles();
     this.spellVisible = true;
     this.currentSpell = spell;
-    let range = spell.maxRange;
     this.spellRange = this.calculateSpellRange(this.player, spell)!;
+    this.clearOverlay();
+    let baseColor = 0x000099;
     this.spellRange.forEach((tile) => {
       if (tile) {
-        tile.setAlpha(0.6);
-        tile.tint = 0x0000ff;
+        // overlay the tile with an interactive transparent rectangle
+        let overlay = this.add.rectangle(
+          tile.pixelX + 0.5 * tile.width,
+          tile.pixelY + 0.5 * tile.height,
+          tile.width,
+          tile.height,
+          baseColor,
+          0.4
+        );
+        overlay.setInteractive();
+        this.overlays.push(overlay);
+        //on hovering over a tile
+        overlay.on("pointerover", () => {
+          this.displayAoeZone(spell, tile.pixelX, tile.pixelY);
+        });
+        overlay.on("pointerout", () => {
+          this.clearAoeZone();
+        });
       }
     });
+  }
+
+  displayAoeZone(spell: Spell, x: number, y: number) {
+    let highlightColor = 0xff0099;
+    switch (spell.aoe) {
+      case "monoTarget":
+        this.spellAoeOverlay.push(
+          this.add.rectangle(
+            x + 0.5 * this.tileWidth,
+            y + 0.5 * this.tileHeight,
+            this.tileWidth,
+            this.tileHeight,
+            highlightColor,
+            0.4
+          )
+        );
+        break;
+      case "star":
+        // for the 'star' aoe, we iterate over the tiles within the 'aoeSize' distance from target
+        const target = this.background!.worldToTileXY(x, y);
+        for (
+          let i = target.x - spell.aoeSize;
+          i <= target.x + spell.aoeSize;
+          i++
+        ) {
+          for (
+            let j = target.y - spell.aoeSize;
+            j <= target.y + spell.aoeSize;
+            j++
+          ) {
+            let distance = Math.abs(target.x - i) + Math.abs(target.y - j);
+            if (distance <= spell.aoeSize) {
+              let pos = this.background!.tileToWorldXY(i, j);
+              this.spellAoeOverlay.push(
+                this.add.rectangle(
+                  pos.x + 0.5 * this.tileWidth,
+                  pos.y + 0.5 * this.tileHeight,
+                  this.tileWidth,
+                  this.tileHeight,
+                  highlightColor,
+                  0.4
+                )
+              );
+            }
+          }
+        }
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  clearAoeZone() {
+    this.spellAoeOverlay.forEach((spellAoe) => {
+      spellAoe.destroy(true);
+    });
+    this.spellAoeOverlay = [];
+  }
+
+  getUnitsInsideAoe(indX: number, indY: number, spell: Spell) {
+    let units = [];
+    switch (spell.aoe) {
+      case "monoTarget":
+        if (this.isUnitThere(indX, indY)) {
+          units.push(this.getUnitAtPos(indX, indY));
+        }
+        break;
+      case "star":
+        for (let i = indX - spell.aoeSize; i <= indX + spell.aoeSize; i++) {
+          for (let j = indY - spell.aoeSize; j <= indY + spell.aoeSize; j++) {
+            let distance = Math.abs(indX - i) + Math.abs(indY - j);
+            if (distance <= spell.aoeSize) {
+              if (this.isUnitThere(i, j)) {
+                units.push(this.getUnitAtPos(i, j));
+              }
+            }
+          }
+        }
+        break;
+
+      default:
+        break;
+    }
+    return units;
   }
 
   // calculate spell range
@@ -658,8 +776,17 @@ export class BattleScene extends Phaser.Scene {
   clearSpellRange() {
     this.spellVisible = false;
     this.uiScene.clearSpellsHighlight();
+    this.clearOverlay();
+    this.clearAoeZone();
     this.clearAccessibleTiles();
     this.highlightAccessibleTiles(this.accessibleTiles);
+  }
+
+  private clearOverlay() {
+    this.overlays.forEach((overlay) => {
+      overlay.destroy(true);
+    });
+    this.overlays = [];
   }
 
   gameOver() {

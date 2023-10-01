@@ -25,8 +25,8 @@ export class Player extends Unit {
     this.myScene.highlightAccessibleTiles(this.myScene.accessibleTiles);
   }
 
-  override launchSpell(spell: Spell, targetVec: Phaser.Math.Vector2): void {
-    super.launchSpell(spell, targetVec);
+  override castSpell(spell: Spell, targetVec: Phaser.Math.Vector2): void {
+    super.castSpell(spell, targetVec);
     // if not enough pa to launch the spell again : quit spell mode
     if (this.pa < spell.cost) {
       this.myScene.clearSpellRange();

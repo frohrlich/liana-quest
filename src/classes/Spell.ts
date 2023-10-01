@@ -9,6 +9,9 @@ export class Spell {
   lineOfSight: boolean;
   malusPM: number;
   malusPA: number;
+  // area of effect type (mono target by default)
+  aoe: string;
+  aoeSize: number;
 
   constructor(
     frame: number,
@@ -19,7 +22,9 @@ export class Spell {
     name: string,
     lineOfSight: boolean,
     malusPM: number = 0,
-    malusPA: number = 0
+    malusPA: number = 0,
+    aoe: string = "monoTarget",
+    aoeSize: number = 0
   ) {
     this.frame = frame;
     this.minRange = minRange;
@@ -30,5 +35,7 @@ export class Spell {
     this.lineOfSight = lineOfSight;
     this.malusPM = malusPM;
     this.malusPA = malusPA;
+    this.aoe = aoe;
+    this.aoeSize = aoeSize;
   }
 }

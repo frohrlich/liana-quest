@@ -1,7 +1,6 @@
 import Phaser from "phaser";
 import { Unit } from "./Unit";
 import { Spell } from "./Spell";
-import isVisible from "../utils/lineOfSight";
 
 export class Npc extends Unit {
   constructor(
@@ -27,7 +26,7 @@ export class Npc extends Unit {
       let target = this.locateTarget(this.spells[0]);
       if (target) {
         let targetVec = new Phaser.Math.Vector2(target.x, target.y);
-        this.launchSpell(this.spells[0], targetVec);
+        this.castSpell(this.spells[0], targetVec);
         // wait till attack animation is finished
         this.scene.time.addEvent({
           delay: 400,
