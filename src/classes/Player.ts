@@ -22,6 +22,7 @@ export class Player extends Unit {
   // plays at the end of deplacement
   override nextAction(): void {
     this.myScene.clearAccessibleTiles();
+    this.myScene.refreshAccessibleTiles();
     this.myScene.highlightAccessibleTiles(this.myScene.accessibleTiles);
   }
 

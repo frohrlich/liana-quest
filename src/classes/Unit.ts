@@ -71,6 +71,10 @@ export class Unit extends Phaser.GameObjects.Sprite {
     // health bar visible only on hover
     // also change color of unit and its timeline icon
     // and display unit stats on the UI
+    this.addHoverEvents();
+  }
+
+  addHoverEvents() {
     this.on("pointerover", () => {
       this.selectUnit();
     });
@@ -271,38 +275,34 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.pm -= spell.malusPM;
     this.pa -= spell.malusPA;
     this.updateHealthBar();
-    let totalDelay = this.displaySpellEffect(spell);
-    this.scene.time.delayedCall(totalDelay, () => {
-      this.checkDead();
-    });
-    return totalDelay;
+    this.displaySpellEffect(spell);
+    this.checkDead();
   }
 
   // display damage animation when unit is hit
   displaySpellEffect(spell: Spell) {
-    let totalDelay = 0;
+    let dmgDelay = 0;
     if (spell.damage > 0) {
       // display damage with unit blinking red
       this.displayEffect(spell.damage, "damage", true);
-      totalDelay += 300;
+      dmgDelay = 300;
     }
-    this.scene.time.delayedCall(totalDelay, () => {
-      let pmDelay = 0;
-      // display PM malus in green (no blinking)
-      if (spell.malusPM > 0) {
-        this.displayEffect(spell.malusPM, "pm");
-        totalDelay += 300;
-        pmDelay = 300;
-      }
-      this.scene.time.delayedCall(pmDelay, () => {
-        // display PA malus in blue (no blinking)
-        if (spell.malusPA > 0) {
-          this.displayEffect(spell.malusPA, "pa");
-          totalDelay += 300;
+    if (!this.isDead()) {
+      this.scene.time.delayedCall(dmgDelay, () => {
+        let pmDelay = 0;
+        // display PM malus in green (no blinking)
+        if (spell.malusPM > 0) {
+          this.displayEffect(spell.malusPM, "pm");
+          pmDelay = 300;
         }
+        this.scene.time.delayedCall(pmDelay, () => {
+          // display PA malus in blue (no blinking)
+          if (spell.malusPA > 0) {
+            this.displayEffect(spell.malusPA, "pa");
+          }
+        });
       });
-    });
-    return totalDelay;
+    }
   }
 
   displayEffect(value: number, type: string, blink: boolean = false) {

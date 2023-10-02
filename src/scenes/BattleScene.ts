@@ -7,6 +7,12 @@ import { Spell } from "../classes/Spell";
 import { UIScene } from "./UIScene";
 import isVisible from "../utils/lineOfSight";
 
+// Store a tile and the path to it
+interface TilePath {
+  pos: Phaser.Math.Vector2;
+  path: Phaser.Math.Vector2[];
+}
+
 export class BattleScene extends Phaser.Scene {
   player!: Unit;
   allies: Unit[] = [];
@@ -22,13 +28,14 @@ export class BattleScene extends Phaser.Scene {
   turnIndex: number = 0;
   timeline: Unit[] = [];
   isPlayerTurn: boolean = true;
-  accessibleTiles: Phaser.Math.Vector2[] = [];
+  accessibleTiles: TilePath[] = [];
   spellVisible: boolean = false;
   spellRange: Phaser.Tilemaps.Tile[] = [];
   currentSpell!: Spell;
   uiScene!: UIScene;
   overlays: Phaser.GameObjects.Rectangle[] = [];
   spellAoeOverlay: Phaser.GameObjects.Rectangle[] = [];
+  pathOverlay: Phaser.GameObjects.Rectangle[] = [];
 
   constructor() {
     super({
@@ -242,38 +249,15 @@ export class BattleScene extends Phaser.Scene {
           );
           const targetVec = this.background!.worldToTileXY(worldX, worldY);
 
-          // if in spell mode, try to launch spell
+          // if in spell mode
           if (this.spellVisible) {
-            // check if clicked tile inside spell range
+            // if cliked outside spell range, deselect spell
             if (
-              this.spellRange.some((tile) => {
+              !this.spellRange.some((tile) => {
                 return tile.x == targetVec.x && tile.y == targetVec.y;
               })
             ) {
-              this.player.castSpell(this.currentSpell, targetVec);
-              this.uiScene.refreshUI();
-              // if cliked outside spell range, deselect spell
-            } else {
               this.clearSpellRange();
-            }
-            // else try to move player
-          } else if (
-            // check if clicked tile is accessible to player
-            this.accessibleTiles.some((tile) => {
-              return tile.x == targetVec.x && tile.y == targetVec.y;
-            })
-          ) {
-            // pathfinding
-            let path = findPath(
-              startVec,
-              targetVec,
-              this.background!,
-              this.obstacles!
-            );
-
-            if (!this.player.isMoving && path && path.length > 0) {
-              this.player.moveAlong(path);
-              this.refreshAccessibleTiles();
             }
           }
         }
@@ -332,10 +316,15 @@ export class BattleScene extends Phaser.Scene {
     }
   };
 
-  override update(time: number, delta: number): void {}
-
   // checks if the unit can access this tile with their remaining PMs
-  isAccessible(x: number, y: number, unitX: number, unitY: number, pm: number) {
+  // if there is a path, return it
+  getPathToPosition(
+    x: number,
+    y: number,
+    unitX: number,
+    unitY: number,
+    pm: number
+  ) {
     const startVec = new Phaser.Math.Vector2(unitX, unitY);
     const targetVec = new Phaser.Math.Vector2(x, y);
     // pathfinding
@@ -346,27 +335,78 @@ export class BattleScene extends Phaser.Scene {
       this.obstacles!
     );
     if (path.length > 0 && path.length <= pm) {
-      return true;
+      return path;
     } else {
       return false;
     }
   }
 
   // highlight tiles accessible to the player
-  // according to their remaining PMs
-  highlightAccessibleTiles = (positions: Phaser.Math.Vector2[]) => {
-    positions.forEach((pos) => {
-      this.background?.getTileAt(pos.x, pos.y).setAlpha(0.6);
+  // and make them interactive
+  highlightAccessibleTiles = (positions: TilePath[]) => {
+    let baseColor = 0xffffff;
+    positions.forEach((tilePos) => {
+      let tile = this.background?.getTileAt(tilePos.pos.x, tilePos.pos.y);
+      // overlay the tile with an interactive transparent rectangle
+      let overlay = this.add.rectangle(
+        tile.pixelX + 0.5 * tile.width,
+        tile.pixelY + 0.5 * tile.height,
+        tile.width,
+        tile.height,
+        baseColor,
+        0.4
+      );
+      overlay.setInteractive();
+      this.overlays.push(overlay);
+
+      // on clicking on a tile, move
+      overlay.on("pointerup", () => {
+        this.player.moveAlong(tilePos.path);
+        this.uiScene.refreshUI();
+      });
+      //on hovering over a tile, display path to it
+      overlay.on("pointerover", () => {
+        this.highlightPath(tilePos.path);
+      });
+      overlay.on("pointerout", () => {
+        this.clearPathHighlight();
+      });
     });
   };
 
+  // highlight tiles on a path
+  highlightPath(path: Phaser.Math.Vector2[]) {
+    let highlightColor = 0xffffff;
+    path.forEach((position) => {
+      let pos = this.background!.tileToWorldXY(position.x, position.y);
+      this.pathOverlay.push(
+        this.add.rectangle(
+          pos.x + 0.5 * this.tileWidth,
+          pos.y + 0.5 * this.tileHeight,
+          this.tileWidth,
+          this.tileHeight,
+          highlightColor,
+          0.5
+        )
+      );
+    });
+  }
+
+  clearPathHighlight() {
+    this.pathOverlay.forEach((overlay) => {
+      overlay.destroy(true);
+    });
+    this.pathOverlay = [];
+  }
+
   // calculate the accessible tiles around a position with a pm radius
+  // also store the path to each tile
   calculateAccessibleTiles = (
     pos: Phaser.Math.Vector2,
     pm: number
-  ): Phaser.Math.Vector2[] => {
+  ): TilePath[] => {
     const { x, y } = pos;
-    let tablePos: Phaser.Math.Vector2[] = [];
+    let tablePos: TilePath[] = [];
     const tilesAround = this.background?.getTilesWithin(
       x - pm,
       y - pm,
@@ -377,12 +417,16 @@ export class BattleScene extends Phaser.Scene {
       tilesAround.forEach((tile) => {
         const isPlayerTile = tile.x == x && tile.y == y;
         const distance = Math.abs(tile.x - pos.x) + Math.abs(tile.y - pos.y);
-        if (
-          !isPlayerTile &&
-          pm >= distance &&
-          this.isAccessible(tile.x, tile.y, x, y, pm)
-        ) {
-          tablePos.push(new Phaser.Math.Vector2(tile.x, tile.y));
+        let path;
+        if (!isPlayerTile && pm >= distance) {
+          path = this.getPathToPosition(tile.x, tile.y, x, y, pm);
+        }
+        if (path) {
+          let myPos: TilePath = {
+            path: path,
+            pos: new Phaser.Math.Vector2(tile.x, tile.y),
+          };
+          tablePos.push(myPos);
         }
       });
     }
@@ -399,10 +443,8 @@ export class BattleScene extends Phaser.Scene {
 
   // clear highlighted tiles
   clearAccessibleTiles = () => {
-    this.background?.forEachTile((tile) => {
-      tile.setAlpha(1);
-      tile.tint = 0xffffff;
-    });
+    this.clearOverlay();
+    this.clearPathHighlight();
   };
 
   // add a unit to the scene
@@ -567,11 +609,6 @@ export class BattleScene extends Phaser.Scene {
     });
   };
 
-  // find a path with start and target vectors
-  findPath(start: Phaser.Math.Vector2, target: Phaser.Math.Vector2) {
-    return findPath(start, target, this.background!, this.obstacles!);
-  }
-
   // update position of Unit as an obstacle for the others
   updateObstacleLayer(unit: Unit, target: Phaser.Math.Vector2) {
     this.removeFromObstacleLayer(unit);
@@ -623,13 +660,35 @@ export class BattleScene extends Phaser.Scene {
         );
         overlay.setInteractive();
         this.overlays.push(overlay);
-        //on hovering over a tile
+        let pos = new Phaser.Math.Vector2(tile.x, tile.y);
+
+        // on clicking on a tile, launch spell
+        overlay.on("pointerup", () => {
+          this.player.castSpell(this.currentSpell, pos);
+          this.uiScene.refreshUI();
+        });
+        //on hovering over a tile, display aoe zone
         overlay.on("pointerover", () => {
           this.displayAoeZone(spell, tile.pixelX, tile.pixelY);
         });
         overlay.on("pointerout", () => {
           this.clearAoeZone();
         });
+
+        // we want hover or click on a unit to have the same effect than hover or click on its tile
+        let playerOnThisTile = this.getUnitAtPos(tile.x, tile.y);
+        if (playerOnThisTile) {
+          playerOnThisTile.on("pointerup", () => {
+            this.player.castSpell(this.currentSpell, pos);
+            this.uiScene.refreshUI();
+          });
+          playerOnThisTile.on("pointerover", () => {
+            this.displayAoeZone(spell, tile.pixelX, tile.pixelY);
+          });
+          playerOnThisTile.on("pointerout", () => {
+            this.clearAoeZone();
+          });
+        }
       }
     });
   }
@@ -767,6 +826,9 @@ export class BattleScene extends Phaser.Scene {
     );
     if (index !== -1) {
       this.timeline.splice(index, 1);
+      if (this.turnIndex >= this.timeline.length) {
+        this.turnIndex = 0;
+      }
       if (this.timeline.length > 0) {
         this.uiScene.updateTimeline(this.timeline);
       }
@@ -778,8 +840,18 @@ export class BattleScene extends Phaser.Scene {
     this.uiScene.clearSpellsHighlight();
     this.clearOverlay();
     this.clearAoeZone();
+    this.clearPointerEvents();
     this.clearAccessibleTiles();
     this.highlightAccessibleTiles(this.accessibleTiles);
+  }
+
+  clearPointerEvents() {
+    this.timeline.forEach((unit) => {
+      unit.off("pointerup");
+      unit.off("pointerover");
+      unit.off("pointerout");
+      unit.addHoverEvents();
+    });
   }
 
   private clearOverlay() {

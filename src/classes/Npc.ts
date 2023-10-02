@@ -28,11 +28,20 @@ export class Npc extends Unit {
         let targetVec = new Phaser.Math.Vector2(target.x, target.y);
         this.castSpell(this.spells[0], targetVec);
         // wait till attack animation is finished
-        this.scene.time.addEvent({
-          delay: 400,
-          callback: this.tryToMove,
-          callbackScope: this,
-        });
+        // also verify npc didn't kill itself during spell cast
+        if (!this.isDead()) {
+          this.scene.time.addEvent({
+            delay: 400,
+            callback: this.tryToMove,
+            callbackScope: this,
+          });
+        } else {
+          this.scene.time.addEvent({
+            delay: 400,
+            callback: this.myScene.endTurn,
+            callbackScope: this,
+          });
+        }
       } else {
         this.tryToMove();
       }
@@ -52,11 +61,8 @@ export class Npc extends Unit {
       );
       // then chooses one randomly
       const randMove = Phaser.Math.Between(0, accessibleTiles.length - 1);
-      let targetVec = accessibleTiles[randMove];
-      // then finds the path to it
-      let path = this.myScene.findPath(startVec, targetVec);
+      let path = accessibleTiles[randMove].path;
       if (path) {
-        // then move along it
         this.moveAlong(path);
       } else {
         // if no path found, do nothing
