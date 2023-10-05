@@ -243,10 +243,6 @@ export class BattleScene extends Phaser.Scene {
         if (!this.player.isMoving && this.isPlayerTurn) {
           const { worldX, worldY } = pointer;
 
-          const startVec = new Phaser.Math.Vector2(
-            this.player.indX,
-            this.player.indY
-          );
           const targetVec = this.background!.worldToTileXY(worldX, worldY);
 
           // if in spell mode
@@ -366,10 +362,10 @@ export class BattleScene extends Phaser.Scene {
       });
       //on hovering over a tile, display path to it
       overlay.on("pointerover", () => {
-        this.highlightPath(tilePos.path);
+        if (!this.player.isMoving) this.highlightPath(tilePos.path);
       });
       overlay.on("pointerout", () => {
-        this.clearPathHighlight();
+        if (!this.player.isMoving) this.clearPathHighlight();
       });
     });
   };
@@ -642,10 +638,14 @@ export class BattleScene extends Phaser.Scene {
 
   displaySpellRange(spell: Spell) {
     this.clearAccessibleTiles();
+    this.clearOverlay();
+    this.clearAoeZone();
+    this.clearPointerEvents();
+
     this.spellVisible = true;
     this.currentSpell = spell;
-    this.spellRange = this.calculateSpellRange(this.player, spell)!;
-    this.clearOverlay();
+    this.spellRange = this.calculateSpellRange(this.player, spell);
+    this.createAoeZone(spell);
     let baseColor = 0x000099;
     this.spellRange.forEach((tile) => {
       if (tile) {
@@ -660,7 +660,7 @@ export class BattleScene extends Phaser.Scene {
         );
         overlay.setInteractive();
         this.overlays.push(overlay);
-        let pos = new Phaser.Math.Vector2(tile.x, tile.y);
+        const pos = new Phaser.Math.Vector2(tile.x, tile.y);
 
         // on clicking on a tile, launch spell
         overlay.on("pointerup", () => {
@@ -669,48 +669,90 @@ export class BattleScene extends Phaser.Scene {
         });
         //on hovering over a tile, display aoe zone
         overlay.on("pointerover", () => {
-          this.displayAoeZone(spell, tile.pixelX, tile.pixelY);
+          this.updateAoeZone(spell, tile.pixelX, tile.pixelY);
         });
         overlay.on("pointerout", () => {
-          this.clearAoeZone();
+          this.hideAoeZone();
         });
 
         // we want hover or click on a unit to have the same effect than hover or click on its tile
-        let playerOnThisTile = this.getUnitAtPos(tile.x, tile.y);
+        const playerOnThisTile = this.getUnitAtPos(tile.x, tile.y);
         if (playerOnThisTile) {
           playerOnThisTile.on("pointerup", () => {
             this.player.castSpell(this.currentSpell, pos);
             this.uiScene.refreshUI();
           });
           playerOnThisTile.on("pointerover", () => {
-            this.displayAoeZone(spell, tile.pixelX, tile.pixelY);
+            this.updateAoeZone(spell, tile.pixelX, tile.pixelY);
           });
           playerOnThisTile.on("pointerout", () => {
-            this.clearAoeZone();
+            this.hideAoeZone();
           });
         }
       }
     });
   }
+  hideAoeZone() {
+    this.spellAoeOverlay.forEach((overlay) => {
+      overlay.setVisible(false);
+    });
+  }
 
-  displayAoeZone(spell: Spell, x: number, y: number) {
+  // create aoe zone but doesn't display it yet
+  createAoeZone(spell: Spell) {
     let highlightColor = 0xff0099;
     switch (spell.aoe) {
       case "monoTarget":
-        this.spellAoeOverlay.push(
-          this.add.rectangle(
-            x + 0.5 * this.tileWidth,
-            y + 0.5 * this.tileHeight,
-            this.tileWidth,
-            this.tileHeight,
-            highlightColor,
-            0.4
-          )
+        const overlay = this.add.rectangle(
+          0,
+          0,
+          this.tileWidth,
+          this.tileHeight,
+          highlightColor,
+          0.4
         );
+        overlay.setVisible(false);
+        this.spellAoeOverlay.push(overlay);
+        break;
+      case "star":
+        // for the 'star' aoe, we iterate over the tiles within the 'aoeSize' distance from target
+        for (let i = -spell.aoeSize; i <= spell.aoeSize; i++) {
+          for (let j = -spell.aoeSize; j <= spell.aoeSize; j++) {
+            let distance = Math.abs(i) + Math.abs(j);
+            if (distance <= spell.aoeSize) {
+              const overlay = this.add.rectangle(
+                0,
+                0,
+                this.tileWidth,
+                this.tileHeight,
+                highlightColor,
+                0.4
+              );
+              overlay.setVisible(false);
+              this.spellAoeOverlay.push(overlay);
+            }
+          }
+        }
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  // update the position of the aoe zone, when player hovers over tile
+  updateAoeZone(spell: Spell, x: number, y: number) {
+    switch (spell.aoe) {
+      case "monoTarget":
+        const overlay = this.spellAoeOverlay[0];
+        overlay.x = x + 0.5 * this.tileWidth;
+        overlay.y = y + 0.5 * this.tileWidth;
+        overlay.setVisible(true);
         break;
       case "star":
         // for the 'star' aoe, we iterate over the tiles within the 'aoeSize' distance from target
         const target = this.background!.worldToTileXY(x, y);
+        let k = 0;
         for (
           let i = target.x - spell.aoeSize;
           i <= target.x + spell.aoeSize;
@@ -724,16 +766,11 @@ export class BattleScene extends Phaser.Scene {
             let distance = Math.abs(target.x - i) + Math.abs(target.y - j);
             if (distance <= spell.aoeSize) {
               let pos = this.background!.tileToWorldXY(i, j);
-              this.spellAoeOverlay.push(
-                this.add.rectangle(
-                  pos.x + 0.5 * this.tileWidth,
-                  pos.y + 0.5 * this.tileHeight,
-                  this.tileWidth,
-                  this.tileHeight,
-                  highlightColor,
-                  0.4
-                )
-              );
+              const overlay = this.spellAoeOverlay[k];
+              overlay.x = pos.x + 0.5 * this.tileWidth;
+              overlay.y = pos.y + 0.5 * this.tileWidth;
+              overlay.setVisible(true);
+              k++;
             }
           }
         }
