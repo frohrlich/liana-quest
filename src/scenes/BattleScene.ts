@@ -6,6 +6,7 @@ import { Player } from "../classes/Player";
 import { Spell } from "../classes/Spell";
 import { UIScene } from "./UIScene";
 import isVisible from "../utils/lineOfSight";
+import { EffectOverTime } from "../classes/EffectOverTime";
 
 // Store a tile and the path to it
 interface TilePath {
@@ -75,14 +76,15 @@ export class BattleScene extends Phaser.Scene {
       42,
       0,
       4,
-      25,
+      99,
       3,
       "Deadly Javelin",
       true,
       0,
       2,
       "star",
-      2
+      2,
+      new EffectOverTime(2, 10, 1, 1)
     );
     let punch = new Spell(51, 1, 1, 55, 2, "Punch", true);
     let sting = new Spell(60, 4, 12, 15, 2, "Sting", false, 1, 1);
@@ -284,26 +286,31 @@ export class BattleScene extends Phaser.Scene {
   endTurn = () => {
     // clear previous player highlight on the timeline
     let prevPlayer = this.timeline[this.turnIndex];
-    this.uiScene.uiTimelineBackgrounds[this.turnIndex].fillColor =
-      prevPlayer.isAlly ? 0x0000ff : 0xff0000;
-
+    if (prevPlayer) {
+      this.uiScene.uiTimelineBackgrounds[this.turnIndex].fillColor =
+        prevPlayer.isAlly ? 0x0000ff : 0xff0000;
+    }
     if (this.isPlayerTurn) {
       this.clearAccessibleTiles();
       this.clearOverlay();
       this.clearAoeZone();
+      this.clearPointerEvents();
       this.player.refillPoints();
       this.spellVisible = false;
       this.uiScene.endTurn();
     }
     this.isPlayerTurn = false;
+
     this.turnIndex++;
     if (this.turnIndex >= this.timeline.length) {
       this.turnIndex = 0;
     }
     let currentPlayer = this.timeline[this.turnIndex];
+
     // highlight current unit on the timeline
     this.uiScene.uiTimelineBackgrounds[this.turnIndex].fillColor = 0xffffff;
-    if (currentPlayer instanceof Npc && !currentPlayer.isDead()) {
+
+    if (currentPlayer instanceof Npc) {
       currentPlayer.playTurn();
     } else {
       this.isPlayerTurn = true;
@@ -357,8 +364,10 @@ export class BattleScene extends Phaser.Scene {
 
       // on clicking on a tile, move
       overlay.on("pointerup", () => {
-        this.player.moveAlong(tilePos.path);
-        this.uiScene.refreshUI();
+        if (!this.player.isMoving) {
+          this.player.moveAlong(tilePos.path);
+          this.uiScene.refreshUI();
+        }
       });
       //on hovering over a tile, display path to it
       overlay.on("pointerover", () => {
@@ -863,9 +872,7 @@ export class BattleScene extends Phaser.Scene {
     );
     if (index !== -1) {
       this.timeline.splice(index, 1);
-      if (this.turnIndex >= this.timeline.length) {
-        this.turnIndex = 0;
-      }
+      if (index <= this.turnIndex) this.turnIndex--;
       if (this.timeline.length > 0) {
         this.uiScene.updateTimeline(this.timeline);
       }

@@ -21,32 +21,41 @@ export class Npc extends Unit {
 
   // plays npc turn
   override playTurn() {
-    // first try to launch spell if there is a target available
-    if (this.pa >= this.spells[0].cost) {
-      let target = this.locateTarget(this.spells[0]);
-      if (target) {
-        let targetVec = new Phaser.Math.Vector2(target.x, target.y);
-        this.castSpell(this.spells[0], targetVec);
-        // wait till attack animation is finished
-        // also verify npc didn't kill itself during spell cast
-        if (!this.isDead()) {
-          this.scene.time.addEvent({
-            delay: 400,
-            callback: this.tryToMove,
-            callbackScope: this,
-          });
+    super.playTurn();
+    if (!this.isDead()) {
+      // first try to launch spell if there is a target available
+      if (this.pa >= this.spells[0].cost) {
+        let target = this.locateTarget(this.spells[0]);
+        if (target) {
+          let targetVec = new Phaser.Math.Vector2(target.x, target.y);
+          this.castSpell(this.spells[0], targetVec);
+          // wait till attack animation is finished
+          // also verify npc didn't kill itself during spell cast
+          if (!this.isDead()) {
+            this.scene.time.addEvent({
+              delay: 400,
+              callback: this.tryToMove,
+              callbackScope: this,
+            });
+          } else {
+            this.scene.time.addEvent({
+              delay: 400,
+              callback: this.myScene.endTurn,
+              callbackScope: this,
+            });
+          }
         } else {
-          this.scene.time.addEvent({
-            delay: 400,
-            callback: this.myScene.endTurn,
-            callbackScope: this,
-          });
+          this.tryToMove();
         }
       } else {
         this.tryToMove();
       }
     } else {
-      this.tryToMove();
+      this.scene.time.addEvent({
+        delay: 400,
+        callback: this.myScene.endTurn,
+        callbackScope: this,
+      });
     }
   }
 

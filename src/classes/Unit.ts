@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { BattleScene } from "../scenes/BattleScene";
 import { Spell } from "./Spell";
 import { UITimelineSlot } from "./UITimelineSlot";
+import { EffectOverTime } from "./EffectOverTime";
 
 export class Unit extends Phaser.GameObjects.Sprite {
   myScene: BattleScene;
@@ -29,6 +30,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   identifier!: Phaser.GameObjects.Image;
   spells: Spell[] = [];
   timelineSlot!: UITimelineSlot;
+  effectOverTime: EffectOverTime = null;
 
   constructor(
     scene: Phaser.Scene,
@@ -242,7 +244,10 @@ export class Unit extends Phaser.GameObjects.Sprite {
   };
 
   // polymorphic methods
-  playTurn() {}
+  playTurn() {
+    this.undergoEffectOverTime();
+  }
+
   nextAction() {}
 
   isDead(): boolean {
@@ -266,7 +271,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
     affectedUnits.forEach((unit) => {
       unit.undergoSpell(spell);
     });
-    this.refreshUI();
   }
 
   // Receive spell effects
@@ -274,31 +278,50 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.hp -= spell.damage;
     this.pm -= spell.malusPM;
     this.pa -= spell.malusPA;
+    if (spell.effectOverTime) {
+      this.addEffectOverTime(spell.effectOverTime);
+    }
     this.updateHealthBar();
-    this.displaySpellEffect(spell);
+    this.displaySpellEffect(spell.damage, spell.malusPM, spell.malusPA);
     this.checkDead();
+    this.refreshUI();
+  }
+
+  undergoEffectOverTime() {
+    const eot = this.effectOverTime;
+    if (eot && eot.duration > 0) {
+      this.hp -= eot.damage;
+      this.pa -= eot.malusPA;
+      this.pm -= eot.malusPM;
+      this.updateHealthBar();
+      eot.duration--;
+      this.displaySpellEffect(eot.damage, eot.malusPM, eot.malusPA);
+      this.checkDead();
+      this.refreshUI();
+    }
   }
 
   // display damage animation when unit is hit
-  displaySpellEffect(spell: Spell) {
+  displaySpellEffect(damage: number, malusPM: number, malusPA: number) {
     let dmgDelay = 0;
-    if (spell.damage > 0) {
+    const scene = this.scene;
+    if (damage > 0) {
       // display damage with unit blinking red
-      this.displayEffect(spell.damage, "damage", true);
+      this.displayEffect(damage, "damage", true);
       dmgDelay = 300;
     }
     if (!this.isDead()) {
-      this.scene.time.delayedCall(dmgDelay, () => {
+      scene.time.delayedCall(dmgDelay, () => {
         let pmDelay = 0;
         // display PM malus in green (no blinking)
-        if (spell.malusPM > 0) {
-          this.displayEffect(spell.malusPM, "pm");
+        if (malusPM > 0) {
+          this.displayEffect(malusPM, "pm");
           pmDelay = 300;
         }
-        this.scene.time.delayedCall(pmDelay, () => {
+        scene.time.delayedCall(pmDelay, () => {
           // display PA malus in blue (no blinking)
-          if (spell.malusPA > 0) {
-            this.displayEffect(spell.malusPA, "pa");
+          if (malusPA > 0) {
+            this.displayEffect(malusPA, "pa");
           }
         });
       });
@@ -477,19 +500,17 @@ export class Unit extends Phaser.GameObjects.Sprite {
       this.healthBar.setVisible(false);
     } else {
       const hpPercentage = Math.max(this.hp / this.maxHp, 0) * 100;
-      this.setBarValue(this.healthBar, hpPercentage);
+      this.setBarValue(this.healthBar, hpPercentage + 2);
       const barWidth = this.displayWidth * 0.8;
       const barAlpha = 0.8;
       if (hpPercentage <= 25) {
         this.healthBar.fillStyle(0xff0000, barAlpha);
-        this.healthBar.fillRect(0, 0, barWidth, 5);
       } else if (hpPercentage <= 50) {
         this.healthBar.fillStyle(0xffc802, barAlpha);
-        this.healthBar.fillRect(0, 0, barWidth, 5);
       } else {
         this.healthBar.fillStyle(0x2ecc71, barAlpha);
-        this.healthBar.fillRect(0, 0, barWidth, 5);
       }
+      this.healthBar.fillRect(0, 0, barWidth, 5);
     }
   }
 
@@ -501,5 +522,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
   // links unit to its timeline slot on the UI
   addTimelineSlot(slot: UITimelineSlot) {
     this.timelineSlot = slot;
+  }
+
+  addEffectOverTime(effectOverTime: EffectOverTime) {
+    this.effectOverTime = { ...effectOverTime };
   }
 }

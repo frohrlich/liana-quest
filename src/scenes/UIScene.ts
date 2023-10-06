@@ -167,7 +167,13 @@ export class UIScene extends Phaser.Scene {
       }
     );
 
-    this.uiTimelineBackgrounds[this.battleScene.turnIndex].fillColor = 0xffffff;
+    let fillIndex;
+    if (this.battleScene.turnIndex < timeline.length) {
+      fillIndex = this.battleScene.turnIndex;
+    } else {
+      fillIndex = 0;
+    }
+    this.uiTimelineBackgrounds[fillIndex].fillColor = 0xffffff;
   }
 
   // draw the outline of the UI
