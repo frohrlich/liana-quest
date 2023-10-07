@@ -31,6 +31,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   spells: Spell[] = [];
   timelineSlot!: UITimelineSlot;
   effectOverTime: EffectOverTime = null;
+  effectIcon: Phaser.GameObjects.Image;
 
   constructor(
     scene: Phaser.Scene,
@@ -89,6 +90,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.tint = 0xffffff;
     this.timelineSlot.tint = 0xffffff;
     this.healthBar.setVisible(false);
+    if (this.effectIcon) this.effectIcon.setVisible(false);
     this.myScene.uiScene.changeStatsUnit(this.myScene.player);
   }
 
@@ -96,6 +98,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.tint = 0x777777;
     this.timelineSlot.tint = 0x777777;
     this.healthBar.setVisible(true);
+    if (this.effectIcon) this.effectIcon.setVisible(true);
     this.myScene.uiScene.changeStatsUnit(this);
   }
 
@@ -170,6 +173,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
         onUpdate: () => {
           this.moveHealthBar();
           this.moveTeamIdentifier();
+          if (this.effectIcon) this.moveEffectIcon();
         },
         duration: 300,
         repeat: 0,
@@ -187,6 +191,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
         onUpdate: () => {
           this.moveHealthBar();
           this.moveTeamIdentifier();
+          if (this.effectIcon) this.moveEffectIcon();
         },
         duration: 300,
         repeat: 0,
@@ -283,8 +288,8 @@ export class Unit extends Phaser.GameObjects.Sprite {
     }
     this.updateHealthBar();
     this.displaySpellEffect(spell.damage, spell.malusPM, spell.malusPA);
-    this.checkDead();
     this.refreshUI();
+    this.checkDead();
   }
 
   undergoEffectOverTime() {
@@ -296,8 +301,12 @@ export class Unit extends Phaser.GameObjects.Sprite {
       this.updateHealthBar();
       eot.duration--;
       this.displaySpellEffect(eot.damage, eot.malusPM, eot.malusPA);
-      this.checkDead();
       this.refreshUI();
+      if (eot.duration <= 0) {
+        this.effectOverTime = null;
+        this.effectIcon.destroy();
+      }
+      this.checkDead();
     }
   }
 
@@ -307,7 +316,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     const scene = this.scene;
     if (damage > 0) {
       // display damage with unit blinking red
-      this.displayEffect(damage, "damage", true);
+      this.displayEffect(scene, damage, "damage", true);
       dmgDelay = 300;
     }
     if (!this.isDead()) {
@@ -315,20 +324,25 @@ export class Unit extends Phaser.GameObjects.Sprite {
         let pmDelay = 0;
         // display PM malus in green (no blinking)
         if (malusPM > 0) {
-          this.displayEffect(malusPM, "pm");
+          this.displayEffect(scene, malusPM, "pm");
           pmDelay = 300;
         }
         scene.time.delayedCall(pmDelay, () => {
           // display PA malus in blue (no blinking)
           if (malusPA > 0) {
-            this.displayEffect(malusPA, "pa");
+            this.displayEffect(scene, malusPA, "pa");
           }
         });
       });
     }
   }
 
-  displayEffect(value: number, type: string, blink: boolean = false) {
+  displayEffect(
+    scene: Phaser.Scene,
+    value: number,
+    type: string,
+    blink: boolean = false
+  ) {
     let color = "";
     if (blink) this.tint = 0xff0000;
     switch (type) {
@@ -345,7 +359,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
         break;
     }
     let isOnTop = this.indY < 2;
-    let malus = this.scene.add.text(
+    let malus = scene.add.text(
       this.x - 2,
       isOnTop ? this.y + 20 : this.y - this.displayHeight + 5,
       "-" + value.toString(),
@@ -359,7 +373,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     malus.setDepth(10001);
     malus.setOrigin(0.5, 0.5);
     // disappears after short time
-    this.scene.time.delayedCall(
+    scene.time.delayedCall(
       300,
       () => {
         malus.destroy();
@@ -382,6 +396,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
           this.healthBar.destroy();
           this.identifier.destroy();
           this.timelineSlot.destroy();
+          if (this.effectIcon) this.effectIcon.destroy();
           // if it's the player that just died... game over
           if (this.myScene.player === this) this.myScene.gameOver();
           this.destroy();
@@ -474,15 +489,16 @@ export class Unit extends Phaser.GameObjects.Sprite {
   // create health bar
   makeBar(unit: Unit, color: number) {
     //draw the bar
-    let bar = this.scene.add.graphics();
+    const bar = this.scene.add.graphics();
     //color the bar
     bar.fillStyle(color, 0.8);
     //fill the bar with a rectangle
-    let barWidth = unit.displayWidth * 0.8;
+    const barWidth = unit.displayWidth * 0.8;
     bar.fillRect(0, 0, barWidth, 5);
     //position the bar
     bar.x = unit.x - barWidth / 2;
-    bar.y = unit.y - unit.displayHeight + 5;
+    const isOnTop = this.y < this.myScene.tileHeight * 2;
+    bar.y = isOnTop ? this.y + 15 : this.y - this.displayHeight + 5;
     //return the bar
     bar.setDepth(10000);
     return bar;
@@ -526,5 +542,28 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   addEffectOverTime(effectOverTime: EffectOverTime) {
     this.effectOverTime = { ...effectOverTime };
+    if (this.effectIcon) this.effectIcon.destroy();
+    this.effectIcon = this.makeEffectIcon(effectOverTime);
+  }
+
+  makeEffectIcon(effectOverTime: EffectOverTime) {
+    const isOnTop = this.y < this.myScene.tileHeight * 2;
+    //draw the bar
+    const icon = this.scene.add.image(
+      this.x,
+      isOnTop ? this.y + 27 : this.y - this.displayHeight - 2,
+      "player",
+      effectOverTime.frame
+    );
+    icon.scale = 0.7;
+    icon.setDepth(9999);
+    icon.setVisible(false);
+    return icon;
+  }
+
+  moveEffectIcon() {
+    let isOnTop = this.y < this.myScene.tileHeight * 2;
+    this.effectIcon.x = this.x;
+    this.effectIcon.y = isOnTop ? this.y + 27 : this.y - this.displayHeight - 2;
   }
 }

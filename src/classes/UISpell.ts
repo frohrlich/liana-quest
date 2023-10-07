@@ -79,23 +79,42 @@ export class UISpell extends UIElement {
   }
 
   addInfoText() {
-    let width = 300;
     let height = 100;
-    const lineHeight = 35;
-    let text = `${this.spell.name}\n\ncost:${this.spell.cost}`;
-    text += `\n\n${this.spell.minRange}-${this.spell.maxRange} range`;
+    const lineHeight = this.fontSize + 10;
+    const fontSize = this.fontSize - 5;
+    let text = "";
+    let addText = `-${this.spell.name}-\n\ncost: ${this.spell.cost} PA`;
+    let maxLength = addText.length;
+    text += addText;
+    addText = `\n\n${this.spell.minRange}-${this.spell.maxRange} range`;
+    maxLength = Math.max(maxLength, addText.length);
+    text += addText;
     if (this.spell.damage > 0) {
-      text += `\n\ndmg:${this.spell.damage}`;
+      addText = `\n\n${this.spell.damage} damage`;
+      maxLength = Math.max(maxLength, addText.length);
+      text += addText;
       height += lineHeight;
     }
     if (this.spell.malusPA > 0) {
-      text += `\n\n-${this.spell.malusPA} PA`;
+      addText = `\n\n-${this.spell.malusPA} PA`;
+      maxLength = Math.max(maxLength, addText.length);
+      text += addText;
       height += lineHeight;
     }
     if (this.spell.malusPM > 0) {
-      text += `\n\n-${this.spell.malusPM} PM`;
+      addText = `\n\n-${this.spell.malusPM} PM`;
+      maxLength = Math.max(maxLength, addText.length);
+      text += addText;
       height += lineHeight;
     }
+    if (this.spell.effectOverTime) {
+      addText = `\n\neffect : ${this.spell.effectOverTime.name}(${this.spell.effectOverTime.duration})`;
+      maxLength = Math.max(maxLength, addText.length);
+      text += addText;
+      height += lineHeight;
+    }
+
+    let width = maxLength * (this.fontSize * 0.55);
 
     this.infoRectangle = this.myScene.add.rectangle(
       this.icon.x + this.icon.displayWidth + width / 4,
@@ -126,7 +145,7 @@ export class UISpell extends UIElement {
       text,
       {
         color: "#00FF00",
-        fontSize: this.fontSize - 5,
+        fontSize: fontSize,
         fontFamily: "PublicPixel",
       }
     );

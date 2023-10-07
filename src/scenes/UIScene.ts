@@ -173,7 +173,8 @@ export class UIScene extends Phaser.Scene {
     } else {
       fillIndex = 0;
     }
-    this.uiTimelineBackgrounds[fillIndex].fillColor = 0xffffff;
+    const currentBackground = this.uiTimelineBackgrounds[fillIndex];
+    if (currentBackground) currentBackground.fillColor = 0xffffff;
   }
 
   // draw the outline of the UI

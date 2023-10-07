@@ -76,7 +76,7 @@ export class BattleScene extends Phaser.Scene {
       42,
       0,
       4,
-      99,
+      25,
       3,
       "Deadly Javelin",
       true,
@@ -84,7 +84,7 @@ export class BattleScene extends Phaser.Scene {
       2,
       "star",
       2,
-      new EffectOverTime(2, 10, 1, 1)
+      new EffectOverTime("Poison", 44, 2, 10, 1, 1)
     );
     let punch = new Spell(51, 1, 1, 55, 2, "Punch", true);
     let sting = new Spell(60, 4, 12, 15, 2, "Sting", false, 1, 1);
@@ -114,7 +114,7 @@ export class BattleScene extends Phaser.Scene {
 
     // ally 1
     playerStartX = 12;
-    playerStartY = 5;
+    playerStartY = 0;
     playerFrame = 0;
     this.addUnit(
       "player",
@@ -310,9 +310,9 @@ export class BattleScene extends Phaser.Scene {
     // highlight current unit on the timeline
     this.uiScene.uiTimelineBackgrounds[this.turnIndex].fillColor = 0xffffff;
 
-    if (currentPlayer instanceof Npc) {
-      currentPlayer.playTurn();
-    } else {
+    currentPlayer.playTurn();
+
+    if (currentPlayer instanceof Player) {
       this.isPlayerTurn = true;
       this.refreshAccessibleTiles();
       this.highlightAccessibleTiles(this.accessibleTiles);
@@ -674,7 +674,6 @@ export class BattleScene extends Phaser.Scene {
         // on clicking on a tile, launch spell
         overlay.on("pointerup", () => {
           this.player.castSpell(this.currentSpell, pos);
-          this.uiScene.refreshUI();
         });
         //on hovering over a tile, display aoe zone
         overlay.on("pointerover", () => {
@@ -689,7 +688,6 @@ export class BattleScene extends Phaser.Scene {
         if (playerOnThisTile) {
           playerOnThisTile.on("pointerup", () => {
             this.player.castSpell(this.currentSpell, pos);
-            this.uiScene.refreshUI();
           });
           playerOnThisTile.on("pointerover", () => {
             this.updateAoeZone(spell, tile.pixelX, tile.pixelY);
