@@ -10,7 +10,7 @@ export class UISpell extends UIElement {
   battleScene: BattleScene;
   isHighlighted: boolean = false;
   infoRectangle: Phaser.GameObjects.Rectangle;
-  infoText: Phaser.GameObjects.Text;
+  infoText: Phaser.GameObjects.BitmapText;
   outlineRectangle: Phaser.GameObjects.Rectangle;
 
   constructor(scene: Phaser.Scene, tab: number, posY: number, spell: Spell) {
@@ -28,6 +28,7 @@ export class UISpell extends UIElement {
   }
 
   addIcon() {
+    const scale = this.myScene.uiScale;
     this.icon = this.myScene.add.image(
       this.x,
       this.y,
@@ -40,8 +41,8 @@ export class UISpell extends UIElement {
       "player",
       this.spell.frame + 1
     );
-    this.icon.scale = this.highlightIcon.scale = 5;
-    this.icon.y += this.icon.displayHeight / 2;
+    this.icon.scale = this.highlightIcon.scale = scale * 0.9;
+    this.icon.y += this.icon.displayHeight / 2 + 2;
     this.icon.setInteractive();
     this.highlightIcon.y += this.highlightIcon.displayHeight / 2;
     this.highlightIcon.visible = false;
@@ -79,46 +80,50 @@ export class UISpell extends UIElement {
   }
 
   addInfoText() {
-    let height = 100;
-    const lineHeight = this.fontSize + 10;
-    const fontSize = this.fontSize - 5;
+    const scale = this.myScene.uiScale;
+    let height = 14 * scale;
+    const lineHeight = this.fontSize + 2;
+    const fontSize = this.fontSize;
     let text = "";
-    let addText = `-${this.spell.name}-\n\ncost: ${this.spell.cost} PA`;
+    let addText = `-${this.spell.name}-\ncost: ${this.spell.cost} PA`;
     let maxLength = addText.length;
     text += addText;
-    addText = `\n\n${this.spell.minRange}-${this.spell.maxRange} range`;
-    maxLength = Math.max(maxLength, addText.length);
-    text += addText;
+    // addText = `\n${this.spell.minRange}-${this.spell.maxRange} range`;
+    // maxLength = Math.max(maxLength, addText.length);
+    // text += addText;
     if (this.spell.damage > 0) {
-      addText = `\n\n${this.spell.damage} damage`;
+      addText = `\n${this.spell.damage} damage`;
       maxLength = Math.max(maxLength, addText.length);
       text += addText;
       height += lineHeight;
     }
     if (this.spell.malusPA > 0) {
-      addText = `\n\n-${this.spell.malusPA} PA`;
+      addText = `\n-${this.spell.malusPA} PA`;
       maxLength = Math.max(maxLength, addText.length);
       text += addText;
       height += lineHeight;
     }
     if (this.spell.malusPM > 0) {
-      addText = `\n\n-${this.spell.malusPM} PM`;
+      addText = `\n-${this.spell.malusPM} PM`;
       maxLength = Math.max(maxLength, addText.length);
       text += addText;
       height += lineHeight;
     }
     if (this.spell.effectOverTime) {
-      addText = `\n\neffect : ${this.spell.effectOverTime.name}(${this.spell.effectOverTime.duration})`;
+      addText = `\neffect : ${this.spell.effectOverTime.name}(${this.spell.effectOverTime.duration})`;
       maxLength = Math.max(maxLength, addText.length);
       text += addText;
       height += lineHeight;
     }
 
-    let width = maxLength * (this.fontSize * 0.55);
+    let width = maxLength * (this.fontSize * 0.5);
+
+    const xPos = this.x + width / 2;
+    const yPos = this.y - height / 2;
 
     this.infoRectangle = this.myScene.add.rectangle(
-      this.icon.x + this.icon.displayWidth + width / 4,
-      this.icon.y - height * 0.7,
+      xPos,
+      yPos,
       width,
       height,
       0x31593b
@@ -128,26 +133,23 @@ export class UISpell extends UIElement {
     this.infoRectangle.visible = false;
 
     this.outlineRectangle = this.myScene.add.rectangle(
-      this.icon.x + this.icon.displayWidth + width / 4,
-      this.icon.y - height * 0.7,
-      width + 5,
-      height + 5
+      xPos,
+      yPos,
+      width + scale,
+      height + scale
     );
     this.outlineRectangle.depth = 20000;
-    this.outlineRectangle.setStrokeStyle(5, 0xffffff);
+    this.outlineRectangle.setStrokeStyle(scale + 0.5, 0xffffff);
     this.outlineRectangle.isStroked = true;
     this.outlineRectangle.alpha = 0.9;
     this.outlineRectangle.visible = false;
 
-    this.infoText = this.myScene.add.text(
-      this.infoRectangle.x - this.infoRectangle.displayWidth / 2 + 5,
-      this.infoRectangle.y - this.infoRectangle.displayHeight / 2 + 5,
+    this.infoText = this.myScene.add.bitmapText(
+      this.infoRectangle.x - this.infoRectangle.displayWidth / 2 + 2,
+      this.infoRectangle.y - this.infoRectangle.displayHeight / 2 + 2,
+      "rainyhearts",
       text,
-      {
-        color: "#00FF00",
-        fontSize: fontSize,
-        fontFamily: "PublicPixel",
-      }
+      fontSize
     );
     this.infoText.depth = 20001;
     this.infoText.visible = false;

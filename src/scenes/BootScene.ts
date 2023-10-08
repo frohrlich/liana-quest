@@ -23,6 +23,14 @@ export class BootScene extends Phaser.Scene {
       frameHeight: 16,
     });
 
+    // fonts
+    this.load.bitmapFont(
+      "rainyhearts",
+      "assets/fonts/rainyhearts.png",
+      "assets/fonts/rainyhearts.xml"
+    );
+
+    // illustration image
     this.load.image("guerriere", "assets/guerriere.png");
   }
 

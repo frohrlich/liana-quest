@@ -1,8 +1,0 @@
-@font-face {
-  font-family: "PublicPixel";
-  src: url("assets/fonts/PublicPixel.ttf");
-}
-
-canvas {
-  font-family: "PublicPixel";
-}

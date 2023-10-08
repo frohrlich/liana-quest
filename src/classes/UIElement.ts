@@ -12,24 +12,30 @@ export abstract class UIElement {
   textStyle: Phaser.Types.GameObjects.Text.TextStyle;
   x: number;
   y: number;
+  margin: number;
 
   constructor(scene: Phaser.Scene, tab: number, posY: number) {
     this.tab = tab;
     this.posY = posY;
     this.myScene = scene as UIScene;
-    this.fontSize = this.myScene.uiTabHeight / 6;
-    let margin = 10;
-    this.x = this.myScene.uiTabWidth * this.tab + margin;
-    this.y = this.myScene.topY + (this.fontSize + 10) * this.posY + margin;
-    this.textStyle = {
-      color: "#00FF00",
-      fontSize: this.fontSize,
-      fontFamily: "PublicPixel",
-    };
+    this.fontSize = this.myScene.battleScene.tileWidth;
+    console.log(this.fontSize);
+
+    this.margin = 2 * this.myScene.uiScale;
+    this.x = this.myScene.uiTabWidth * this.tab + this.margin;
+    this.y = this.myScene.topY + (this.fontSize + this.margin) * this.posY;
   }
 
-  addText(...text: string[]): Phaser.GameObjects.Text {
-    return this.myScene.add.text(this.x, this.y, text, this.textStyle);
+  addText(scale: number, ...text: string[]): Phaser.GameObjects.BitmapText {
+    return this.myScene.add
+      .bitmapText(
+        this.x + this.margin,
+        this.y + this.margin,
+        "rainyhearts",
+        text,
+        this.fontSize * scale
+      )
+      .setTint(this.myScene.uiFontColor);
   }
 
   abstract refresh(): void;

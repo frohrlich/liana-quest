@@ -12,6 +12,9 @@ export class UIScene extends Phaser.Scene {
   graphics!: Phaser.GameObjects.Graphics;
   battleScene!: BattleScene;
   uiTabWidth!: number;
+  // global scale for the UI (change it when changing game resolution)
+  uiScale: number = 2.5;
+  uiFontColor = 0x00ff40;
   // y coordinates of the top of the UI
   topY!: number;
   uiTabHeight!: number;
@@ -45,7 +48,7 @@ export class UIScene extends Phaser.Scene {
   }
 
   addStats(tab: number, posY: number, unit: Unit) {
-    const myStats = new UnitStatDisplay(this, tab, posY, unit);
+    const myStats = new UnitStatDisplay(this, tab * 4, posY, unit);
     this.uiElements.push(myStats);
     return myStats;
   }
@@ -55,36 +58,38 @@ export class UIScene extends Phaser.Scene {
   }
 
   createEndTurnButton() {
-    let fontSize = this.uiTabWidth / 10;
-    const nextTurnButton = this.add
-      .text(
-        this.uiTabWidth * 2.5,
-        this.topY + this.uiTabHeight / 2,
-        "End turn",
-        {
-          color: "#00FF40",
-          fontSize: fontSize,
-          fontFamily: "PublicPixel",
+    const xPos = this.uiTabWidth * 2.5;
+    const yPos = this.topY + this.uiTabHeight / 2;
+
+    this.add
+      .rectangle(xPos, yPos, this.uiTabWidth * 0.65, this.uiTabHeight * 0.65)
+      .setStrokeStyle(2, 0xcccccc)
+      .setFillStyle(0x293154);
+
+    let fontSize = this.battleScene.tileWidth * this.uiScale;
+    this.add
+      .bitmapText(xPos, yPos, "rainyhearts", "End turn", fontSize)
+      .setTint(this.uiFontColor)
+      .setOrigin(0.5, 0.5)
+      .setInteractive()
+      .on("pointerup", () => {
+        if (
+          this.battleScene.isPlayerTurn &&
+          !this.battleScene.player.isMoving
+        ) {
+          this.battleScene.endTurn();
         }
-      )
-      .setOrigin(0.5, 0.5);
-    nextTurnButton.setInteractive();
-    nextTurnButton.on("pointerup", () => {
-      if (this.battleScene.isPlayerTurn && !this.battleScene.player.isMoving) {
-        this.battleScene.endTurn();
-      }
-    });
+      });
   }
 
   updateTimeline(timeline: Unit[]) {
     // scale factor for the timeline
-    let timelineSize = 5;
-    let topMargin = 10;
-    let leftMargin = 10;
+    const topMargin = 10;
+    const leftMargin = 10;
     // first add handle on the left of the timeline
-    let handleWidth = 30;
-    let unitHeight = timeline[0].height;
-    let unitWidth = timeline[0].width;
+    const handleWidth = this.uiScale * 6;
+    const unitHeight = timeline[0].height;
+    const unitWidth = timeline[0].width;
     // first we get the handle current position if it's already initialized
     let offsetX = 0;
     let offsetY = 0;
@@ -92,7 +97,7 @@ export class UIScene extends Phaser.Scene {
       // the offset corresponding to the position of the timeline once user dragged it
       // substracting initial position of the handle
       offsetX = this.handle.x - leftMargin - handleWidth / 2;
-      offsetY = this.handle.y - (unitHeight * timelineSize) / 2 - topMargin;
+      offsetY = this.handle.y - (unitHeight * this.uiScale) / 2 - topMargin;
     }
     this.uiTimeline.forEach((slot) => {
       slot.destroy();
@@ -105,9 +110,9 @@ export class UIScene extends Phaser.Scene {
     this.uiTimeline = [];
     this.handle = this.add.rectangle(
       offsetX + leftMargin + handleWidth / 2,
-      offsetY + (unitHeight * timelineSize) / 2 + topMargin,
+      offsetY + (unitHeight * this.uiScale) / 2 + topMargin,
       handleWidth,
-      unitHeight * timelineSize,
+      unitHeight * this.uiScale,
       0x888888
     );
     for (let i = 0; i < timeline.length; i++) {
@@ -118,10 +123,10 @@ export class UIScene extends Phaser.Scene {
         offsetX +
           handleWidth +
           leftMargin +
-          (i + 0.5) * unitWidth * timelineSize,
-        offsetY + (unitHeight * timelineSize) / 2 + topMargin,
+          (i + 0.5) * unitWidth * this.uiScale,
+        offsetY + (unitHeight * this.uiScale) / 2 + topMargin,
         unit,
-        timelineSize
+        this.uiScale
       );
       // on hover, highlight the timeline slot and its corresponding unit
       slot.setInteractive();
@@ -138,10 +143,10 @@ export class UIScene extends Phaser.Scene {
         offsetX +
           handleWidth +
           leftMargin +
-          (i + 0.5) * unitWidth * timelineSize,
-        offsetY + (unitHeight * timelineSize) / 2 + topMargin,
-        unitWidth * timelineSize,
-        unitHeight * timelineSize,
+          (i + 0.5) * unitWidth * this.uiScale,
+        offsetY + (unitHeight * this.uiScale) / 2 + topMargin,
+        unitWidth * this.uiScale,
+        unitHeight * this.uiScale,
         unit.isAlly ? 0x0000ff : 0xff0000,
         0.3
       );
@@ -160,7 +165,7 @@ export class UIScene extends Phaser.Scene {
           const slot = this.uiTimeline[i];
           const background = this.uiTimelineBackgrounds[i];
           let posX =
-            (i + 0.5) * unitWidth * timelineSize + handleWidth / 2 + dragX;
+            (i + 0.5) * unitWidth * this.uiScale + handleWidth / 2 + dragX;
           slot.setPosition(posX, dragY);
           background.setPosition(posX, dragY);
         }
@@ -185,7 +190,7 @@ export class UIScene extends Phaser.Scene {
     let width = bounds.width * zoom;
     let offset = 2;
     let uiTabWidth = (width - offset * 2) / 3;
-    let height = 150;
+    let height = 30 * this.uiScale;
 
     this.graphics = this.add.graphics();
     this.graphics.lineStyle(4, 0x79ae55);
@@ -220,7 +225,7 @@ export class UIScene extends Phaser.Scene {
 
   // display unit spells on the spell slot of the UI
   displaySpells(unit: Unit) {
-    this.uiElements.push(new UIText(this, 1.5, 0, "Spells"));
+    this.uiElements.push(new UIText(this, 1.5, 0.1, "Spells"));
     for (let i = 0; i < unit.spells.length; i++) {
       const spell = unit.spells[i];
       this.addSpell(1.15 + 0.33 * i, 1.35, spell);

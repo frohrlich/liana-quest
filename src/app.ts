@@ -7,9 +7,9 @@ import { GameOverScene } from "./scenes/GameOverScene";
 const config = {
   type: Phaser.AUTO,
   parent: "game",
-  width: 1920,
-  height: 1080,
-  zoom: 0.55,
+  width: 960,
+  height: 540,
+  zoom: 1.3,
   pixelArt: true,
   backgroundColor: "#FFFFFF",
   physics: {

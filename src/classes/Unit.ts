@@ -317,7 +317,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     if (damage > 0) {
       // display damage with unit blinking red
       this.displayEffect(scene, damage, "damage", true);
-      dmgDelay = 300;
+      dmgDelay = 400;
     }
     if (!this.isDead()) {
       scene.time.delayedCall(dmgDelay, () => {
@@ -325,7 +325,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
         // display PM malus in green (no blinking)
         if (malusPM > 0) {
           this.displayEffect(scene, malusPM, "pm");
-          pmDelay = 300;
+          pmDelay = 400;
         }
         scene.time.delayedCall(pmDelay, () => {
           // display PA malus in blue (no blinking)
@@ -343,33 +343,32 @@ export class Unit extends Phaser.GameObjects.Sprite {
     type: string,
     blink: boolean = false
   ) {
-    let color = "";
+    let color: number;
+    const fontSize = 16;
     if (blink) this.tint = 0xff0000;
     switch (type) {
       case "damage":
-        color = "#ff0000";
+        color = 0xff0000;
         break;
       case "pm":
-        color = "#00dd00";
+        color = 0x00dd00;
         break;
       case "pa":
-        color = "#33c6f7";
+        color = 0x33c6f7;
         break;
       default:
         break;
     }
     let isOnTop = this.indY < 2;
-    let malus = scene.add.text(
-      this.x - 2,
-      isOnTop ? this.y + 20 : this.y - this.displayHeight + 5,
-      "-" + value.toString(),
-      {
-        fontSize: 8,
-        fontFamily: "PublicPixel",
-        color: color,
-        align: "center",
-      }
-    );
+    let malus = scene.add
+      .bitmapText(
+        this.x - 2,
+        isOnTop ? this.y + 20 : this.y - this.displayHeight + 5,
+        "rainyhearts",
+        "-" + value.toString(),
+        fontSize
+      )
+      .setTint(color);
     malus.setDepth(10001);
     malus.setOrigin(0.5, 0.5);
     // disappears after short time
@@ -391,7 +390,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
       // turn black before dying...
       this.tint = 0x000000;
       this.scene.time.delayedCall(
-        300,
+        400,
         () => {
           this.healthBar.destroy();
           this.identifier.destroy();

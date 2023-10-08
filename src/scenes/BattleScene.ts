@@ -76,7 +76,7 @@ export class BattleScene extends Phaser.Scene {
       42,
       0,
       4,
-      25,
+      100,
       3,
       "Deadly Javelin",
       true,
@@ -213,7 +213,7 @@ export class BattleScene extends Phaser.Scene {
     overPlayer?.setAlpha(0.5);
 
     // camera settings
-    let zoom = 4;
+    let zoom = 2;
     this.cameras.main.setZoom(zoom);
     this.cameras.main.setBounds(
       0,
@@ -227,8 +227,8 @@ export class BattleScene extends Phaser.Scene {
     this.add.grid(
       0,
       0,
-      (this.map.widthInPixels * zoom) / 2,
-      (this.map.heightInPixels * zoom) / 2,
+      this.map.widthInPixels * zoom,
+      this.map.heightInPixels * zoom,
       this.map.tileWidth,
       this.map.tileHeight,
       0xffffff,
@@ -707,7 +707,8 @@ export class BattleScene extends Phaser.Scene {
 
   // create aoe zone but doesn't display it yet
   createAoeZone(spell: Spell) {
-    let highlightColor = 0xff0099;
+    const highlightColor = 0xff0099;
+    const alpha = 0.6;
     switch (spell.aoe) {
       case "monoTarget":
         const overlay = this.add.rectangle(
@@ -716,7 +717,7 @@ export class BattleScene extends Phaser.Scene {
           this.tileWidth,
           this.tileHeight,
           highlightColor,
-          0.4
+          alpha
         );
         overlay.setVisible(false);
         this.spellAoeOverlay.push(overlay);
@@ -733,7 +734,7 @@ export class BattleScene extends Phaser.Scene {
                 this.tileWidth,
                 this.tileHeight,
                 highlightColor,
-                0.4
+                alpha
               );
               overlay.setVisible(false);
               this.spellAoeOverlay.push(overlay);
