@@ -281,13 +281,23 @@ export class Unit extends Phaser.GameObjects.Sprite {
   // Receive spell effects
   undergoSpell(spell: Spell) {
     this.hp -= spell.damage;
+    this.hp = Math.min(this.hp + spell.heal, this.maxHp);
     this.pm -= spell.malusPM;
+    this.pm += spell.bonusPM;
     this.pa -= spell.malusPA;
+    this.pa += spell.bonusPA;
     if (spell.effectOverTime) {
       this.addEffectOverTime(spell.effectOverTime);
     }
     this.updateHealthBar();
-    this.displaySpellEffect(spell.damage, spell.malusPM, spell.malusPA);
+    this.displaySpellEffect(
+      spell.damage,
+      spell.malusPM,
+      spell.malusPA,
+      spell.heal,
+      spell.bonusPM,
+      spell.bonusPA
+    );
     this.refreshUI();
     this.checkDead();
   }
@@ -296,11 +306,22 @@ export class Unit extends Phaser.GameObjects.Sprite {
     const eot = this.effectOverTime;
     if (eot && eot.duration > 0) {
       this.hp -= eot.damage;
+      // no healing over max hp
+      this.hp = Math.min(this.hp + eot.heal, this.maxHp);
       this.pa -= eot.malusPA;
+      this.pa += eot.bonusPA;
       this.pm -= eot.malusPM;
+      this.pm += eot.bonusPM;
       this.updateHealthBar();
       eot.duration--;
-      this.displaySpellEffect(eot.damage, eot.malusPM, eot.malusPA);
+      this.displaySpellEffect(
+        eot.damage,
+        eot.malusPM,
+        eot.malusPA,
+        eot.heal,
+        eot.bonusPM,
+        eot.bonusPA
+      );
       this.refreshUI();
       if (eot.duration <= 0) {
         this.effectOverTime = null;
@@ -311,7 +332,14 @@ export class Unit extends Phaser.GameObjects.Sprite {
   }
 
   // display damage animation when unit is hit
-  displaySpellEffect(damage: number, malusPM: number, malusPA: number) {
+  displaySpellEffect(
+    damage: number,
+    malusPM: number,
+    malusPA: number,
+    heal: number,
+    bonusPM: number,
+    bonusPA: number
+  ) {
     let dmgDelay = 0;
     const scene = this.scene;
     if (damage > 0) {
@@ -321,17 +349,42 @@ export class Unit extends Phaser.GameObjects.Sprite {
     }
     if (!this.isDead()) {
       scene.time.delayedCall(dmgDelay, () => {
-        let pmDelay = 0;
-        // display PM malus in green (no blinking)
-        if (malusPM > 0) {
-          this.displayEffect(scene, malusPM, "pm");
-          pmDelay = 400;
+        let healDelay = 0;
+        // display heal in green (no blinking)
+        if (heal > 0) {
+          this.displayEffect(scene, heal, "heal", false, true);
+          healDelay = 400;
         }
-        scene.time.delayedCall(pmDelay, () => {
-          // display PA malus in blue (no blinking)
-          if (malusPA > 0) {
-            this.displayEffect(scene, malusPA, "pa");
+        scene.time.delayedCall(healDelay, () => {
+          let pmDelay = 0;
+          // display PM malus in white
+          if (malusPM > 0) {
+            this.displayEffect(scene, malusPM, "pm");
+            pmDelay = 400;
           }
+          scene.time.delayedCall(pmDelay, () => {
+            let bonusPmDelay = 0;
+            // display PM bonus in white
+            if (bonusPM > 0) {
+              this.displayEffect(scene, bonusPM, "pm", false, true);
+              bonusPmDelay = 400;
+            }
+            scene.time.delayedCall(bonusPmDelay, () => {
+              let paDelay = 0;
+              // display PA malus in blue
+              if (malusPA > 0) {
+                this.displayEffect(scene, malusPA, "pa");
+                paDelay = 400;
+              }
+              scene.time.delayedCall(paDelay, () => {
+                // display PA bonus in blue
+                if (bonusPA > 0) {
+                  this.displayEffect(scene, bonusPA, "pa", false, true);
+                  paDelay = 400;
+                }
+              });
+            });
+          });
         });
       });
     }
@@ -341,7 +394,8 @@ export class Unit extends Phaser.GameObjects.Sprite {
     scene: Phaser.Scene,
     value: number,
     type: string,
-    blink: boolean = false
+    blink: boolean = false,
+    positive: boolean = false
   ) {
     let color: number;
     const fontSize = 16;
@@ -350,8 +404,11 @@ export class Unit extends Phaser.GameObjects.Sprite {
       case "damage":
         color = 0xff0000;
         break;
-      case "pm":
+      case "heal":
         color = 0x00dd00;
+        break;
+      case "pm":
+        color = 0xffffff;
         break;
       case "pa":
         color = 0x33c6f7;
@@ -365,7 +422,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
         this.x - 2,
         isOnTop ? this.y + 20 : this.y - this.displayHeight + 5,
         "rainyhearts",
-        "-" + value.toString(),
+        (positive ? "+" : "-") + value.toString(),
         fontSize
       )
       .setTint(color);

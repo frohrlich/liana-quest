@@ -44,7 +44,7 @@ export class UISpell extends UIElement {
     this.icon.scale = this.highlightIcon.scale = scale * 0.9;
     this.icon.y += this.icon.displayHeight / 2 + 2;
     this.icon.setInteractive();
-    this.highlightIcon.y += this.highlightIcon.displayHeight / 2;
+    this.highlightIcon.y += this.highlightIcon.displayHeight / 2 + 2;
     this.highlightIcon.visible = false;
     this.highlightIcon.setInteractive();
 
@@ -82,7 +82,7 @@ export class UISpell extends UIElement {
   addInfoText() {
     const scale = this.myScene.uiScale;
     let height = 14 * scale;
-    const lineHeight = this.fontSize + 2;
+    const lineHeight = this.fontSize;
     const fontSize = this.fontSize;
     let text = "";
     let addText = `-${this.spell.name}-\ncost: ${this.spell.cost} PA`;
@@ -92,7 +92,13 @@ export class UISpell extends UIElement {
     // maxLength = Math.max(maxLength, addText.length);
     // text += addText;
     if (this.spell.damage > 0) {
-      addText = `\n${this.spell.damage} damage`;
+      addText = `\n-${this.spell.damage} HP`;
+      maxLength = Math.max(maxLength, addText.length);
+      text += addText;
+      height += lineHeight;
+    }
+    if (this.spell.heal > 0) {
+      addText = `\n+${this.spell.heal} HP`;
       maxLength = Math.max(maxLength, addText.length);
       text += addText;
       height += lineHeight;
@@ -103,8 +109,20 @@ export class UISpell extends UIElement {
       text += addText;
       height += lineHeight;
     }
+    if (this.spell.bonusPA > 0) {
+      addText = `\n+${this.spell.bonusPA} PA`;
+      maxLength = Math.max(maxLength, addText.length);
+      text += addText;
+      height += lineHeight;
+    }
     if (this.spell.malusPM > 0) {
       addText = `\n-${this.spell.malusPM} PM`;
+      maxLength = Math.max(maxLength, addText.length);
+      text += addText;
+      height += lineHeight;
+    }
+    if (this.spell.bonusPM > 0) {
+      addText = `\n+${this.spell.bonusPM} PM`;
       maxLength = Math.max(maxLength, addText.length);
       text += addText;
       height += lineHeight;

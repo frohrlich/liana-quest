@@ -72,22 +72,39 @@ export class BattleScene extends Phaser.Scene {
     );
 
     // create spells
-    let javelin = new Spell(
+    const javelin = new Spell(
       42,
       0,
-      4,
-      100,
+      5,
       3,
       "Deadly Javelin",
       true,
+      25,
       0,
       2,
+      0,
+      0,
+      0,
       "star",
       2,
-      new EffectOverTime("Poison", 44, 2, 10, 1, 1)
+      new EffectOverTime("Poison", 44, 2, 10, 1, 1, 0, 0, 0)
     );
-    let punch = new Spell(51, 1, 1, 55, 2, "Punch", true);
-    let sting = new Spell(60, 4, 12, 15, 2, "Sting", false, 1, 1);
+    const punch = new Spell(51, 1, 1, 2, "Punch", true, 55);
+    const heal = new Spell(
+      69,
+      0,
+      8,
+      3,
+      "Herbal medicine",
+      true,
+      0,
+      0,
+      0,
+      20,
+      1,
+      1
+    );
+    const sting = new Spell(60, 4, 12, 2, "Sting", false, 15, 1, 1);
 
     // add units
     // starting position (grid index)
@@ -106,7 +123,7 @@ export class BattleScene extends Phaser.Scene {
       false,
       true,
       javelin,
-      punch,
+      heal,
       sting
     );
     // create player animations with base sprite and framerate
