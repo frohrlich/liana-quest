@@ -19,7 +19,6 @@ export abstract class UIElement {
     this.posY = posY;
     this.myScene = scene as UIScene;
     this.fontSize = this.myScene.battleScene.tileWidth;
-    console.log(this.fontSize);
 
     this.margin = 2 * this.myScene.uiScale;
     this.x = this.myScene.uiTabWidth * this.tab + this.margin;

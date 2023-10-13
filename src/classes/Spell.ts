@@ -1,4 +1,5 @@
 import { EffectOverTime } from "./EffectOverTime";
+import { Unit } from "./Unit";
 
 export class Spell {
   frame: number;
@@ -18,6 +19,8 @@ export class Spell {
   aoe: string;
   aoeSize: number;
   effectOverTime: EffectOverTime;
+  // for summon spells, defines summoned unit
+  summons: Unit;
 
   constructor(
     frame: number,
@@ -34,7 +37,8 @@ export class Spell {
     bonusPM: number = 0,
     aoe: string = "monoTarget",
     aoeSize: number = 0,
-    effectOverTime: EffectOverTime = null
+    effectOverTime: EffectOverTime = null,
+    summons: Unit = null
   ) {
     this.frame = frame;
     this.minRange = minRange;
@@ -51,5 +55,6 @@ export class Spell {
     this.aoe = aoe;
     this.aoeSize = aoeSize;
     this.effectOverTime = effectOverTime;
+    this.summons = summons;
   }
 }

@@ -90,6 +90,15 @@ export class BattleScene extends Phaser.Scene {
       new EffectOverTime("Poison", 44, 2, 10, 1, 1, 0, 0, 0)
     );
     const punch = new Spell(51, 1, 1, 2, "Punch", true, 55);
+    const sting = new Spell(60, 4, 12, 2, "Sting", false, 15, 1, 1);
+
+    // define summoned unit
+    const summonedFrame = 3;
+    const summoned = new Unit(this, 0, 0, "player", 3, 0, 0, 3, 6, 50, true);
+    summoned.type = "princess";
+    summoned.addSpells(sting);
+    this.createAnimations(summonedFrame, 5, "princess");
+
     const heal = new Spell(
       69,
       0,
@@ -102,9 +111,12 @@ export class BattleScene extends Phaser.Scene {
       0,
       20,
       1,
-      1
+      1,
+      "monoTarget",
+      0,
+      null,
+      summoned
     );
-    const sting = new Spell(60, 4, 12, 2, "Sting", false, 15, 1, 1);
 
     // add units
     // starting position (grid index)
@@ -893,6 +905,17 @@ export class BattleScene extends Phaser.Scene {
         this.uiScene.updateTimeline(this.timeline);
       }
     }
+  }
+
+  // add summoned unit after the summoner in the timeline
+  addSummonedUnitToTimeline(summoner: Unit, summoned: Unit) {
+    const index = this.timeline.findIndex(
+      (timelineUnit) => timelineUnit == summoner
+    );
+    if (index !== -1) {
+      this.timeline.splice(index + 1, 0, summoned);
+    }
+    this.uiScene.updateTimeline(this.timeline);
   }
 
   clearSpellRange() {

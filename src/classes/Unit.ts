@@ -21,6 +21,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   // pathfinding
   movePath: Phaser.Math.Vector2[] = [];
 
+  textureStr: string;
   direction: string;
   isMoving: boolean;
   moveChain: any = {};
@@ -32,6 +33,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   timelineSlot!: UITimelineSlot;
   effectOverTime: EffectOverTime = null;
   effectIcon: Phaser.GameObjects.Image;
+  summonedUnits: Unit[] = [];
 
   constructor(
     scene: Phaser.Scene,
@@ -50,6 +52,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.myScene = this.scene as BattleScene;
     this.indX = indX;
     this.indY = indY;
+    this.textureStr = texture;
     this.maxPm = maxPm;
     this.maxPa = maxPa;
     this.pa = maxPa;
@@ -276,6 +279,28 @@ export class Unit extends Phaser.GameObjects.Sprite {
     affectedUnits.forEach((unit) => {
       unit.undergoSpell(spell);
     });
+    // if spell summons a unit AND targeted tile is free, summon the unit
+    if (
+      spell.summons &&
+      !this.myScene.obstacles.getTileAt(targetVec.x, targetVec.y)
+    ) {
+      const myUnit = spell.summons;
+      const summonedUnit = this.myScene.addUnit(
+        myUnit.textureStr,
+        myUnit.frameNumber,
+        targetVec.x,
+        targetVec.y,
+        myUnit.maxPm,
+        myUnit.maxPa,
+        myUnit.maxHp,
+        myUnit.type,
+        true,
+        this.isAlly,
+        ...myUnit.spells
+      );
+      this.myScene.addSummonedUnitToTimeline(this, summonedUnit);
+      this.summonedUnits.push(summonedUnit);
+    }
   }
 
   // Receive spell effects
@@ -442,25 +467,32 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   checkDead() {
     if (this.isDead()) {
-      this.unselectUnit();
-      this.myScene.removeUnitFromBattle(this);
-      // turn black before dying...
-      this.tint = 0x000000;
-      this.scene.time.delayedCall(
-        400,
-        () => {
-          this.healthBar.destroy();
-          this.identifier.destroy();
-          this.timelineSlot.destroy();
-          if (this.effectIcon) this.effectIcon.destroy();
-          // if it's the player that just died... game over
-          if (this.myScene.player === this) this.myScene.gameOver();
-          this.destroy();
-        },
-        undefined,
-        this
-      );
+      this.die();
     }
+  }
+
+  private die() {
+    this.summonedUnits.forEach((unit) => {
+      unit.die();
+    });
+    this.unselectUnit();
+    this.myScene.removeUnitFromBattle(this);
+    // turn black before dying...
+    this.tint = 0x000000;
+    this.scene.time.delayedCall(
+      400,
+      () => {
+        this.healthBar.destroy();
+        this.identifier.destroy();
+        this.timelineSlot.destroy();
+        if (this.effectIcon) this.effectIcon.destroy();
+        // if it's the player that just died... game over
+        if (this.myScene.player === this) this.myScene.gameOver();
+        this.destroy();
+      },
+      undefined,
+      this
+    );
   }
 
   // look at a position (change player direction)
