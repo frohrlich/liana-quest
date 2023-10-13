@@ -95,9 +95,9 @@ export class BattleScene extends Phaser.Scene {
     // define summoned unit
     const summonedFrame = 3;
     const summoned = new Unit(this, 0, 0, "player", 3, 0, 0, 3, 6, 50, true);
-    summoned.type = "princess";
+    summoned.type = "Princess";
     summoned.addSpells(sting);
-    this.createAnimations(summonedFrame, 5, "princess");
+    this.createAnimations(summonedFrame, 5, "Princess");
 
     const heal = new Spell(
       69,

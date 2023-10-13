@@ -133,8 +133,14 @@ export class UISpell extends UIElement {
       text += addText;
       height += lineHeight;
     }
+    if (this.spell.summons) {
+      addText = `\nsummons : ${this.spell.summons.type}`;
+      maxLength = Math.max(maxLength, addText.length);
+      text += addText;
+      height += lineHeight;
+    }
 
-    let width = maxLength * (this.fontSize * 0.5);
+    let width = maxLength * (this.fontSize * 0.3);
 
     const xPos = this.x + width / 2;
     const yPos = this.y - height / 2;
