@@ -74,10 +74,11 @@ export class BattleScene extends Phaser.Scene {
     // create spells
     const javelin = new Spell(
       42,
-      0,
+      1,
       5,
       3,
       "Deadly Javelin",
+      true,
       true,
       25,
       0,
@@ -85,12 +86,12 @@ export class BattleScene extends Phaser.Scene {
       0,
       0,
       0,
-      "star",
-      2,
+      "line",
+      3,
       new EffectOverTime("Poison", 44, 2, 10, 1, 1, 0, 0, 0)
     );
-    const punch = new Spell(51, 1, 1, 2, "Punch", true, 55);
-    const sting = new Spell(60, 4, 12, 2, "Sting", false, 15, 1, 1);
+    const punch = new Spell(51, 1, 1, 2, "Punch", true, false, 55);
+    const sting = new Spell(60, 4, 12, 2, "Sting", false, false, 15, 1, 1);
 
     // define summoned unit
     const summonedFrame = 3;
@@ -106,14 +107,15 @@ export class BattleScene extends Phaser.Scene {
       3,
       "Herbal medicine",
       true,
+      false,
       0,
       0,
       0,
       20,
       1,
       1,
-      "monoTarget",
-      0,
+      "star",
+      1,
       null,
       summoned
     );
@@ -728,6 +730,7 @@ export class BattleScene extends Phaser.Scene {
       }
     });
   }
+
   hideAoeZone() {
     this.spellAoeOverlay.forEach((overlay) => {
       overlay.setVisible(false);
@@ -771,7 +774,21 @@ export class BattleScene extends Phaser.Scene {
           }
         }
         break;
-
+      case "line":
+        // this aoe should only be used with spells cast in a straight line
+        for (let i = 0; i < spell.aoeSize; i++) {
+          const overlay = this.add.rectangle(
+            0,
+            0,
+            this.tileWidth,
+            this.tileHeight,
+            highlightColor,
+            alpha
+          );
+          overlay.setVisible(false);
+          this.spellAoeOverlay.push(overlay);
+        }
+        break;
       default:
         break;
     }
@@ -788,7 +805,7 @@ export class BattleScene extends Phaser.Scene {
         break;
       case "star":
         // for the 'star' aoe, we iterate over the tiles within the 'aoeSize' distance from target
-        const target = this.background!.worldToTileXY(x, y);
+        let target = this.background!.worldToTileXY(x, y);
         let k = 0;
         for (
           let i = target.x - spell.aoeSize;
@@ -810,6 +827,31 @@ export class BattleScene extends Phaser.Scene {
               k++;
             }
           }
+        }
+        break;
+      case "line":
+        // this aoe should only be used with spells cast in a straight line
+        target = this.background!.worldToTileXY(x, y);
+        // true if target is aligned horizontally with player (else we assume it's aligned vertically)
+        let isAlignedX = target.y == this.player.indY;
+        const baseIndex = isAlignedX ? target.x : target.y;
+        const isForward = isAlignedX
+          ? Math.sign(target.x - this.player.indX)
+          : Math.sign(target.y - this.player.indY);
+        for (let i = 0; i < spell.aoeSize; i++) {
+          const overlay = this.spellAoeOverlay[i];
+          let pos = isAlignedX
+            ? this.background!.tileToWorldXY(
+                baseIndex + i * isForward,
+                target.y
+              )
+            : this.background!.tileToWorldXY(
+                target.x,
+                baseIndex + i * isForward
+              );
+          overlay.x = pos.x + 0.5 * this.tileWidth;
+          overlay.y = pos.y + 0.5 * this.tileWidth;
+          overlay.setVisible(true);
         }
         break;
 
@@ -842,6 +884,30 @@ export class BattleScene extends Phaser.Scene {
                 units.push(this.getUnitAtPos(i, j));
               }
             }
+          }
+        }
+        break;
+      case "line":
+        // this aoe should only be used with spells cast in a straight line
+        let target = { x: indX, y: indY };
+        // true if target is aligned horizontally with player (else we assume it's aligned vertically)
+        let isAlignedX = target.y == this.player.indY;
+        const baseIndex = isAlignedX ? target.x : target.y;
+        const isForward = isAlignedX
+          ? Math.sign(target.x - this.player.indX)
+          : Math.sign(target.y - this.player.indY);
+        for (let i = 0; i < spell.aoeSize; i++) {
+          let pos = isAlignedX
+            ? {
+                x: baseIndex + i * isForward,
+                y: target.y,
+              }
+            : {
+                x: target.x,
+                y: baseIndex + i * isForward,
+              };
+          if (this.isUnitThere(pos.x, pos.y)) {
+            units.push(this.getUnitAtPos(pos.x, pos.y));
           }
         }
         break;
@@ -879,7 +945,17 @@ export class BattleScene extends Phaser.Scene {
       // if spell doesn't need line of sight we just need to ensure tile isn't an obstacle
       if (!spell.lineOfSight) return true;
       // else we use the line of sight algorithm
-      else return isVisible(startVec, targetVec, this.obstacles!, this);
+      else {
+        // case of spells being cast in straight line only
+        let isInStraightLine = true;
+        if (spell.straightLine) {
+          isInStraightLine = unit.indX === tile.x || unit.indY === tile.y;
+        }
+        return (
+          isInStraightLine &&
+          isVisible(startVec, targetVec, this.obstacles!, this)
+        );
+      }
     }
     return false;
   }

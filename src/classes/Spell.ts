@@ -9,6 +9,8 @@ export class Spell {
   name: string;
   // true if spell needs a line of sight to be cast
   lineOfSight: boolean;
+  // true if spell is cast in a straight line only
+  straightLine: boolean;
   damage: number;
   malusPM: number;
   malusPA: number;
@@ -29,6 +31,7 @@ export class Spell {
     cost: number,
     name: string,
     lineOfSight: boolean,
+    straightLine: boolean,
     damage: number,
     malusPM: number = 0,
     malusPA: number = 0,
@@ -46,6 +49,7 @@ export class Spell {
     this.cost = cost;
     this.name = name;
     this.lineOfSight = lineOfSight;
+    this.straightLine = straightLine;
     this.damage = damage;
     this.malusPM = malusPM;
     this.malusPA = malusPA;
