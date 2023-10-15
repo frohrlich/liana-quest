@@ -139,6 +139,13 @@ export class UISpell extends UIElement {
       text += addText;
       height += lineHeight;
     }
+    if (this.spell.moveTargetBy) {
+      const pushOrPull = this.spell.moveTargetBy > 0 ? "push" : "pull";
+      addText = `\n${pushOrPull} (${Math.abs(this.spell.moveTargetBy)})`;
+      maxLength = Math.max(maxLength, addText.length);
+      text += addText;
+      height += lineHeight;
+    }
 
     let width = maxLength * (this.fontSize * 0.3);
 

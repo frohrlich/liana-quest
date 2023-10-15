@@ -90,7 +90,7 @@ export class BattleScene extends Phaser.Scene {
       3,
       new EffectOverTime("Poison", 44, 2, 10, 1, 1, 0, 0, 0),
       null,
-      -4
+      4
     );
     const punch = new Spell(51, 1, 1, 2, "Punch", true, false, 55);
     const sting = new Spell(60, 4, 12, 2, "Sting", false, false, 15, 1, 1);
