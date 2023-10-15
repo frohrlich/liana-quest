@@ -80,7 +80,7 @@ export class BattleScene extends Phaser.Scene {
       "Deadly Javelin",
       true,
       true,
-      25,
+      0,
       0,
       2,
       0,
@@ -88,7 +88,9 @@ export class BattleScene extends Phaser.Scene {
       0,
       "line",
       3,
-      new EffectOverTime("Poison", 44, 2, 10, 1, 1, 0, 0, 0)
+      new EffectOverTime("Poison", 44, 2, 10, 1, 1, 0, 0, 0),
+      null,
+      -4
     );
     const punch = new Spell(51, 1, 1, 2, "Punch", true, false, 55);
     const sting = new Spell(60, 4, 12, 2, "Sting", false, false, 15, 1, 1);
@@ -122,7 +124,7 @@ export class BattleScene extends Phaser.Scene {
 
     // add units
     // starting position (grid index)
-    let playerStartX = 5;
+    let playerStartX = 17;
     let playerStartY = 6;
     let playerFrame = 6;
     this.player = this.addUnit(
@@ -144,8 +146,8 @@ export class BattleScene extends Phaser.Scene {
     this.createAnimations(playerFrame, 5, "Amazon");
 
     // ally 1
-    playerStartX = 12;
-    playerStartY = 0;
+    playerStartX = 18;
+    playerStartY = 7;
     playerFrame = 0;
     this.addUnit(
       "player",
@@ -867,7 +869,7 @@ export class BattleScene extends Phaser.Scene {
     this.spellAoeOverlay = [];
   }
 
-  getUnitsInsideAoe(indX: number, indY: number, spell: Spell) {
+  getUnitsInsideAoe(caster: Unit, indX: number, indY: number, spell: Spell) {
     let units = [];
     switch (spell.aoe) {
       case "monoTarget":
@@ -890,12 +892,12 @@ export class BattleScene extends Phaser.Scene {
       case "line":
         // this aoe should only be used with spells cast in a straight line
         let target = { x: indX, y: indY };
-        // true if target is aligned horizontally with player (else we assume it's aligned vertically)
-        let isAlignedX = target.y == this.player.indY;
+        // true if target is aligned horizontally with caster (else we assume it's aligned vertically)
+        let isAlignedX = target.y == caster.indY;
         const baseIndex = isAlignedX ? target.x : target.y;
         const isForward = isAlignedX
-          ? Math.sign(target.x - this.player.indX)
-          : Math.sign(target.y - this.player.indY);
+          ? Math.sign(target.x - caster.indX)
+          : Math.sign(target.y - caster.indY);
         for (let i = 0; i < spell.aoeSize; i++) {
           let pos = isAlignedX
             ? {

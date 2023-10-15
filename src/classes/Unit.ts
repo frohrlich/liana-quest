@@ -272,12 +272,26 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.startAttackAnim(this.direction);
     this.pa -= spell.cost;
     const affectedUnits = this.myScene.getUnitsInsideAoe(
+      this,
       targetVec.x,
       targetVec.y,
       spell
     );
     affectedUnits.forEach((unit) => {
       unit.undergoSpell(spell);
+      if (spell.moveTargetBy) {
+        // check alignment for spells that push or pull
+        const isAlignedX = targetVec.y == this.indY;
+        const isForward = isAlignedX
+          ? Math.sign(targetVec.x - this.indX)
+          : Math.sign(targetVec.y - this.indY);
+        unit.moveBy(spell.moveTargetBy, isAlignedX, isForward);
+        // refresh battle scene
+        this.myScene.refreshAccessibleTiles();
+        if (this.myScene.spellVisible) {
+          this.myScene.displaySpellRange(this.myScene.currentSpell);
+        }
+      }
     });
     // if spell summons a unit AND targeted tile is free, summon the unit
     if (
@@ -325,6 +339,80 @@ export class Unit extends Phaser.GameObjects.Sprite {
     );
     this.refreshUI();
     this.checkDead();
+  }
+
+  // move function without animations used for push/pull spells
+  moveBy(value: number, isAlignedX: boolean, isForward: number) {
+    this.myScene.removeFromObstacleLayer(this);
+    if (isAlignedX) {
+      let deltaX = value * isForward;
+      let direction = Math.sign(deltaX);
+      // stop when there is an obstacle or edge of map
+      for (let i = 0; Math.abs(i) < Math.abs(deltaX); i += direction) {
+        let nextTileX = this.indX + i + direction;
+        if (
+          this.myScene.obstacles.getTileAt(nextTileX, this.indY) ||
+          !this.myScene.background.getTileAt(nextTileX, this.indY) ||
+          nextTileX < 0
+        ) {
+          deltaX = i;
+          break;
+        }
+      }
+      if (deltaX) {
+        this.myScene.tweens.add({
+          targets: this,
+          x: this.tilePosToPixelsX(deltaX),
+          ease: "Linear",
+          onUpdate: () => {
+            this.moveHealthBar();
+            this.moveTeamIdentifier();
+            if (this.effectIcon) this.moveEffectIcon();
+          },
+          duration: 66 * Math.abs(deltaX),
+          repeat: 0,
+          yoyo: false,
+        });
+        this.indX += deltaX;
+      }
+    } else {
+      let deltaY = value * isForward;
+      let direction = Math.sign(deltaY);
+      // stop when there is an obstacle or edge of map
+      for (let i = 0; Math.abs(i) < Math.abs(deltaY); i += direction) {
+        let nextTileY = this.indY + i + direction;
+        if (
+          this.myScene.obstacles.getTileAt(this.indX, nextTileY) ||
+          !this.myScene.background.getTileAt(this.indX, nextTileY) ||
+          nextTileY < 0
+        ) {
+          deltaY = i;
+          break;
+        }
+      }
+      if (deltaY) {
+        this.myScene.tweens.add({
+          targets: this,
+          y: this.tilePosToPixelsY(deltaY),
+          ease: "Linear",
+          onUpdate: () => {
+            this.moveHealthBar();
+            this.moveTeamIdentifier();
+            if (this.effectIcon) this.moveEffectIcon();
+          },
+          duration: 66 * Math.abs(deltaY),
+          repeat: 0,
+          yoyo: false,
+        });
+        this.indY += deltaY;
+      }
+    }
+    this.moveTeamIdentifier();
+    this.moveHealthBar();
+    this.moveEffectIcon();
+    this.myScene.addToObstacleLayer(
+      new Phaser.Math.Vector2(this.indX, this.indY)
+    );
   }
 
   undergoEffectOverTime() {

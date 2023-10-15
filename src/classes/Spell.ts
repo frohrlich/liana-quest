@@ -23,6 +23,8 @@ export class Spell {
   effectOverTime: EffectOverTime;
   // for summon spells, defines summoned unit
   summons: Unit;
+  // push target by x if positive, pull if negative (only works for spell in straight line)
+  moveTargetBy: number;
 
   constructor(
     frame: number,
@@ -41,7 +43,8 @@ export class Spell {
     aoe: string = "monoTarget",
     aoeSize: number = 0,
     effectOverTime: EffectOverTime = null,
-    summons: Unit = null
+    summons: Unit = null,
+    moveTargetBy = 0
   ) {
     this.frame = frame;
     this.minRange = minRange;
@@ -60,5 +63,6 @@ export class Spell {
     this.aoeSize = aoeSize;
     this.effectOverTime = effectOverTime;
     this.summons = summons;
+    this.moveTargetBy = moveTargetBy;
   }
 }
