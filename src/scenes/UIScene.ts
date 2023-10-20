@@ -77,7 +77,7 @@ export class UIScene extends Phaser.Scene {
           this.battleScene.isPlayerTurn &&
           !this.battleScene.player.isMoving
         ) {
-          this.battleScene.endTurn();
+          this.battleScene.player.endTurn();
         }
       });
   }

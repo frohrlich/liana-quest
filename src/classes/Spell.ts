@@ -20,6 +20,8 @@ export class Spell {
   // area of effect type (mono target by default)
   aoe: string;
   aoeSize: number;
+  maxCooldown: number;
+  cooldown: number;
   effectOverTime: EffectOverTime;
   // for summon spells, defines summoned unit
   summons: Unit;
@@ -42,6 +44,7 @@ export class Spell {
     bonusPM: number = 0,
     aoe: string = "monoTarget",
     aoeSize: number = 0,
+    maxCooldown: number = 0,
     effectOverTime: EffectOverTime = null,
     summons: Unit = null,
     moveTargetBy = 0
@@ -61,6 +64,8 @@ export class Spell {
     this.bonusPM = bonusPM;
     this.aoe = aoe;
     this.aoeSize = aoeSize;
+    this.maxCooldown = maxCooldown;
+    this.cooldown = 0; // at battle start cooldowns are set to zero
     this.effectOverTime = effectOverTime;
     this.summons = summons;
     this.moveTargetBy = moveTargetBy;

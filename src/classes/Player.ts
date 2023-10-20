@@ -26,10 +26,20 @@ export class Player extends Unit {
     this.myScene.highlightAccessibleTiles(this.myScene.accessibleTiles);
   }
 
+  override endTurn(): void {
+    const scene = this.myScene;
+    scene.clearAccessibleTiles();
+    scene.clearOverlay();
+    scene.clearAoeZone();
+    scene.clearPointerEvents();
+    scene.spellVisible = false;
+    super.endTurn();
+  }
+
   override castSpell(spell: Spell, targetVec: Phaser.Math.Vector2): void {
     super.castSpell(spell, targetVec);
-    // if not enough pa to launch the spell again : quit spell mode
-    if (this.pa < spell.cost) {
+    // if spell not available anymore : quit spell mode
+    if (this.pa < spell.cost || spell.cooldown > 0) {
       this.myScene.clearSpellRange();
     }
   }

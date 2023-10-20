@@ -24,11 +24,12 @@ export class Npc extends Unit {
     super.playTurn();
     if (!this.isDead()) {
       // first try to launch spell if there is a target available
-      if (this.pa >= this.spells[0].cost) {
-        let target = this.locateTarget(this.spells[0]);
+      const spell = this.spells[0];
+      if (this.pa >= spell.cost && spell.cooldown <= 0) {
+        let target = this.locateTarget(spell);
         if (target) {
           let targetVec = new Phaser.Math.Vector2(target.x, target.y);
-          this.castSpell(this.spells[0], targetVec);
+          this.castSpell(spell, targetVec);
           // wait till attack animation is finished
           // also verify npc didn't kill itself during spell cast
           if (!this.isDead()) {
@@ -86,10 +87,8 @@ export class Npc extends Unit {
     this.endTurn();
   }
 
-  endTurn() {
-    this.timelineSlot.tint = 0xffffff;
-    this.refillPoints();
-    this.myScene.endTurn();
+  override endTurn() {
+    super.endTurn();
   }
 
   // locates an accessible target for a given spell

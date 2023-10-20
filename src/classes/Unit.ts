@@ -258,6 +258,18 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   nextAction() {}
 
+  endTurn() {
+    this.decrementSpellCooldowns();
+    this.refillPoints();
+    this.myScene.endTurn();
+  }
+
+  private decrementSpellCooldowns() {
+    this.spells.forEach((spell) => {
+      spell.cooldown--;
+    });
+  }
+
   isDead(): boolean {
     return this.hp <= 0;
   }
@@ -268,9 +280,10 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   // cast a spell at specified position
   castSpell(spell: Spell, targetVec: Phaser.Math.Vector2) {
+    this.pa -= spell.cost;
+    spell.cooldown = spell.maxCooldown;
     this.lookAtTile(targetVec);
     this.startAttackAnim(this.direction);
-    this.pa -= spell.cost;
     const affectedUnits = this.myScene.getUnitsInsideAoe(
       this,
       targetVec.x,
@@ -315,6 +328,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
       this.myScene.addSummonedUnitToTimeline(this, summonedUnit);
       this.summonedUnits.push(summonedUnit);
     }
+    this.refreshUI();
   }
 
   // Receive spell effects
@@ -398,6 +412,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
           onUpdate: () => {
             this.moveHealthBar();
             this.moveTeamIdentifier();
+            this.depth = this.y;
             if (this.effectIcon) this.moveEffectIcon();
           },
           duration: 66 * Math.abs(deltaY),
@@ -708,7 +723,12 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   // add spells to a unit
   addSpells(...spells: Spell[]) {
-    this.spells = this.spells.concat(spells);
+    const copySpells = [];
+    // each unit must have its own copy of each spell to manage cooldowns separately
+    spells.forEach((spell) => {
+      copySpells.push({ ...spell });
+    });
+    this.spells = this.spells.concat(copySpells);
   }
 
   // links unit to its timeline slot on the UI

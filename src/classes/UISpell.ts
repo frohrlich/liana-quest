@@ -12,6 +12,7 @@ export class UISpell extends UIElement {
   infoRectangle: Phaser.GameObjects.Rectangle;
   infoText: Phaser.GameObjects.BitmapText;
   outlineRectangle: Phaser.GameObjects.Rectangle;
+  spellCooldown: Phaser.GameObjects.BitmapText;
 
   constructor(scene: Phaser.Scene, tab: number, posY: number, spell: Spell) {
     super(scene, tab, posY);
@@ -19,6 +20,7 @@ export class UISpell extends UIElement {
     this.battleScene = this.myScene.battleScene;
     this.addIcon();
     this.addInfoText();
+    this.createSpellCooldown();
   }
 
   private showInfo(show: boolean) {
@@ -70,7 +72,7 @@ export class UISpell extends UIElement {
 
   private toggleSpellMode() {
     if (this.battleScene.isPlayerTurn && !this.battleScene.player.isMoving) {
-      if (this.battleScene.player.pa >= this.spell.cost) {
+      if (!this.isInaccessible()) {
         this.myScene.clearSpellsHighlight();
         this.isHighlighted = true;
         this.refresh();
@@ -91,6 +93,12 @@ export class UISpell extends UIElement {
     // addText = `\n${this.spell.minRange}-${this.spell.maxRange} range`;
     // maxLength = Math.max(maxLength, addText.length);
     // text += addText;
+    // if (this.spell.maxCooldown > 0) {
+    //   addText = `\ncooldown: ${this.spell.maxCooldown}`;
+    //   maxLength = Math.max(maxLength, addText.length);
+    //   text += addText;
+    //   height += lineHeight;
+    // }
     if (this.spell.damage > 0) {
       addText = `\n-${this.spell.damage} HP`;
       maxLength = Math.max(maxLength, addText.length);
@@ -198,10 +206,14 @@ export class UISpell extends UIElement {
 
   // true if unit cannot currently launch this spell
   isInaccessible() {
-    return this.battleScene.player.pa < this.spell.cost;
+    return (
+      this.battleScene.player.pa < this.spell.cost || this.spell.cooldown > 0
+    );
   }
 
   override refresh(): void {
+    this.refreshSpellCooldown();
+
     if (this.isHighlighted) {
       this.icon.visible = false;
       this.highlightIcon.visible = true;
@@ -209,6 +221,33 @@ export class UISpell extends UIElement {
       this.icon.visible = true;
       this.highlightIcon.visible = false;
     }
+
     this.hideIfInaccessible();
+
+    if (this.spell.cooldown > 0) {
+      this.showSpellCooldown(true);
+    } else {
+      this.showSpellCooldown(false);
+    }
+  }
+
+  showSpellCooldown(isVisible: boolean) {
+    this.spellCooldown.visible = isVisible;
+  }
+
+  createSpellCooldown() {
+    this.spellCooldown = this.myScene.add.bitmapText(
+      this.icon.x,
+      this.icon.y + 1,
+      "rainyhearts",
+      this.spell.cooldown.toString(),
+      this.fontSize * 2
+    );
+    this.spellCooldown.setOrigin(0.5);
+    this.spellCooldown.visible = false;
+  }
+
+  refreshSpellCooldown() {
+    this.spellCooldown.text = this.spell.cooldown.toString();
   }
 }

@@ -88,12 +88,30 @@ export class BattleScene extends Phaser.Scene {
       0,
       "line",
       3,
+      0,
       new EffectOverTime("Poison", 44, 2, 10, 1, 1, 0, 0, 0),
       null,
       4
     );
     const punch = new Spell(51, 1, 1, 2, "Punch", true, false, 55);
-    const sting = new Spell(60, 4, 12, 2, "Sting", false, false, 15, 1, 1);
+    const sting = new Spell(
+      60,
+      4,
+      12,
+      2,
+      "Sting",
+      false,
+      false,
+      15,
+      1,
+      1,
+      0,
+      0,
+      0,
+      "monoTarget",
+      0,
+      3
+    );
 
     // define summoned unit
     const summonedFrame = 3;
@@ -118,6 +136,7 @@ export class BattleScene extends Phaser.Scene {
       1,
       "star",
       1,
+      0,
       null,
       summoned
     );
@@ -315,42 +334,42 @@ export class BattleScene extends Phaser.Scene {
     this.uiScene = this.scene.get("UIScene") as UIScene;
   }
 
-  // end unit turn (works for player and npc)
   endTurn = () => {
+    this.uiScene.endTurn();
     // clear previous player highlight on the timeline
     let prevPlayer = this.timeline[this.turnIndex];
     if (prevPlayer) {
       this.uiScene.uiTimelineBackgrounds[this.turnIndex].fillColor =
         prevPlayer.isAlly ? 0x0000ff : 0xff0000;
     }
+
     if (this.isPlayerTurn) {
-      this.clearAccessibleTiles();
-      this.clearOverlay();
-      this.clearAoeZone();
-      this.clearPointerEvents();
-      this.player.refillPoints();
-      this.spellVisible = false;
-      this.uiScene.endTurn();
+      this.isPlayerTurn = false;
     }
-    this.isPlayerTurn = false;
 
     this.turnIndex++;
     if (this.turnIndex >= this.timeline.length) {
       this.turnIndex = 0;
     }
-    let currentPlayer = this.timeline[this.turnIndex];
 
-    // highlight current unit on the timeline
-    this.uiScene.uiTimelineBackgrounds[this.turnIndex].fillColor = 0xffffff;
-
+    const currentPlayer = this.timeline[this.turnIndex];
+    this.highlightCurrentUnitInTimeline();
     currentPlayer.playTurn();
 
     if (currentPlayer instanceof Player) {
-      this.isPlayerTurn = true;
-      this.refreshAccessibleTiles();
-      this.highlightAccessibleTiles(this.accessibleTiles);
+      this.startPlayerTurn();
     }
   };
+
+  private startPlayerTurn() {
+    this.isPlayerTurn = true;
+    this.refreshAccessibleTiles();
+    this.highlightAccessibleTiles(this.accessibleTiles);
+  }
+
+  private highlightCurrentUnitInTimeline() {
+    this.uiScene.uiTimelineBackgrounds[this.turnIndex].fillColor = 0xffffff;
+  }
 
   // checks if the unit can access this tile with their remaining PMs
   // if there is a path, return it
@@ -1015,7 +1034,7 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  private clearOverlay() {
+  clearOverlay() {
     this.overlays.forEach((overlay) => {
       overlay.destroy(true);
     });
