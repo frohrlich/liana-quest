@@ -131,26 +131,26 @@ export class Unit extends Phaser.GameObjects.Sprite {
     // left
     if (this.indX - x == 1) {
       this.direction = "left";
-      this.move(x, this.direction);
+      this.move(this.direction);
       this.indX--;
       this.pm--;
     }
     // right
     else if (this.indX - x == -1) {
       this.direction = "right";
-      this.move(x, this.direction);
+      this.move(this.direction);
       this.indX++;
       this.pm--;
       // down
     } else if (this.indY - y == -1) {
       this.direction = "down";
-      this.move(y, this.direction);
+      this.move(this.direction);
       this.indY++;
       this.pm--;
       // up
     } else if (this.indY - y == 1) {
       this.direction = "up";
-      this.move(y, this.direction);
+      this.move(this.direction);
       this.indY--;
       this.pm--;
     }
@@ -162,7 +162,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   // actual moving of the player
   // via tweens
-  move(tilePos: number, direction: string) {
+  move(direction: string) {
     this.isMoving = true;
     if (direction == "left" || direction == "right") {
       let deltaX = direction == "left" ? -1 : 1;
@@ -219,11 +219,11 @@ export class Unit extends Phaser.GameObjects.Sprite {
   // and their animations too
   stopMovement = () => {
     this.depth = this.y;
-    this.isMoving = false;
     this.anims.stop();
     this.changeDirection(this.direction);
     this.direction = "";
     this.moveChain.tweens = [];
+    this.isMoving = false;
     this.refreshUI();
     this.nextAction();
   };

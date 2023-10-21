@@ -17,7 +17,7 @@ export class BootScene extends Phaser.Scene {
     this.load.tilemapTiledJSON("map", "assets/map/map.json");
     this.load.tilemapTiledJSON("battlemap", "assets/map/battleMap.json");
 
-    // our characters
+    // characters
     this.load.spritesheet("player", "assets/RPG_assets.png", {
       frameWidth: 16,
       frameHeight: 16,
@@ -35,7 +35,8 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.scene.start("BattleScene");
+    // this.scene.start("BattleScene");
+    this.scene.start("WorldScene");
   }
 
   override update(time: number): void {}

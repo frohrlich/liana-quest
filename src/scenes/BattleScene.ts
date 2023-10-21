@@ -265,7 +265,7 @@ export class BattleScene extends Phaser.Scene {
     overPlayer?.setAlpha(0.5);
 
     // camera settings
-    let zoom = 2;
+    const zoom = 2;
     this.cameras.main.setZoom(zoom);
     this.cameras.main.setBounds(
       0,
