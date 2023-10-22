@@ -1,15 +1,19 @@
 import Phaser from "phaser";
 import findPath from "../utils/findPath";
 import { WorldUnit } from "../classes/WorldUnit";
+import { WorldNpc } from "../classes/WorldNpc";
 
 export class WorldScene extends Phaser.Scene {
   player!: WorldUnit;
   spawns!: Phaser.Physics.Arcade.Group;
   speed: number = 80;
+  unitScale = 1.5;
 
   background: Phaser.Tilemaps.TilemapLayer;
   tileWidth: number;
   tileHeight: number;
+  map: Phaser.Tilemaps.Tilemap;
+  obstacles: Phaser.Tilemaps.TilemapLayer;
 
   constructor() {
     super({
@@ -22,61 +26,79 @@ export class WorldScene extends Phaser.Scene {
   preload(): void {}
 
   create(): void {
-    const map = this.make.tilemap({ key: "map" });
-    this.tileWidth = map.tileWidth;
-    this.tileHeight = map.tileHeight;
+    this.map = this.make.tilemap({ key: "map" });
+    this.tileWidth = this.map.tileWidth;
+    this.tileHeight = this.map.tileHeight;
 
     // tiles creation
-    const tiles = map.addTilesetImage("forest_tilemap", "tiles");
-    this.background = map.createLayer("calque_background", tiles!, 0, 0);
-    const obstacles = map.createLayer("calque_obstacles", tiles!, 0, 0);
+    const tiles = this.map.addTilesetImage("forest_tilemap", "tiles");
+    this.background = this.map.createLayer("calque_background", tiles!, 0, 0);
+    this.obstacles = this.map.createLayer("calque_obstacles", tiles!, 0, 0);
     const startIndX = 3;
     const startIndY = 6;
     const frame = 6;
     const framerate = 7;
-    this.player = new WorldUnit(this, startIndX, startIndY, "player", frame);
+    this.player = new WorldUnit(
+      this,
+      startIndX,
+      startIndY,
+      "player",
+      frame,
+      "Amazon"
+    );
     this.physics.add.existing(this.player);
     this.add.existing(this.player);
+    this.player.scale = this.unitScale;
     this.createAnimations(frame, framerate, this.player.type);
     // layer for tall items appearing on top of the player like trees
-    map.createLayer("calque_devant_joueur", tiles!, 0, 0).setDepth(9999);
+    this.map.createLayer("calque_devant_joueur", tiles!, 0, 0).setDepth(9999);
     // enable collisions for certain tiles
-    obstacles!.setCollisionByProperty({ collide: true });
-
-    // player and boundaries creation
-    // size of the hitbox (only the feet)
-    this.player.setSize(
-      this.player.displayWidth * 0.8,
-      this.player.displayHeight / 3
-    );
-    this.player.setOffset(
-      this.player.displayWidth * 0.1,
-      this.player.displayHeight * (2 / 3)
-    );
-    this.player.scale = 1.5;
-    this.physics.world.bounds.width = map.widthInPixels;
-    this.physics.world.bounds.height = map.heightInPixels;
-    this.player.setCollideWorldBounds(true);
+    this.obstacles.setCollisionByProperty({ collide: true });
 
     // make the camera follow the player
     const zoom = 2;
     this.cameras.main.setZoom(zoom);
 
-    this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+    this.cameras.main.setBounds(
+      0,
+      0,
+      this.map.widthInPixels,
+      this.map.heightInPixels
+    );
     this.cameras.main.startFollow(this.player);
     this.cameras.main.roundPixels = true;
 
-    this.physics.add.collider(this.player, obstacles!);
+    this.addEnemies();
 
+    this.sys.events.on("wake", this.wake, this);
+
+    this.enableDeplacementOnClick(this.background, this.obstacles);
+  }
+
+  private addEnemies() {
     this.spawns = this.physics.add.group({
-      classType: Phaser.GameObjects.Zone,
+      classType: Phaser.GameObjects.Sprite,
     });
+
+    // we place enemies on random location of the map (except obstacles)
+    const enemyFrame = 30;
     for (let i = 0; i < 30; i++) {
-      let x = Phaser.Math.RND.between(0, this.physics.world.bounds.width);
-      let y = Phaser.Math.RND.between(0, this.physics.world.bounds.height);
-      let myZone = new Phaser.GameObjects.Zone(this, x, y, 20, 20);
-      // parameters are x, y, width, height
-      this.spawns.add(myZone);
+      let indX: number, indY: number;
+      do {
+        indX = Phaser.Math.RND.between(0, this.map.width);
+        indY = Phaser.Math.RND.between(0, this.map.height - 1);
+      } while (this.obstacles.getTileAt(indX, indY));
+      const myEnemy = new WorldNpc(
+        this,
+        indX,
+        indY,
+        "player",
+        enemyFrame,
+        "Snowman"
+      );
+      this.spawns.add(myEnemy, true);
+      myEnemy.setHitboxScale(1.5);
+      myEnemy.scale = this.unitScale;
     }
     this.physics.add.overlap(
       this.player,
@@ -85,18 +107,15 @@ export class WorldScene extends Phaser.Scene {
       undefined,
       this
     );
-
-    this.sys.events.on("wake", this.wake, this);
-
-    this.enableDeplacementOnClick(this.background, obstacles);
+    this.createAnimations(enemyFrame, 7, "Snowman");
   }
 
   override update(time: number, delta: number): void {}
 
   onMeetEnemy(player: any, zone: any) {
     // we move the zone to some other location
-    zone.x = Phaser.Math.RND.between(0, this.physics.world.bounds.width);
-    zone.y = Phaser.Math.RND.between(0, this.physics.world.bounds.height);
+    zone.x = Phaser.Math.RND.between(0, this.map.width) * this.tileWidth;
+    zone.y = Phaser.Math.RND.between(0, this.map.height) * this.tileHeight;
 
     // shake the world
     this.cameras.main.shake(300);

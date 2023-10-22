@@ -20,7 +20,8 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     indX: number,
     indY: number,
     texture: string,
-    frame: number
+    frame: number,
+    name: string
   ) {
     super(scene, 0, 0, texture, frame);
     this.frameNumber = frame;
@@ -29,7 +30,8 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     this.indY = indY;
     this.x = this.tilePosToPixelsX();
     this.y = this.tilePosToPixelsY();
-    this.type = "Amazon";
+    this.type = name;
+
     this.moveChain.targets = this;
     this.moveChain.onStart = () => {
       // depth is same as y
@@ -39,6 +41,13 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     };
     this.moveChain.onComplete = this.stopMovement;
     this.moveChain.tweens = [];
+  }
+
+  setHitboxScale(hitBoxScale: number = 1) {
+    this.setSize(
+      this.displayWidth * hitBoxScale,
+      this.displayHeight * hitBoxScale
+    );
   }
 
   // move along a path
