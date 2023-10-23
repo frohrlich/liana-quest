@@ -2,18 +2,29 @@ import Phaser from "phaser";
 import findPath from "../utils/findPath";
 import { WorldUnit } from "../classes/WorldUnit";
 import { WorldNpc } from "../classes/WorldNpc";
+import { amazon, snowman, unitsAvailable } from "../data/UnitData";
+
+interface UnitPosition {
+  indX: number;
+  indY: number;
+  type: string;
+  id: number;
+}
 
 export class WorldScene extends Phaser.Scene {
   player!: WorldUnit;
   spawns!: Phaser.Physics.Arcade.Group;
-  speed: number = 80;
   unitScale = 1.5;
+  animFramerate = 7;
 
   background: Phaser.Tilemaps.TilemapLayer;
   tileWidth: number;
   tileHeight: number;
   map: Phaser.Tilemaps.Tilemap;
   obstacles: Phaser.Tilemaps.TilemapLayer;
+  tileset: Phaser.Tilemaps.Tileset;
+  enemyPositions: UnitPosition[] = [];
+  enemyId: number;
 
   constructor() {
     super({
@@ -25,37 +36,19 @@ export class WorldScene extends Phaser.Scene {
 
   preload(): void {}
 
-  create(): void {
-    this.map = this.make.tilemap({ key: "map" });
-    this.tileWidth = this.map.tileWidth;
-    this.tileHeight = this.map.tileHeight;
+  create(data: any): void {
+    // enemy id sent back from the victorious battle
+    this.enemyId = data.enemyId;
 
-    // tiles creation
-    const tiles = this.map.addTilesetImage("forest_tilemap", "tiles");
-    this.background = this.map.createLayer("calque_background", tiles!, 0, 0);
-    this.obstacles = this.map.createLayer("calque_obstacles", tiles!, 0, 0);
-    const startIndX = 3;
-    const startIndY = 6;
-    const frame = 6;
-    const framerate = 7;
-    this.player = new WorldUnit(
-      this,
-      startIndX,
-      startIndY,
-      "player",
-      frame,
-      "Amazon"
-    );
-    this.physics.add.existing(this.player);
-    this.add.existing(this.player);
-    this.player.scale = this.unitScale;
-    this.createAnimations(frame, framerate, this.player.type);
-    // layer for tall items appearing on top of the player like trees
-    this.map.createLayer("calque_devant_joueur", tiles!, 0, 0).setDepth(9999);
-    // enable collisions for certain tiles
-    this.obstacles.setCollisionByProperty({ collide: true });
+    this.createTilemap();
+    this.addPlayer();
+    this.setupCamera();
+    this.addEnemies(30);
 
-    // make the camera follow the player
+    this.enableDeplacementOnClick(this.background, this.obstacles);
+  }
+
+  private setupCamera() {
     const zoom = 2;
     this.cameras.main.setZoom(zoom);
 
@@ -67,34 +60,125 @@ export class WorldScene extends Phaser.Scene {
     );
     this.cameras.main.startFollow(this.player);
     this.cameras.main.roundPixels = true;
-
-    this.addEnemies();
-
-    this.sys.events.on("wake", this.wake, this);
-
-    this.enableDeplacementOnClick(this.background, this.obstacles);
   }
 
-  private addEnemies() {
+  private addPlayer() {
+    const startIndX = 3;
+    const startIndY = 6;
+    const playerPosX = this.player ? this.player.indX : startIndX;
+    const playerPosY = this.player ? this.player.indY : startIndY;
+    const playerData = amazon;
+    this.player = new WorldUnit(
+      this,
+      playerPosX,
+      playerPosY,
+      "player",
+      playerData.frame,
+      playerData.name
+    );
+    this.physics.add.existing(this.player);
+    this.add.existing(this.player);
+    this.player.scale = this.unitScale;
+    if (!this.anims.exists("left" + this.player.type)) {
+      this.createAnimations(
+        playerData.frame,
+        this.animFramerate,
+        this.player.type
+      );
+    }
+  }
+
+  private createTilemap() {
+    this.map = this.make.tilemap({ key: "map" });
+    this.tileWidth = this.map.tileWidth;
+    this.tileHeight = this.map.tileHeight;
+    this.tileset = this.map.addTilesetImage("forest_tilemap", "tiles");
+    this.background = this.map.createLayer(
+      "calque_background",
+      this.tileset!,
+      0,
+      0
+    );
+    this.obstacles = this.map.createLayer(
+      "calque_obstacles",
+      this.tileset!,
+      0,
+      0
+    );
+    // layer for tall items appearing on top of the player like trees
+    this.map
+      .createLayer("calque_devant_joueur", this.tileset!, 0, 0)
+      .setDepth(9999);
+  }
+
+  private addEnemies(enemyNumber: number) {
     this.spawns = this.physics.add.group({
       classType: Phaser.GameObjects.Sprite,
     });
 
+    const create = this.enemyPositions.length === 0;
+
+    // if we just defeated an enemy in battle, delete it
+    if (this.enemyId !== undefined) {
+      const index = this.enemyPositions.findIndex(
+        (enemy) => enemy.id === this.enemyId
+      );
+      if (index !== -1) this.enemyPositions.splice(index, 1);
+    }
+    const currentEnemyNumber = create
+      ? enemyNumber
+      : this.enemyPositions.length;
+
     // we place enemies on random location of the map (except obstacles)
-    const enemyFrame = 30;
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < currentEnemyNumber; i++) {
       let indX: number, indY: number;
-      do {
-        indX = Phaser.Math.RND.between(0, this.map.width);
-        indY = Phaser.Math.RND.between(0, this.map.height - 1);
-      } while (this.obstacles.getTileAt(indX, indY));
+      let id: number;
+      let enemyType: string;
+      // if enemies not already created, create them randomly
+      if (create) {
+        do {
+          indX = Phaser.Math.RND.between(0, this.map.width);
+          indY = Phaser.Math.RND.between(0, this.map.height - 1);
+        } while (this.obstacles.getTileAt(indX, indY));
+        // toss a coin between snowman and dude...
+        enemyType = Phaser.Math.RND.between(0, 1) ? "Snowman" : "Dude";
+
+        // remember the enemy positions to recreate them later
+        id = i;
+        this.enemyPositions.push({
+          indX: indX,
+          indY: indY,
+          type: enemyType,
+          id: id,
+        });
+      } else {
+        const myPosition = this.enemyPositions[i];
+        indX = myPosition.indX;
+        indY = myPosition.indY;
+        enemyType = myPosition.type;
+        id = myPosition.id;
+      }
+
+      const enemyData = unitsAvailable.find(
+        (unitData) => unitData.name === enemyType
+      );
+
+      if (!this.anims.exists("left" + enemyData.name)) {
+        this.createAnimations(
+          enemyData.frame,
+          this.animFramerate,
+          enemyData.name
+        );
+      }
+
       const myEnemy = new WorldNpc(
         this,
+        id,
         indX,
         indY,
         "player",
-        enemyFrame,
-        "Snowman"
+        enemyData.frame,
+        enemyType
       );
       this.spawns.add(myEnemy, true);
       myEnemy.setHitboxScale(1.5);
@@ -107,24 +191,26 @@ export class WorldScene extends Phaser.Scene {
       undefined,
       this
     );
-    this.createAnimations(enemyFrame, 7, "Snowman");
   }
 
   override update(time: number, delta: number): void {}
 
-  onMeetEnemy(player: any, zone: any) {
-    // we move the zone to some other location
-    zone.x = Phaser.Math.RND.between(0, this.map.width) * this.tileWidth;
-    zone.y = Phaser.Math.RND.between(0, this.map.height) * this.tileHeight;
-
+  onMeetEnemy(player: any, enemy: any) {
     // shake the world
     this.cameras.main.shake(300);
 
     // start battle
-    this.scene.switch("BattleScene");
+    this.time.addEvent({
+      delay: 300,
+      callback: () =>
+        this.scene.start("BattleScene", {
+          playerType: player.type,
+          enemyType: enemy.type,
+          enemyId: enemy.id,
+        }),
+      callbackScope: this,
+    });
   }
-
-  wake() {}
 
   enableDeplacementOnClick(
     background: Phaser.Tilemaps.TilemapLayer,
@@ -148,6 +234,11 @@ export class WorldScene extends Phaser.Scene {
         }
       }
     );
+
+    // remember to clean up on Scene shutdown
+    this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.off(Phaser.Input.Events.POINTER_UP);
+    });
   }
 
   // create a set of animations from a framerate and a base sprite
@@ -167,6 +258,15 @@ export class WorldScene extends Phaser.Scene {
       frameRate: framerate,
       repeat: -1,
     });
+    // animation for 'left attack'
+    this.anims.create({
+      key: "leftAttack" + name,
+      frames: this.anims.generateFrameNumbers("player", {
+        frames: [baseSprite + 10, baseSprite + 1],
+      }),
+      frameRate: framerate,
+      repeat: 0,
+    });
     // animation for 'right'
     this.anims.create({
       key: "right" + name,
@@ -180,6 +280,15 @@ export class WorldScene extends Phaser.Scene {
       }),
       frameRate: framerate,
       repeat: -1,
+    });
+    // animation for 'right attack'
+    this.anims.create({
+      key: "rightAttack" + name,
+      frames: this.anims.generateFrameNumbers("player", {
+        frames: [baseSprite + 10, baseSprite + 1],
+      }),
+      frameRate: framerate,
+      repeat: 0,
     });
     // animation for 'up'
     this.anims.create({
@@ -195,6 +304,15 @@ export class WorldScene extends Phaser.Scene {
       frameRate: framerate,
       repeat: -1,
     });
+    // animation for 'up attack'
+    this.anims.create({
+      key: "upAttack" + name,
+      frames: this.anims.generateFrameNumbers("player", {
+        frames: [baseSprite + 11, baseSprite + 2],
+      }),
+      frameRate: framerate,
+      repeat: 0,
+    });
     // animation for 'down'
     this.anims.create({
       key: "down" + name,
@@ -203,6 +321,15 @@ export class WorldScene extends Phaser.Scene {
       }),
       frameRate: framerate,
       repeat: -1,
+    });
+    // animation for 'down attack'
+    this.anims.create({
+      key: "downAttack" + name,
+      frames: this.anims.generateFrameNumbers("player", {
+        frames: [baseSprite + 9, baseSprite],
+      }),
+      frameRate: framerate,
+      repeat: 0,
     });
   };
 }

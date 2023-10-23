@@ -311,19 +311,12 @@ export class Unit extends Phaser.GameObjects.Sprite {
       spell.summons &&
       !this.myScene.obstacles.getTileAt(targetVec.x, targetVec.y)
     ) {
-      const myUnit = spell.summons;
       const summonedUnit = this.myScene.addUnit(
-        myUnit.textureStr,
-        myUnit.frameNumber,
+        spell.summons,
         targetVec.x,
         targetVec.y,
-        myUnit.maxPm,
-        myUnit.maxPa,
-        myUnit.maxHp,
-        myUnit.type,
         true,
-        this.isAlly,
-        ...myUnit.spells
+        this.isAlly
       );
       this.myScene.addSummonedUnitToTimeline(this, summonedUnit);
       this.summonedUnits.push(summonedUnit);
@@ -585,17 +578,24 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.scene.time.delayedCall(
       400,
       () => {
-        this.healthBar.destroy();
-        this.identifier.destroy();
-        this.timelineSlot.destroy();
-        if (this.effectIcon) this.effectIcon.destroy();
         // if it's the player that just died... game over
         if (this.myScene.player === this) this.myScene.gameOver();
-        this.destroy();
+        this.destroyUnit();
+        if (this.myScene.enemies.length === 0) {
+          this.myScene.endBattle();
+        }
       },
       undefined,
       this
     );
+  }
+
+  destroyUnit() {
+    this.healthBar.destroy();
+    this.identifier.destroy();
+    this.timelineSlot.destroy();
+    if (this.effectIcon) this.effectIcon.destroy();
+    this.destroy();
   }
 
   // look at a position (change player direction)

@@ -17,7 +17,7 @@ const config = {
     default: "arcade",
     arcade: {
       gravity: { y: 0 },
-      debug: true,
+      debug: false,
     },
   },
   scene: [BootScene, WorldScene, BattleScene, UIScene, GameOverScene],

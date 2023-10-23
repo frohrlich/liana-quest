@@ -1,3 +1,4 @@
+import { UnitData } from "../data/UnitData";
 import { EffectOverTime } from "./EffectOverTime";
 import { Unit } from "./Unit";
 
@@ -24,7 +25,7 @@ export class Spell {
   cooldown: number;
   effectOverTime: EffectOverTime;
   // for summon spells, defines summoned unit
-  summons: Unit;
+  summons: UnitData;
   // push target by x if positive, pull if negative (only works for spell in straight line)
   moveTargetBy: number;
 
@@ -46,8 +47,8 @@ export class Spell {
     aoeSize: number = 0,
     maxCooldown: number = 0,
     effectOverTime: EffectOverTime = null,
-    summons: Unit = null,
-    moveTargetBy = 0
+    summons: UnitData = null,
+    moveTargetBy: number = 0
   ) {
     this.frame = frame;
     this.minRange = minRange;

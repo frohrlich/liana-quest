@@ -41,6 +41,7 @@ export class Player extends Unit {
     // if spell not available anymore : quit spell mode
     if (this.pa < spell.cost || spell.cooldown > 0) {
       this.myScene.clearSpellRange();
+      this.myScene.highlightAccessibleTiles(this.myScene.accessibleTiles);
     }
   }
 }

@@ -17,7 +17,7 @@ export class UnitStatDisplay extends UIElement {
   }
 
   displayStats() {
-    this.text.text = `${this.unit.type}\nPA: ${this.unit.pa}\nPM: ${this.unit.pm}\nHP : ${this.unit.hp}`;
+    this.text.text = `${this.unit.type}\nPA: ${this.unit.pa}\nPM: ${this.unit.pm}\nHP: ${this.unit.hp}`;
   }
 
   override refresh() {

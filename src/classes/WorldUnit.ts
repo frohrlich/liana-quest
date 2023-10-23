@@ -15,6 +15,9 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   direction: string = "";
   isMoving: boolean = false;
 
+  // time for moving by 1 tile (in ms)
+  moveDuration = 180;
+
   constructor(
     scene: Phaser.Scene,
     indX: number,
@@ -95,7 +98,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   // via tweens
   move(direction: string) {
     this.isMoving = true;
-    const duration = 150;
+    const duration = this.moveDuration;
     if (direction == "left" || direction == "right") {
       let deltaX = direction == "left" ? -1 : 1;
       this.moveChain.tweens.push({

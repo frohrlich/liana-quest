@@ -6,9 +6,11 @@ import findPath from "../utils/findPath";
 export class WorldNpc extends WorldUnit {
   movingDelay = 10000;
   movingSize = 3;
+  id: number;
 
   constructor(
     scene: Phaser.Scene,
+    id: number,
     indX: number,
     indY: number,
     texture: string,
@@ -16,6 +18,7 @@ export class WorldNpc extends WorldUnit {
     name: string
   ) {
     super(scene, indX, indY, texture, frame, name);
+    this.id = id;
     this.moveRandomly(this.movingDelay, this.movingSize);
   }
 

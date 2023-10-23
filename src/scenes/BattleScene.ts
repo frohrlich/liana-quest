@@ -6,7 +6,8 @@ import { Player } from "../classes/Player";
 import { Spell } from "../classes/Spell";
 import { UIScene } from "./UIScene";
 import isVisible from "../utils/lineOfSight";
-import { EffectOverTime } from "../classes/EffectOverTime";
+import { UnitData, unitsAvailable } from "../data/UnitData";
+import { heal, javelin, punch, sting } from "../data/SpellData";
 
 // Store a tile and the path to it
 interface TilePath {
@@ -15,6 +16,7 @@ interface TilePath {
 }
 
 export class BattleScene extends Phaser.Scene {
+  animFramerate: number = 5;
   player!: Unit;
   allies: Unit[] = [];
   enemies: Unit[] = [];
@@ -37,6 +39,9 @@ export class BattleScene extends Phaser.Scene {
   overlays: Phaser.GameObjects.Rectangle[] = [];
   spellAoeOverlay: Phaser.GameObjects.Rectangle[] = [];
   pathOverlay: Phaser.GameObjects.Rectangle[] = [];
+  enemyType: string;
+  grid: Phaser.GameObjects.Grid;
+  enemyId: any;
 
   constructor() {
     super({
@@ -44,226 +49,14 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  init(params: any): void {}
-
   preload(): void {}
 
-  create(): void {
-    // create tilemap and get tile dimensions
-    this.map = this.make.tilemap({ key: "battlemap" });
-    this.tileWidth = this.map.tileWidth;
-    this.tileHeight = this.map.tileHeight;
+  create(data: any): void {
+    // id of the enemy from the world scene
+    this.enemyId = data.enemyId;
 
-    // get the tileset
-    this.tileset = this.map.addTilesetImage("forest_tilemap", "tiles");
-
-    // create layers and characters sprites
-    this.background = this.map.createLayer(
-      "calque_background",
-      this.tileset!,
-      0,
-      0
-    );
-    this.obstacles = this.map.createLayer(
-      "calque_obstacles",
-      this.tileset!,
-      0,
-      0
-    );
-
-    // create spells
-    const javelin = new Spell(
-      42,
-      1,
-      5,
-      3,
-      "Deadly Javelin",
-      true,
-      true,
-      0,
-      0,
-      2,
-      0,
-      0,
-      0,
-      "line",
-      3,
-      0,
-      new EffectOverTime("Poison", 44, 2, 10, 1, 1, 0, 0, 0),
-      null,
-      4
-    );
-    const punch = new Spell(51, 1, 1, 2, "Punch", true, false, 55);
-    const sting = new Spell(
-      60,
-      4,
-      12,
-      2,
-      "Sting",
-      false,
-      false,
-      15,
-      1,
-      1,
-      0,
-      0,
-      0,
-      "monoTarget",
-      0,
-      3
-    );
-
-    // define summoned unit
-    const summonedFrame = 3;
-    const summoned = new Unit(this, 0, 0, "player", 3, 0, 0, 3, 6, 50, true);
-    summoned.type = "Princess";
-    summoned.addSpells(sting);
-    this.createAnimations(summonedFrame, 5, "Princess");
-
-    const heal = new Spell(
-      69,
-      0,
-      8,
-      3,
-      "Herbal medicine",
-      true,
-      false,
-      0,
-      0,
-      0,
-      20,
-      1,
-      1,
-      "star",
-      1,
-      0,
-      null,
-      summoned
-    );
-
-    // add units
-    // starting position (grid index)
-    let playerStartX = 17;
-    let playerStartY = 6;
-    let playerFrame = 6;
-    this.player = this.addUnit(
-      "player",
-      playerFrame,
-      playerStartX,
-      playerStartY,
-      5,
-      6,
-      100,
-      "Amazon",
-      false,
-      true,
-      javelin,
-      heal,
-      sting
-    );
-    // create player animations with base sprite and framerate
-    this.createAnimations(playerFrame, 5, "Amazon");
-
-    // ally 1
-    playerStartX = 18;
-    playerStartY = 7;
-    playerFrame = 0;
-    this.addUnit(
-      "player",
-      playerFrame,
-      playerStartX,
-      playerStartY,
-      3,
-      6,
-      100,
-      "Dude",
-      true,
-      true,
-      sting
-    );
-    this.createAnimations(playerFrame, 5, "Dude");
-    // ally 2
-    playerStartX = 13;
-    playerStartY = 2;
-    playerFrame = 0;
-    this.addUnit(
-      "player",
-      playerFrame,
-      playerStartX,
-      playerStartY,
-      3,
-      6,
-      100,
-      "Dude",
-      true,
-      true,
-      sting
-    );
-    // enemy 1
-    let enemyStartX = 14;
-    let enemyStartY = 2;
-    let enemyFrame = 30;
-    this.addUnit(
-      "player",
-      enemyFrame,
-      enemyStartX,
-      enemyStartY,
-      3,
-      6,
-      100,
-      "Snowman",
-      true,
-      false,
-      javelin
-    );
-    // enemy 2
-    enemyStartX = 18;
-    enemyStartY = 6;
-    enemyFrame = 30;
-    this.addUnit(
-      "player",
-      enemyFrame,
-      enemyStartX,
-      enemyStartY,
-      3,
-      6,
-      100,
-      "Snowman",
-      true,
-      false,
-      javelin
-    );
-    // enemy 3
-    enemyStartX = 17;
-    enemyStartY = 3;
-    enemyFrame = 30;
-    this.addUnit(
-      "player",
-      enemyFrame,
-      enemyStartX,
-      enemyStartY,
-      3,
-      6,
-      100,
-      "Snowman",
-      true,
-      false,
-      javelin
-    );
-    this.createAnimations(enemyFrame, 5, "Snowman");
-
-    // layer for tall items appearing on top of the player like trees
-    let overPlayer = this.map.createLayer(
-      "calque_devant_joueur",
-      this.tileset!,
-      0,
-      0
-    );
-    // always on top
-    overPlayer?.setDepth(9999);
-    // transparent to see player beneath tall items
-    overPlayer?.setAlpha(0.5);
-
+    this.createTilemap();
+    this.addUnitsOnStart(data);
     // camera settings
     const zoom = 2;
     this.cameras.main.setZoom(zoom);
@@ -276,7 +69,7 @@ export class BattleScene extends Phaser.Scene {
     this.cameras.main.roundPixels = true;
 
     // game grid
-    this.add.grid(
+    this.grid = this.add.grid(
       0,
       0,
       this.map.widthInPixels * zoom,
@@ -308,6 +101,7 @@ export class BattleScene extends Phaser.Scene {
               })
             ) {
               this.clearSpellRange();
+              this.highlightAccessibleTiles(this.accessibleTiles);
             }
           }
         }
@@ -360,6 +154,76 @@ export class BattleScene extends Phaser.Scene {
       this.startPlayerTurn();
     }
   };
+
+  private addUnitsOnStart(data: any) {
+    // player
+    // see if we find a unit with the name given by the world scene in the array
+    // of all available units
+    const playerData = unitsAvailable.find(
+      (unitData) => unitData.name === data.playerType
+    );
+    if (playerData) {
+      let startX = 3;
+      let startY = 6;
+      this.player = this.addUnit(playerData, startX, startY, false, true);
+    } else {
+      throw new Error("Error : unit not found");
+    }
+    // enemy
+    const enemyData = unitsAvailable.find(
+      (unitData) => unitData.name === data.enemyType
+    );
+    if (enemyData) {
+      let startX = 14;
+      let startY = 2;
+      this.addUnit(enemyData, startX, startY, true, false);
+    } else {
+      throw new Error("Error : unit not found");
+    }
+  }
+
+  clearAllUnits() {
+    this.timeline.forEach((unit) => {
+      unit.destroyUnit();
+    });
+    this.timeline = [];
+    this.allies = [];
+    this.enemies = [];
+  }
+
+  private createTilemap() {
+    this.map = this.make.tilemap({ key: "battlemap" });
+    this.tileWidth = this.map.tileWidth;
+    this.tileHeight = this.map.tileHeight;
+
+    // get the tileset
+    this.tileset = this.map.addTilesetImage("forest_tilemap", "tiles");
+
+    // create layers
+    this.background = this.map.createLayer(
+      "calque_background",
+      this.tileset!,
+      0,
+      0
+    );
+    this.obstacles = this.map.createLayer(
+      "calque_obstacles",
+      this.tileset!,
+      0,
+      0
+    );
+    // layer for tall items appearing on top of the player like trees
+    let overPlayer = this.map.createLayer(
+      "calque_devant_joueur",
+      this.tileset!,
+      0,
+      0
+    );
+    // always on top
+    overPlayer?.setDepth(9999);
+    // transparent to see player beneath tall items
+    overPlayer?.setAlpha(0.5);
+  }
 
   private startPlayerTurn() {
     this.isPlayerTurn = true;
@@ -506,18 +370,13 @@ export class BattleScene extends Phaser.Scene {
 
   // add a unit to the scene
   addUnit(
-    key: string,
-    frame: number,
+    unitData: UnitData,
     startX: number,
     startY: number,
-    maxPm: number,
-    maxPa: number,
-    maxHp: number,
-    name: string,
     npc: boolean,
-    allied: boolean,
-    ...spells: Spell[]
+    allied: boolean
   ) {
+    const key = "player";
     let unit: Unit;
     if (npc) {
       unit = new Npc(
@@ -525,12 +384,12 @@ export class BattleScene extends Phaser.Scene {
         0,
         0,
         key,
-        frame,
+        unitData.frame,
         startX,
         startY,
-        maxPm,
-        maxPa,
-        maxHp,
+        unitData.PM,
+        unitData.PA,
+        unitData.HP,
         allied
       );
     } else {
@@ -539,17 +398,23 @@ export class BattleScene extends Phaser.Scene {
         0,
         0,
         key,
-        frame,
+        unitData.frame,
         startX,
         startY,
-        maxPm,
-        maxPa,
-        maxHp,
+        unitData.PM,
+        unitData.PA,
+        unitData.HP,
         allied
       );
     }
-    unit.type = name;
+    unit.type = unitData.name;
     this.add.existing(unit);
+
+    // create unit animations with base sprite and framerate
+    if (!this.anims.exists("left" + unitData.name)) {
+      this.createAnimations(unitData.frame, this.animFramerate, unitData.name);
+    }
+
     // set player start position
     let initialPlayerX = unit.tilePosToPixelsX();
     let initialPlayerY = unit.tilePosToPixelsY();
@@ -562,7 +427,7 @@ export class BattleScene extends Phaser.Scene {
       this.enemies.push(unit);
     }
     // add spells
-    unit.addSpells.apply(unit, spells);
+    unit.addSpells.apply(unit, this.decodeSpellString(unitData.spells));
     // unit is now considered as an obstacle for other units
     this.addToObstacleLayer(new Phaser.Math.Vector2(unit.indX, unit.indY));
     // initialize health bar
@@ -572,6 +437,30 @@ export class BattleScene extends Phaser.Scene {
     unit.createTeamIdentifier(unitScale);
     unit.setInteractive();
     return unit;
+  }
+
+  // transform a list of spell names in a string into an array of Spell objects
+  decodeSpellString(spellStr: string) {
+    let spellArray: Spell[] = [];
+    spellStr.split(", ").forEach((spellName) => {
+      switch (spellName) {
+        case "deadly javelin":
+          spellArray.push(javelin);
+          break;
+        case "punch":
+          spellArray.push(punch);
+          break;
+        case "sting":
+          spellArray.push(sting);
+          break;
+        case "herbal medicine":
+          spellArray.push(heal);
+          break;
+        default:
+          break;
+      }
+    });
+    return spellArray;
   }
 
   // create a set of animations from a framerate and a base sprite
@@ -680,9 +569,18 @@ export class BattleScene extends Phaser.Scene {
   removeUnitFromBattle(unit: Unit) {
     this.removeFromObstacleLayer(unit);
     this.removeUnitFromTimeline(unit);
+    this.removeUnitFromTeam(unit);
     this.refreshAccessibleTiles();
     if (this.spellVisible) {
       this.displaySpellRange(this.currentSpell);
+    }
+  }
+
+  removeUnitFromTeam(unit: Unit) {
+    const teamArray = unit.isAlly ? this.allies : this.enemies;
+    const index = teamArray.findIndex((unit) => unit == unit);
+    if (index !== -1) {
+      teamArray.splice(index, 1);
     }
   }
 
@@ -1022,7 +920,6 @@ export class BattleScene extends Phaser.Scene {
     this.clearAoeZone();
     this.clearPointerEvents();
     this.clearAccessibleTiles();
-    this.highlightAccessibleTiles(this.accessibleTiles);
   }
 
   clearPointerEvents() {
@@ -1042,8 +939,21 @@ export class BattleScene extends Phaser.Scene {
   }
 
   gameOver() {
-    this.scene.stop("UIScene");
+    this.resetScene();
     this.scene.start("GameOverScene");
+  }
+
+  endBattle() {
+    this.resetScene();
+    this.scene.start("WorldScene", { enemyId: this.enemyId });
+  }
+
+  resetScene() {
+    this.clearSpellRange();
+    this.clearAllUnits();
+    this.map.destroy();
+    this.grid.destroy();
+    this.scene.stop("UIScene");
   }
 }
 

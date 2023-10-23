@@ -142,7 +142,7 @@ export class UISpell extends UIElement {
       height += lineHeight;
     }
     if (this.spell.summons) {
-      addText = `\nsummons : ${this.spell.summons.type}`;
+      addText = `\nsummons : ${this.spell.summons.name}`;
       maxLength = Math.max(maxLength, addText.length);
       text += addText;
       height += lineHeight;
