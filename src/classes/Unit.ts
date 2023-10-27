@@ -581,7 +581,8 @@ export class Unit extends Phaser.GameObjects.Sprite {
         // if it's the player that just died... game over
         if (this.myScene.player === this) this.myScene.gameOver();
         this.destroyUnit();
-        if (this.myScene.enemies.length === 0) {
+        // if no enemies left, end the battle
+        if (this.myScene.battleIsFinished()) {
           this.myScene.endBattle();
         }
       },

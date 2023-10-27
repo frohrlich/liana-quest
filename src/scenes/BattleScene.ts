@@ -28,11 +28,11 @@ export class BattleScene extends Phaser.Scene {
   tileset!: Phaser.Tilemaps.Tileset | null;
   obstacles!: Phaser.Tilemaps.TilemapLayer | null;
   background!: Phaser.Tilemaps.TilemapLayer | null;
-  turnIndex: number = 0;
+  turnIndex: number;
   timeline: Unit[] = [];
-  isPlayerTurn: boolean = true;
+  isPlayerTurn: boolean;
   accessibleTiles: TilePath[] = [];
-  spellVisible: boolean = false;
+  spellVisible: boolean;
   spellRange: Phaser.Tilemaps.Tile[] = [];
   currentSpell!: Spell;
   uiScene!: UIScene;
@@ -52,6 +52,10 @@ export class BattleScene extends Phaser.Scene {
   preload(): void {}
 
   create(data: any): void {
+    this.turnIndex = 0;
+    this.isPlayerTurn = true;
+    this.spellVisible = false;
+
     // id of the enemy from the world scene
     this.enemyId = data.enemyId;
 
@@ -126,6 +130,39 @@ export class BattleScene extends Phaser.Scene {
 
     this.scene.run("UIScene");
     this.uiScene = this.scene.get("UIScene") as UIScene;
+
+    this.displayBattleStartScreen();
+  }
+
+  displayBattleStartScreen() {
+    const screenCenterX = this.cameras.main.displayWidth / 2;
+    const screenCenterY = this.cameras.main.displayHeight / 2;
+    const battleStartText = "The battle begins !";
+    const battleStart = this.add
+      .bitmapText(screenCenterX, screenCenterY, "rainyhearts", battleStartText)
+      .setOrigin(0.5)
+      .setScale(2)
+      .setDepth(99999);
+    const battleStartOverlay = this.add
+      .rectangle(
+        0,
+        0,
+        this.cameras.main.displayWidth,
+        this.cameras.main.displayHeight,
+        0x999999,
+        0.7
+      )
+      .setOrigin(0)
+      .setDepth(99998);
+
+    this.time.addEvent({
+      delay: 1500,
+      callback: () => {
+        battleStart.destroy();
+        battleStartOverlay.destroy();
+      },
+      callbackScope: this,
+    });
   }
 
   endTurn = () => {
@@ -954,6 +991,10 @@ export class BattleScene extends Phaser.Scene {
     this.map.destroy();
     this.grid.destroy();
     this.scene.stop("UIScene");
+  }
+
+  battleIsFinished() {
+    return this.enemies.length === 0;
   }
 }
 

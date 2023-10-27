@@ -32,18 +32,21 @@ export class Npc extends Unit {
           this.castSpell(spell, targetVec);
           // wait till attack animation is finished
           // also verify npc didn't kill itself during spell cast
-          if (!this.isDead()) {
-            this.scene.time.addEvent({
-              delay: 400,
-              callback: this.tryToMove,
-              callbackScope: this,
-            });
-          } else {
-            this.scene.time.addEvent({
-              delay: 400,
-              callback: this.myScene.endTurn,
-              callbackScope: this,
-            });
+          // and that battle is not finished
+          if (!this.myScene.battleIsFinished()) {
+            if (!this.isDead()) {
+              this.scene.time.addEvent({
+                delay: 400,
+                callback: this.tryToMove,
+                callbackScope: this,
+              });
+            } else {
+              this.scene.time.addEvent({
+                delay: 400,
+                callback: this.myScene.endTurn,
+                callbackScope: this,
+              });
+            }
           }
         } else {
           this.tryToMove();
