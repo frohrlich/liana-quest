@@ -25,6 +25,7 @@ export class WorldScene extends Phaser.Scene {
   tileset: Phaser.Tilemaps.Tileset;
   enemyPositions: UnitPosition[] = [];
   enemyId: number;
+  battleHasStarted: boolean;
 
   constructor() {
     super({
@@ -37,6 +38,7 @@ export class WorldScene extends Phaser.Scene {
   preload(): void {}
 
   create(data: any): void {
+    this.battleHasStarted = false;
     // enemy id sent back from the victorious battle
     this.enemyId = data.enemyId;
 
@@ -196,20 +198,22 @@ export class WorldScene extends Phaser.Scene {
   override update(time: number, delta: number): void {}
 
   onMeetEnemy(player: any, enemy: any) {
-    // shake the world
-    this.cameras.main.shake(300);
-
-    // start battle
-    this.time.addEvent({
-      delay: 300,
-      callback: () =>
-        this.scene.start("BattleScene", {
-          playerType: player.type,
-          enemyType: enemy.type,
-          enemyId: enemy.id,
-        }),
-      callbackScope: this,
-    });
+    if (!this.battleHasStarted) {
+      this.battleHasStarted = true;
+      // shake the world
+      this.cameras.main.shake(300);
+      // start battle
+      this.time.addEvent({
+        delay: 300,
+        callback: () =>
+          this.scene.start("BattleScene", {
+            playerType: player.type,
+            enemyType: enemy.type,
+            enemyId: enemy.id,
+          }),
+        callbackScope: this,
+      });
+    }
   }
 
   enableDeplacementOnClick(
