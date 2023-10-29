@@ -18,7 +18,7 @@ export class UIScene extends Phaser.Scene {
   // y coordinates of the top of the UI
   topY!: number;
   uiTabHeight!: number;
-  uiElements: UIElement[] = [];
+  uiSpells: UISpell[] = [];
   uiTimeline: UITimelineSlot[] = [];
   uiTimelineBackgrounds: Phaser.GameObjects.Rectangle[] = [];
   handle!: Phaser.GameObjects.Rectangle;
@@ -39,17 +39,17 @@ export class UIScene extends Phaser.Scene {
     this.drawOutline();
     this.createEndTurnButton();
     this.updateTimeline(this.battleScene.timeline);
-    this.unitStats = this.addStats(0, 0, this.battleScene.player);
-    this.displaySpells(this.battleScene.player);
+    this.unitStats = this.addStats(0, 0, this.battleScene.currentPlayer);
+    const spellTitle = new UIText(this, 1.5, 0.1, "Spells");
+    this.refreshSpells();
   }
 
   addSpell(tab: number, posY: number, spell: Spell) {
-    this.uiElements.push(new UISpell(this, tab, posY, spell));
+    this.uiSpells.push(new UISpell(this, tab, posY, spell));
   }
 
   addStats(tab: number, posY: number, unit: Unit) {
     const myStats = new UnitStatDisplay(this, tab * 4, posY, unit);
-    this.uiElements.push(myStats);
     return myStats;
   }
 
@@ -75,9 +75,9 @@ export class UIScene extends Phaser.Scene {
       .on("pointerup", () => {
         if (
           this.battleScene.isPlayerTurn &&
-          !this.battleScene.player.isMoving
+          !this.battleScene.currentPlayer.isMoving
         ) {
-          this.battleScene.player.endTurn();
+          this.battleScene.currentPlayer.endTurn();
         }
       });
   }
@@ -218,26 +218,33 @@ export class UIScene extends Phaser.Scene {
   }
 
   refreshUI() {
-    this.uiElements.forEach((element) => {
-      element.refresh();
+    this.changeStatsUnit(this.battleScene.currentPlayer);
+    this.uiSpells.forEach((uiSpell) => {
+      uiSpell.refresh();
     });
+    this.unitStats.refresh();
   }
 
   // display unit spells on the spell slot of the UI
   displaySpells(unit: Unit) {
-    this.uiElements.push(new UIText(this, 1.5, 0.1, "Spells"));
     for (let i = 0; i < unit.spells.length; i++) {
       const spell = unit.spells[i];
       this.addSpell(1.15 + 0.33 * i, 1.35, spell);
     }
   }
 
+  refreshSpells() {
+    this.uiSpells.forEach((uiSpell) => {
+      uiSpell.destroy();
+    });
+    this.uiSpells = [];
+    this.displaySpells(this.battleScene.currentPlayer);
+  }
+
   clearSpellsHighlight() {
-    this.uiElements.forEach((element) => {
-      if (element instanceof UISpell) {
-        element.isHighlighted = false;
-        element.refresh();
-      }
+    this.uiSpells.forEach((uiSpell) => {
+      uiSpell.isHighlighted = false;
+      uiSpell.refresh();
     });
   }
 }

@@ -33,7 +33,7 @@ export class Npc extends Unit {
           // wait till attack animation is finished
           // also verify npc didn't kill itself during spell cast
           // and that battle is not finished
-          if (!this.myScene.battleIsFinished()) {
+          if (!this.myScene.battleIsFinished() && !this.myScene.gameIsOver()) {
             if (!this.isDead()) {
               this.scene.time.addEvent({
                 delay: 400,

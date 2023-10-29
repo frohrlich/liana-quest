@@ -71,7 +71,10 @@ export class UISpell extends UIElement {
   }
 
   private toggleSpellMode() {
-    if (this.battleScene.isPlayerTurn && !this.battleScene.player.isMoving) {
+    if (
+      this.battleScene.isPlayerTurn &&
+      !this.battleScene.currentPlayer.isMoving
+    ) {
       if (!this.isInaccessible()) {
         this.myScene.clearSpellsHighlight();
         this.isHighlighted = true;
@@ -207,12 +210,13 @@ export class UISpell extends UIElement {
   // true if unit cannot currently launch this spell
   isInaccessible() {
     return (
-      this.battleScene.player.pa < this.spell.cost || this.spell.cooldown > 0
+      this.battleScene.currentPlayer.pa < this.spell.cost ||
+      this.spell.cooldown > 0
     );
   }
 
   override refresh(): void {
-    this.refreshSpellCooldown();
+    this.createSpellCooldown();
 
     if (this.isHighlighted) {
       this.icon.visible = false;
@@ -236,6 +240,7 @@ export class UISpell extends UIElement {
   }
 
   createSpellCooldown() {
+    if (this.spellCooldown) this.spellCooldown.destroy();
     this.spellCooldown = this.myScene.add.bitmapText(
       this.icon.x,
       this.icon.y + 1,
@@ -247,7 +252,12 @@ export class UISpell extends UIElement {
     this.spellCooldown.visible = false;
   }
 
-  refreshSpellCooldown() {
-    this.spellCooldown.text = this.spell.cooldown.toString();
+  destroy() {
+    this.highlightIcon.destroy();
+    this.icon.destroy();
+    this.infoRectangle.destroy();
+    this.infoText.destroy();
+    this.outlineRectangle.destroy();
+    this.spellCooldown.destroy();
   }
 }

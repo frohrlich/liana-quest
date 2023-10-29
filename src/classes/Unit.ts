@@ -94,7 +94,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.timelineSlot.tint = 0xffffff;
     this.healthBar.setVisible(false);
     if (this.effectIcon) this.effectIcon.setVisible(false);
-    this.myScene.uiScene.changeStatsUnit(this.myScene.player);
+    this.myScene.uiScene.changeStatsUnit(this.myScene.currentPlayer);
   }
 
   selectUnit() {
@@ -315,7 +315,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
         spell.summons,
         targetVec.x,
         targetVec.y,
-        true,
+        false,
         this.isAlly
       );
       this.myScene.addSummonedUnitToTimeline(this, summonedUnit);
@@ -569,7 +569,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   private die() {
     this.summonedUnits.forEach((unit) => {
-      unit.die();
+      if (!unit.isDead()) unit.die();
     });
     this.unselectUnit();
     this.myScene.removeUnitFromBattle(this);
@@ -578,8 +578,10 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.scene.time.delayedCall(
       400,
       () => {
-        // if it's the player that just died... game over
-        if (this.myScene.player === this) this.myScene.gameOver();
+        // if no allies left... game over
+        if (this.myScene.gameIsOver()) {
+          this.myScene.gameOver();
+        }
         this.destroyUnit();
         // if no enemies left, end the battle
         if (this.myScene.battleIsFinished()) {

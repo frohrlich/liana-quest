@@ -17,7 +17,7 @@ interface TilePath {
 
 export class BattleScene extends Phaser.Scene {
   animFramerate: number = 5;
-  player!: Unit;
+  currentPlayer!: Player;
   allies: Unit[] = [];
   enemies: Unit[] = [];
   clickedTile!: Phaser.Tilemaps.Tile | null;
@@ -91,7 +91,7 @@ export class BattleScene extends Phaser.Scene {
       Phaser.Input.Events.POINTER_UP,
       (pointer: Phaser.Input.Pointer) => {
         // continue only if player turn and not already moving
-        if (!this.player.isMoving && this.isPlayerTurn) {
+        if (!this.currentPlayer.isMoving && this.isPlayerTurn) {
           const { worldX, worldY } = pointer;
 
           const targetVec = this.background!.worldToTileXY(worldX, worldY);
@@ -116,10 +116,13 @@ export class BattleScene extends Phaser.Scene {
     this.timeline = createTimeline(this.allies, this.enemies);
 
     // highlight the accessible tiles around the player
-    let playerPos = new Phaser.Math.Vector2(this.player.indX, this.player.indY);
+    let playerPos = new Phaser.Math.Vector2(
+      this.currentPlayer.indX,
+      this.currentPlayer.indY
+    );
     this.accessibleTiles = this.calculateAccessibleTiles(
       playerPos,
-      this.player.pm
+      this.currentPlayer.pm
     );
     this.highlightAccessibleTiles(this.accessibleTiles);
 
@@ -183,12 +186,12 @@ export class BattleScene extends Phaser.Scene {
       this.turnIndex = 0;
     }
 
-    const currentPlayer = this.timeline[this.turnIndex];
+    const currentUnit = this.timeline[this.turnIndex];
     this.highlightCurrentUnitInTimeline();
-    currentPlayer.playTurn();
+    currentUnit.playTurn();
 
-    if (currentPlayer instanceof Player) {
-      this.startPlayerTurn();
+    if (currentUnit instanceof Player) {
+      this.startPlayerTurn(currentUnit);
     }
   };
 
@@ -202,7 +205,13 @@ export class BattleScene extends Phaser.Scene {
     if (playerData) {
       let startX = 3;
       let startY = 6;
-      this.player = this.addUnit(playerData, startX, startY, false, true);
+      this.currentPlayer = this.addUnit(
+        playerData,
+        startX,
+        startY,
+        false,
+        true
+      );
     } else {
       throw new Error("Error : unit not found");
     }
@@ -265,7 +274,10 @@ export class BattleScene extends Phaser.Scene {
     overPlayer?.setAlpha(0.5);
   }
 
-  private startPlayerTurn() {
+  private startPlayerTurn(player: Player) {
+    this.currentPlayer = player;
+    this.uiScene.refreshSpells();
+    this.uiScene.refreshUI();
     this.isPlayerTurn = true;
     this.refreshAccessibleTiles();
     this.highlightAccessibleTiles(this.accessibleTiles);
@@ -320,17 +332,17 @@ export class BattleScene extends Phaser.Scene {
 
       // on clicking on a tile, move
       overlay.on("pointerup", () => {
-        if (!this.player.isMoving) {
-          this.player.moveAlong(tilePos.path);
+        if (!this.currentPlayer.isMoving) {
+          this.currentPlayer.moveAlong(tilePos.path);
           this.uiScene.refreshUI();
         }
       });
       //on hovering over a tile, display path to it
       overlay.on("pointerover", () => {
-        if (!this.player.isMoving) this.highlightPath(tilePos.path);
+        if (!this.currentPlayer.isMoving) this.highlightPath(tilePos.path);
       });
       overlay.on("pointerout", () => {
-        if (!this.player.isMoving) this.clearPathHighlight();
+        if (!this.currentPlayer.isMoving) this.clearPathHighlight();
       });
     });
   };
@@ -397,8 +409,8 @@ export class BattleScene extends Phaser.Scene {
   // refresh the accessible tiles around the player
   refreshAccessibleTiles() {
     this.accessibleTiles = this.calculateAccessibleTiles(
-      new Phaser.Math.Vector2(this.player.indX, this.player.indY),
-      this.player.pm
+      new Phaser.Math.Vector2(this.currentPlayer.indX, this.currentPlayer.indY),
+      this.currentPlayer.pm
     );
   }
 
@@ -643,7 +655,7 @@ export class BattleScene extends Phaser.Scene {
 
     this.spellVisible = true;
     this.currentSpell = spell;
-    this.spellRange = this.calculateSpellRange(this.player, spell);
+    this.spellRange = this.calculateSpellRange(this.currentPlayer, spell);
     this.createAoeZone(spell);
     let baseColor = 0x000099;
     this.spellRange.forEach((tile) => {
@@ -663,7 +675,7 @@ export class BattleScene extends Phaser.Scene {
 
         // on clicking on a tile, launch spell
         overlay.on("pointerup", () => {
-          this.player.castSpell(this.currentSpell, pos);
+          this.currentPlayer.castSpell(this.currentSpell, pos);
         });
         //on hovering over a tile, display aoe zone
         overlay.on("pointerover", () => {
@@ -677,7 +689,7 @@ export class BattleScene extends Phaser.Scene {
         const playerOnThisTile = this.getUnitAtPos(tile.x, tile.y);
         if (playerOnThisTile) {
           playerOnThisTile.on("pointerup", () => {
-            this.player.castSpell(this.currentSpell, pos);
+            this.currentPlayer.castSpell(this.currentSpell, pos);
           });
           playerOnThisTile.on("pointerover", () => {
             this.updateAoeZone(spell, tile.pixelX, tile.pixelY);
@@ -792,11 +804,11 @@ export class BattleScene extends Phaser.Scene {
         // this aoe should only be used with spells cast in a straight line
         target = this.background!.worldToTileXY(x, y);
         // true if target is aligned horizontally with player (else we assume it's aligned vertically)
-        let isAlignedX = target.y == this.player.indY;
+        let isAlignedX = target.y == this.currentPlayer.indY;
         const baseIndex = isAlignedX ? target.x : target.y;
         const isForward = isAlignedX
-          ? Math.sign(target.x - this.player.indX)
-          : Math.sign(target.y - this.player.indY);
+          ? Math.sign(target.x - this.currentPlayer.indX)
+          : Math.sign(target.y - this.currentPlayer.indY);
         for (let i = 0; i < spell.aoeSize; i++) {
           const overlay = this.spellAoeOverlay[i];
           let pos = isAlignedX
@@ -994,6 +1006,10 @@ export class BattleScene extends Phaser.Scene {
     this.map.destroy();
     this.grid.destroy();
     this.scene.stop("UIScene");
+  }
+
+  gameIsOver() {
+    return this.allies.length === 0;
   }
 
   battleIsFinished() {
