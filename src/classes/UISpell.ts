@@ -13,6 +13,7 @@ export class UISpell extends UIElement {
   infoText: Phaser.GameObjects.BitmapText;
   outlineRectangle: Phaser.GameObjects.Rectangle;
   spellCooldown: Phaser.GameObjects.BitmapText;
+  disabled: boolean;
 
   constructor(scene: Phaser.Scene, tab: number, posY: number, spell: Spell) {
     super(scene, tab, posY);
@@ -21,6 +22,7 @@ export class UISpell extends UIElement {
     this.addIcon();
     this.addInfoText();
     this.createSpellCooldown();
+    this.disabled = false;
   }
 
   private showInfo(show: boolean) {
@@ -210,6 +212,7 @@ export class UISpell extends UIElement {
   // true if unit cannot currently launch this spell
   isInaccessible() {
     return (
+      this.disabled ||
       this.battleScene.currentPlayer.pa < this.spell.cost ||
       this.spell.cooldown > 0
     );

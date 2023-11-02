@@ -23,6 +23,7 @@ export class UIScene extends Phaser.Scene {
   uiTimelineBackgrounds: Phaser.GameObjects.Rectangle[] = [];
   handle!: Phaser.GameObjects.Rectangle;
   unitStats!: UnitStatDisplay;
+  buttonText: Phaser.GameObjects.BitmapText;
 
   constructor() {
     super({
@@ -37,11 +38,19 @@ export class UIScene extends Phaser.Scene {
   create(): void {
     this.battleScene = this.scene.get("BattleScene") as BattleScene;
     this.drawOutline();
-    this.createEndTurnButton();
+    this.createStartButton();
     this.updateTimeline(this.battleScene.timeline);
     this.unitStats = this.addStats(0, 0, this.battleScene.currentPlayer);
     const spellTitle = new UIText(this, 1.5, 0.1, "Spells");
     this.refreshSpells();
+    this.disableSpells(true);
+  }
+
+  disableSpells(isDisabled: boolean) {
+    this.uiSpells.forEach((uiSpell) => {
+      uiSpell.disabled = isDisabled;
+      uiSpell.hideIfInaccessible();
+    });
   }
 
   addSpell(tab: number, posY: number, spell: Spell) {
@@ -57,7 +66,7 @@ export class UIScene extends Phaser.Scene {
     this.unitStats.changeUnit(unit);
   }
 
-  createEndTurnButton() {
+  createStartButton() {
     const xPos = this.uiTabWidth * 2.5;
     const yPos = this.topY + this.uiTabHeight / 2;
 
@@ -67,19 +76,35 @@ export class UIScene extends Phaser.Scene {
       .setFillStyle(0x293154);
 
     let fontSize = this.battleScene.tileWidth * this.uiScale;
-    this.add
-      .bitmapText(xPos, yPos, "rainyhearts", "End turn", fontSize)
+    this.buttonText = this.add
+      .bitmapText(xPos, yPos, "rainyhearts", "Fight !", fontSize)
       .setTint(this.uiFontColor)
       .setOrigin(0.5, 0.5)
       .setInteractive()
       .on("pointerup", () => {
-        if (
-          this.battleScene.isPlayerTurn &&
-          !this.battleScene.currentPlayer.isMoving
-        ) {
-          this.battleScene.currentPlayer.endTurn();
-        }
+        this.startBattle();
+        this.battleScene.startBattle();
       });
+  }
+
+  // play this after player chose starter position and pressed start button
+  startBattle() {
+    this.createEndTurnButton();
+    this.disableSpells(false);
+    this.refreshSpells();
+  }
+
+  createEndTurnButton() {
+    this.buttonText.text = "End turn";
+    this.buttonText.off("pointerup");
+    this.buttonText.on("pointerup", () => {
+      if (
+        this.battleScene.isPlayerTurn &&
+        !this.battleScene.currentPlayer.isMoving
+      ) {
+        this.battleScene.currentPlayer.endTurn();
+      }
+    });
   }
 
   updateTimeline(timeline: Unit[]) {

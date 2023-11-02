@@ -765,4 +765,13 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.effectIcon.x = this.x;
     this.effectIcon.y = isOnTop ? this.y + 27 : this.y - this.displayHeight - 2;
   }
+
+  teleportToTile(x: number, y: number) {
+    this.indX = x;
+    this.indY = y;
+    this.x = this.tilePosToPixelsX();
+    this.y = this.tilePosToPixelsY();
+    this.moveHealthBar();
+    this.moveTeamIdentifier();
+  }
 }

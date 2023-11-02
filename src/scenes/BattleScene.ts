@@ -42,6 +42,8 @@ export class BattleScene extends Phaser.Scene {
   enemyType: string;
   grid: Phaser.GameObjects.Grid;
   enemyId: any;
+  playerStarterTiles: Phaser.Tilemaps.Tile[];
+  enemyStarterTiles: Phaser.Tilemaps.Tile[];
 
   constructor() {
     super({
@@ -115,17 +117,6 @@ export class BattleScene extends Phaser.Scene {
     // create the timeline
     this.timeline = createTimeline(this.allies, this.enemies);
 
-    // highlight the accessible tiles around the player
-    let playerPos = new Phaser.Math.Vector2(
-      this.currentPlayer.indX,
-      this.currentPlayer.indY
-    );
-    this.accessibleTiles = this.calculateAccessibleTiles(
-      playerPos,
-      this.currentPlayer.pm
-    );
-    this.highlightAccessibleTiles(this.accessibleTiles);
-
     // remember to clean up on Scene shutdown
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.off(Phaser.Input.Events.POINTER_UP);
@@ -134,7 +125,7 @@ export class BattleScene extends Phaser.Scene {
     this.scene.run("UIScene");
     this.uiScene = this.scene.get("UIScene") as UIScene;
 
-    this.displayBattleStartScreen();
+    this.chooseStartPosition();
   }
 
   displayBattleStartScreen() {
@@ -168,6 +159,80 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
+  chooseStartPosition() {
+    const playerColor = 0x0000ff;
+    const enemyColor = 0xff0000;
+
+    this.playerStarterTiles.forEach((tile) => {
+      // overlay the tile with an interactive transparent rectangle
+      let overlay = this.add.rectangle(
+        tile.pixelX + 0.5 * tile.width,
+        tile.pixelY + 0.5 * tile.height,
+        tile.width,
+        tile.height,
+        playerColor,
+        0.4
+      );
+      overlay.setInteractive();
+      this.overlays.push(overlay);
+
+      overlay.on("pointerup", () => {
+        this.currentPlayer.teleportToTile(tile.x, tile.y);
+      });
+      overlay.on("pointerover", () => {
+        tile.tint = 0x0000ff;
+      });
+      overlay.on("pointerout", () => {
+        tile.tint = 0xffffff;
+      });
+    });
+
+    this.enemyStarterTiles.forEach((tile) => {
+      // overlay the tile with an interactive transparent rectangle
+      let overlay = this.add.rectangle(
+        tile.pixelX + 0.5 * tile.width,
+        tile.pixelY + 0.5 * tile.height,
+        tile.width,
+        tile.height,
+        enemyColor,
+        0.4
+      );
+      this.overlays.push(overlay);
+    });
+  }
+
+  private calculatePlayerStarterTiles() {
+    this.playerStarterTiles = this.background.filterTiles(
+      (tile: Phaser.Tilemaps.Tile) => !this.obstacles.getTileAt(tile.x, tile.y),
+      this,
+      0,
+      0,
+      this.map.width / 3,
+      this.map.height
+    );
+  }
+
+  private calculateEnemyStarterTiles() {
+    this.enemyStarterTiles = this.background.filterTiles(
+      (tile: Phaser.Tilemaps.Tile) => !this.obstacles.getTileAt(tile.x, tile.y),
+      this,
+      Math.floor((this.map.width * 2) / 3),
+      0,
+      this.map.width / 3,
+      this.map.height
+    );
+  }
+
+  // play this after player chose starter position and pressed start button
+  startBattle() {
+    this.clearOverlay();
+    this.enemyStarterTiles = [];
+    this.playerStarterTiles = [];
+    this.displayBattleStartScreen();
+    this.refreshAccessibleTiles();
+    this.highlightAccessibleTiles(this.accessibleTiles);
+  }
+
   endTurn = () => {
     this.uiScene.endTurn();
     // clear previous player highlight on the timeline
@@ -196,6 +261,8 @@ export class BattleScene extends Phaser.Scene {
   };
 
   private addUnitsOnStart(data: any) {
+    this.calculatePlayerStarterTiles();
+    this.calculateEnemyStarterTiles();
     // player
     // see if we find a unit with the name given by the world scene in the array
     // of all available units
@@ -203,15 +270,12 @@ export class BattleScene extends Phaser.Scene {
       (unitData) => unitData.name === data.playerType
     );
     if (playerData) {
-      let startX = 3;
-      let startY = 6;
-      this.currentPlayer = this.addUnit(
-        playerData,
-        startX,
-        startY,
-        false,
-        true
+      const randTile = Phaser.Math.RND.between(
+        0,
+        this.playerStarterTiles.length - 1
       );
+      const { x, y } = this.playerStarterTiles[randTile];
+      this.currentPlayer = this.addUnit(playerData, x, y, false, true);
     } else {
       throw new Error("Error : unit not found");
     }
@@ -220,9 +284,12 @@ export class BattleScene extends Phaser.Scene {
       (unitData) => unitData.name === data.enemyType
     );
     if (enemyData) {
-      let startX = 14;
-      let startY = 2;
-      this.addUnit(enemyData, startX, startY, true, false);
+      const randTile = Phaser.Math.RND.between(
+        0,
+        this.enemyStarterTiles.length - 1
+      );
+      const { x, y } = this.enemyStarterTiles[randTile];
+      this.addUnit(enemyData, x, y, true, false);
     } else {
       throw new Error("Error : unit not found");
     }
