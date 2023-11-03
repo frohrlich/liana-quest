@@ -224,17 +224,18 @@ export class WorldScene extends Phaser.Scene {
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
       (pointer: Phaser.Input.Pointer) => {
-        if (!this.player.isMoving) {
-          const { worldX, worldY } = pointer;
-          const startVec = new Phaser.Math.Vector2(
-            this.player.indX,
-            this.player.indY
-          );
-          const targetVec = background.worldToTileXY(worldX, worldY);
-          const path = findPath(startVec, targetVec, background, obstacles);
-          if (path && path.length > 0) {
-            this.player.moveAlong(path);
-          }
+        if (this.player.isMoving) {
+          this.player.interruptMovement();
+        }
+        const { worldX, worldY } = pointer;
+        const startVec = new Phaser.Math.Vector2(
+          this.player.indX,
+          this.player.indY
+        );
+        const targetVec = background.worldToTileXY(worldX, worldY);
+        const path = findPath(startVec, targetVec, background, obstacles);
+        if (path && path.length > 0) {
+          this.player.moveAlong(path);
         }
       }
     );

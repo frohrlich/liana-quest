@@ -17,6 +17,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
 
   // time for moving by 1 tile (in ms)
   moveDuration = 180;
+  movementDelay: number;
 
   constructor(
     scene: Phaser.Scene,
@@ -179,5 +180,14 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
 
   tilePosToPixelsY(delta: number = 0) {
     return this.myScene.tileHeight * (this.indY + delta) + this.height / 6;
+  }
+
+  interruptMovement() {
+    this.scene.tweens.killTweensOf(this);
+    this.stopMovement();
+    this.indX = this.myScene.map.worldToTileX(this.x);
+    this.indY = this.myScene.map.worldToTileX(this.y);
+    this.x = this.tilePosToPixelsX();
+    this.y = this.tilePosToPixelsY();
   }
 }
