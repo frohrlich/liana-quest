@@ -1,11 +1,13 @@
 import Phaser from "phaser";
 import { WorldUnit } from "./WorldUnit";
-import findPath from "../utils/findPath";
+import findPath from "../../utils/findPath";
 
-// Unit in the world mode, as opposed to the Unit class for battle
 export class WorldNpc extends WorldUnit {
+  // delay between each random movement of the npc on the map
   movingDelay = 10000;
-  movingSize = 3;
+  // range (in tiles) of a random movement on the map
+  movingRange = 3;
+  // the id is used to link a world npc to its battle counterpart
   id: number;
 
   constructor(
@@ -19,32 +21,33 @@ export class WorldNpc extends WorldUnit {
   ) {
     super(scene, indX, indY, texture, frame, name);
     this.id = id;
-    this.moveRandomly(this.movingDelay, this.movingSize);
+    this.moveRandomly(this.movingDelay, this.movingRange);
   }
 
-  moveRandomly(delay: number, size: number) {
+  moveRandomly(delay: number, range: number) {
+    // random offset before first movement so that all npcs don't move simultaneously
     const movingOffset = Phaser.Math.Between(0, delay);
     this.scene.time.addEvent({
       delay: delay,
       callback: this.moveToRandomNearbyTile,
-      args: [size],
+      args: [range],
       callbackScope: this,
       loop: true,
       startAt: movingOffset,
     });
   }
 
-  moveToRandomNearbyTile(size: number) {
+  moveToRandomNearbyTile(range: number) {
     const startVec = new Phaser.Math.Vector2(this.indX, this.indY);
     // first calculate the accessible tiles around npc
     const nearbyTiles = this.myScene.background.filterTiles(
       (tile: Phaser.Tilemaps.Tile) =>
         !this.myScene.obstacles.getTileAt(tile.x, tile.y),
       this.scene,
-      this.indX - size,
-      this.indY - size,
-      size * 2 + 1,
-      size * 2 + 1
+      this.indX - range,
+      this.indY - range,
+      range * 2 + 1,
+      range * 2 + 1
     );
     // then chooses one randomly
     const randMove = Phaser.Math.Between(0, nearbyTiles.length - 1);

@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { UIScene } from "../scenes/UIScene";
+import { UIScene } from "../../scenes/UIScene";
 
 export abstract class UIElement {
   // which UI tab does this element belong to

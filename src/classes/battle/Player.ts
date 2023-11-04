@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { Unit } from "./Unit";
 import { Spell } from "./Spell";
 
+// playable character in battle
 export class Player extends Unit {
   constructor(
     scene: Phaser.Scene,

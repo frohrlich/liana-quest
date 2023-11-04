@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { UIElement } from "./UIElement";
-import { Spell } from "./Spell";
-import { BattleScene } from "../scenes/BattleScene";
+import { Spell } from "../battle/Spell";
+import { BattleScene } from "../../scenes/BattleScene";
 
 export class UISpell extends UIElement {
   spell: Spell;

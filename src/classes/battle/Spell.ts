@@ -1,4 +1,4 @@
-import { UnitData } from "../data/UnitData";
+import { UnitData } from "../../data/UnitData";
 import { EffectOverTime } from "./EffectOverTime";
 import { Unit } from "./Unit";
 

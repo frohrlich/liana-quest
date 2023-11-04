@@ -12,7 +12,7 @@ const config = {
   height: 430,
   zoom: 1.4,
   pixelArt: true,
-  backgroundColor: "#FFFFFF",
+  backgroundColor: "#000000",
   physics: {
     default: "arcade",
     arcade: {

@@ -1,3 +1,4 @@
+// represents effects in battle such as poison, etc
 export class EffectOverTime {
   name: string;
   frame: number;

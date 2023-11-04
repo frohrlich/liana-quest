@@ -17,7 +17,7 @@ export class GameOverScene extends Phaser.Scene {
       gameHeight / 2,
       "rainyhearts",
       text.toUpperCase(),
-      160
+      80
     );
     myText.setOrigin(0.5, 0.5);
   }

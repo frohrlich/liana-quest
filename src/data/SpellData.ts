@@ -1,6 +1,8 @@
-import { EffectOverTime } from "../classes/EffectOverTime";
-import { Spell } from "../classes/Spell";
+import { EffectOverTime } from "../classes/battle/EffectOverTime";
+import { Spell } from "../classes/battle/Spell";
 import { princess } from "./UnitData";
+
+// this file contains the data for all available spells in the game
 
 // create effects over time
 const poison = new EffectOverTime("Poison", 44, 2, 10, 1, 1, 0, 0, 0);
@@ -14,7 +16,7 @@ export const javelin = new Spell(
   "Deadly Javelin",
   true,
   true,
-  0,
+  25,
   0,
   2,
   0,
@@ -38,7 +40,7 @@ export const sting = new Spell(
   "Sting",
   false,
   false,
-  100,
+  15,
   1,
   1,
   0,
@@ -64,7 +66,7 @@ export const heal = new Spell(
   1,
   1,
   "star",
-  1,
+  2,
   0,
   null,
   princess

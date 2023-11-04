@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import findPath from "../utils/findPath";
-import { WorldUnit } from "../classes/WorldUnit";
-import { WorldNpc } from "../classes/WorldNpc";
+import { WorldUnit } from "../classes/world/WorldUnit";
+import { WorldNpc } from "../classes/world/WorldNpc";
 import { amazon, snowman, unitsAvailable } from "../data/UnitData";
 
 interface UnitPosition {
@@ -12,6 +12,10 @@ interface UnitPosition {
 }
 
 export class WorldScene extends Phaser.Scene {
+  startPlayerPosX = 3;
+  startPlayerPosY = 6;
+  playerType = amazon;
+
   player!: WorldUnit;
   spawns!: Phaser.Physics.Arcade.Group;
   unitScale = 1.5;
@@ -33,10 +37,6 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  init(params: any): void {}
-
-  preload(): void {}
-
   create(data: any): void {
     this.battleHasStarted = false;
     // enemy id sent back from the victorious battle
@@ -47,7 +47,7 @@ export class WorldScene extends Phaser.Scene {
     this.setupCamera();
     this.addEnemies(30);
 
-    this.enableDeplacementOnClick(this.background, this.obstacles);
+    this.enableMovingOnClick(this.background, this.obstacles);
   }
 
   private setupCamera() {
@@ -65,11 +65,11 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private addPlayer() {
-    const startIndX = 3;
-    const startIndY = 6;
+    const startIndX = this.startPlayerPosX;
+    const startIndY = this.startPlayerPosY;
     const playerPosX = this.player ? this.player.indX : startIndX;
     const playerPosY = this.player ? this.player.indY : startIndY;
-    const playerData = amazon;
+    const playerData = this.playerType;
     this.player = new WorldUnit(
       this,
       playerPosX,
@@ -118,25 +118,24 @@ export class WorldScene extends Phaser.Scene {
       classType: Phaser.GameObjects.Sprite,
     });
 
+    // if no enemies already, create them
     const create = this.enemyPositions.length === 0;
 
-    // if we just defeated an enemy in battle, delete it
+    // if we just defeated an enemy in battle, delete it from the world map
     if (this.enemyId !== undefined) {
       const index = this.enemyPositions.findIndex(
         (enemy) => enemy.id === this.enemyId
       );
       if (index !== -1) this.enemyPositions.splice(index, 1);
     }
-    const currentEnemyNumber = create
-      ? enemyNumber
-      : this.enemyPositions.length;
 
-    // we place enemies on random location of the map (except obstacles)
-    for (let i = 0; i < currentEnemyNumber; i++) {
+    const currentEnemyCount = create ? enemyNumber : this.enemyPositions.length;
+
+    for (let i = 0; i < currentEnemyCount; i++) {
       let indX: number, indY: number;
       let id: number;
       let enemyType: string;
-      // if enemies not already created, create them randomly
+      // if enemies not already created, create them randomly on the map
       if (create) {
         do {
           indX = Phaser.Math.RND.between(0, this.map.width);
@@ -145,7 +144,7 @@ export class WorldScene extends Phaser.Scene {
         // toss a coin between snowman and dude...
         enemyType = Phaser.Math.RND.between(0, 1) ? "Snowman" : "Dude";
 
-        // remember the enemy positions to recreate them later
+        // remember the enemy's position to recreate it later
         id = i;
         this.enemyPositions.push({
           indX: indX,
@@ -153,6 +152,7 @@ export class WorldScene extends Phaser.Scene {
           type: enemyType,
           id: id,
         });
+        // else if enemies already created, replace them to their previous position
       } else {
         const myPosition = this.enemyPositions[i];
         indX = myPosition.indX;
@@ -161,6 +161,7 @@ export class WorldScene extends Phaser.Scene {
         id = myPosition.id;
       }
 
+      // find enemy data from its type
       const enemyData = unitsAvailable.find(
         (unitData) => unitData.name === enemyType
       );
@@ -195,8 +196,6 @@ export class WorldScene extends Phaser.Scene {
     );
   }
 
-  override update(time: number, delta: number): void {}
-
   onMeetEnemy(player: any, enemy: any) {
     if (!this.battleHasStarted) {
       this.battleHasStarted = true;
@@ -216,7 +215,7 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  enableDeplacementOnClick(
+  enableMovingOnClick(
     background: Phaser.Tilemaps.TilemapLayer,
     obstacles: Phaser.Tilemaps.TilemapLayer
   ) {
@@ -240,7 +239,7 @@ export class WorldScene extends Phaser.Scene {
       }
     );
 
-    // remember to clean up on Scene shutdown
+    // clean up on Scene shutdown
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.off(Phaser.Input.Events.POINTER_UP);
     });

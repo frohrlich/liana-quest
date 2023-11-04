@@ -1,3 +1,5 @@
+// this file contains the data for all available unit types in the game
+
 export interface UnitData {
   HP: number;
   PM: number;

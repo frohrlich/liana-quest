@@ -1,5 +1,5 @@
-import Phaser from 'phaser';
-import { PriorityQueue } from './PriorityQueue';
+import Phaser from "phaser";
+import { PriorityQueue } from "./PriorityQueue";
 
 // A* path finding algorithm
 // https://blog.ourcade.co/posts/2020/phaser-3-point-click-pathfinding-movement-tilemap/
@@ -42,7 +42,7 @@ const findPath = (
   const targetKey = toKey(target.x, target.y);
 
   parentForKey[startKey] = {
-    key: '',
+    key: "",
     position: { x: -1, y: -1 },
   };
   costFromStart[startKey] = 0;
@@ -94,6 +94,7 @@ const findPath = (
         const dr = Math.abs(target.y - neighbor.y);
         // x distance
         const dc = Math.abs(target.x - neighbor.x);
+
         const distance = dr + dc;
         const totalCost = cost + distance;
 

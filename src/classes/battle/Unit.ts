@@ -1,7 +1,7 @@
 import Phaser from "phaser";
-import { BattleScene } from "../scenes/BattleScene";
+import { BattleScene } from "../../scenes/BattleScene";
 import { Spell } from "./Spell";
-import { UITimelineSlot } from "./UITimelineSlot";
+import { UITimelineSlot } from "../UI/UITimelineSlot";
 import { EffectOverTime } from "./EffectOverTime";
 
 export class Unit extends Phaser.GameObjects.Sprite {
@@ -21,13 +21,16 @@ export class Unit extends Phaser.GameObjects.Sprite {
   // pathfinding
   movePath: Phaser.Math.Vector2[] = [];
 
+  // name representing the apparence of the unit
   textureStr: string;
   direction: string;
   isMoving: boolean;
+  // chain of tweens containing the successive moving tweens in path from tile A to tile B
   moveChain: any = {};
   frameNumber: number;
   isAlly: boolean;
   healthBar!: Phaser.GameObjects.Graphics;
+  // team identifier under unit's feet (blue ally, red enemy)
   identifier!: Phaser.GameObjects.Image;
   spells: Spell[] = [];
   timelineSlot!: UITimelineSlot;
@@ -64,6 +67,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.frameNumber = frame;
     this.isAlly = isAlly;
 
+    // tween move chain setup
     this.moveChain.targets = this;
     this.moveChain.onStart = () => {
       // depth is same as y
@@ -74,9 +78,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.moveChain.onComplete = this.stopMovement;
     this.moveChain.tweens = [];
 
-    // health bar visible only on hover
-    // also change color of unit and its timeline icon
-    // and display unit stats on the UI
     this.addHoverEvents();
   }
 
@@ -89,20 +90,21 @@ export class Unit extends Phaser.GameObjects.Sprite {
     });
   }
 
-  unselectUnit() {
-    this.tint = 0xffffff;
-    this.timelineSlot.tint = 0xffffff;
-    this.healthBar.setVisible(false);
-    if (this.effectIcon) this.effectIcon.setVisible(false);
-    this.myScene.uiScene.changeStatsUnit(this.myScene.currentPlayer);
-  }
-
+  // on select, highlight unit, show healthbar and effect icon, and show unit stats in UI
   selectUnit() {
     this.tint = 0x777777;
     this.timelineSlot.tint = 0x777777;
     this.healthBar.setVisible(true);
     if (this.effectIcon) this.effectIcon.setVisible(true);
     this.myScene.uiScene.changeStatsUnit(this);
+  }
+
+  unselectUnit() {
+    this.tint = 0xffffff;
+    this.timelineSlot.tint = 0xffffff;
+    this.healthBar.setVisible(false);
+    if (this.effectIcon) this.effectIcon.setVisible(false);
+    this.myScene.uiScene.changeStatsUnit(this.myScene.currentPlayer);
   }
 
   // refills movement points at turn beginning
@@ -115,6 +117,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   moveAlong(path: Phaser.Math.Vector2[]) {
     if (!path || path.length <= 0 || path.length > this.pm) {
       if (this.isMoving) {
+        // when end of path is reached, start the chain of movement tweens
         this.scene.tweens.chain(this.moveChain);
       }
       return;
@@ -124,7 +127,8 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.moveTo(this.movePath.shift()!);
   }
 
-  // called before actual move to check direction
+  // check next direction to take, update tile position and pm,
+  // and call move function that adds the actual movement to the tween chain
   moveTo(target: Phaser.Math.Vector2) {
     this.myScene.removeFromObstacleLayer(this);
     let { x, y } = target;
@@ -164,8 +168,8 @@ export class Unit extends Phaser.GameObjects.Sprite {
   // via tweens
   move(direction: string) {
     this.isMoving = true;
-    if (direction == "left" || direction == "right") {
-      let deltaX = direction == "left" ? -1 : 1;
+    if (direction === "left" || direction === "right") {
+      const deltaX = direction === "left" ? -1 : 1;
       this.moveChain.tweens.push({
         x: this.tilePosToPixelsX(deltaX),
         ease: "Linear",
@@ -174,16 +178,14 @@ export class Unit extends Phaser.GameObjects.Sprite {
           this.depth = this.y;
         },
         onUpdate: () => {
-          this.moveHealthBar();
-          this.moveTeamIdentifier();
-          if (this.effectIcon) this.moveEffectIcon();
+          this.moveUnitAttributes();
         },
         duration: 300,
         repeat: 0,
         yoyo: false,
       });
     } else {
-      let deltaY = direction == "up" ? -1 : 1;
+      const deltaY = direction === "up" ? -1 : 1;
       this.moveChain.tweens.push({
         y: this.tilePosToPixelsY(deltaY),
         ease: "Linear",
@@ -192,9 +194,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
           this.depth = this.y;
         },
         onUpdate: () => {
-          this.moveHealthBar();
-          this.moveTeamIdentifier();
-          if (this.effectIcon) this.moveEffectIcon();
+          this.moveUnitAttributes();
         },
         duration: 300,
         repeat: 0,
@@ -203,10 +203,17 @@ export class Unit extends Phaser.GameObjects.Sprite {
     }
   }
 
+  private moveUnitAttributes() {
+    this.moveHealthBar();
+    this.moveTeamIdentifier();
+    if (this.effectIcon) this.moveEffectIcon();
+  }
+
   moveHealthBar() {
-    let isOnTop = this.y < this.myScene.tileHeight * 2;
-    let barWidth = this.displayWidth * 0.8;
+    const isOnTop = this.y < this.myScene.tileHeight * 2;
+    const barWidth = this.displayWidth * 0.8;
     this.healthBar.x = this.x - barWidth / 2;
+    // if unit is on top of screen health bar must be below it
     this.healthBar.y = isOnTop ? this.y + 15 : this.y - this.displayHeight + 5;
   }
 
@@ -228,7 +235,8 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.nextAction();
   };
 
-  // convert the tile position (index) of the character to actual pixel position
+  // convert the tile position (index) of the unit to actual pixel position
+  // with optional delta
   tilePosToPixelsX(delta: number = 0) {
     return this.myScene.tileWidth * (this.indX + delta) + this.width / 2;
   }
@@ -240,18 +248,16 @@ export class Unit extends Phaser.GameObjects.Sprite {
   startMovingAnim = (direction: string) => {
     // if direction is left, just flip the image for right
     this.setFlipX(direction.startsWith("left"));
-    // if unit has type 'amazon', animation for left is 'leftamazon'
+    // i.e. if unit has type 'Amazon', animation for left has key 'leftAmazon'
     this.play(direction + this.type, true);
   };
 
   startAttackAnim = (direction: string) => {
-    // if direction is left, just flip the image for right
     this.setFlipX(direction.startsWith("left"));
-    // if unit has type 'amazon', animation for left is 'leftamazon'
     this.play(direction + "Attack" + this.type, true);
   };
 
-  // polymorphic methods
+  // these three methods are redefined by subclasses
   playTurn() {
     this.undergoEffectOverTime();
   }
@@ -272,10 +278,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   isDead(): boolean {
     return this.hp <= 0;
-  }
-
-  isInjured(): boolean {
-    return this.hp < this.maxHp;
   }
 
   // cast a spell at specified position
@@ -299,7 +301,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
           ? Math.sign(targetVec.x - this.indX)
           : Math.sign(targetVec.y - this.indY);
         unit.moveBy(spell.moveTargetBy, isAlignedX, isForward);
-        // refresh battle scene
+
         this.myScene.refreshAccessibleTiles();
         if (this.myScene.spellVisible) {
           this.myScene.displaySpellRange(this.myScene.currentSpell);
@@ -324,7 +326,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.refreshUI();
   }
 
-  // Receive spell effects
   undergoSpell(spell: Spell) {
     this.hp -= spell.damage;
     this.hp = Math.min(this.hp + spell.heal, this.maxHp);
@@ -372,9 +373,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
           x: this.tilePosToPixelsX(deltaX),
           ease: "Linear",
           onUpdate: () => {
-            this.moveHealthBar();
-            this.moveTeamIdentifier();
-            if (this.effectIcon) this.moveEffectIcon();
+            this.moveUnitAttributes();
           },
           duration: 66 * Math.abs(deltaX),
           repeat: 0,
@@ -403,10 +402,8 @@ export class Unit extends Phaser.GameObjects.Sprite {
           y: this.tilePosToPixelsY(deltaY),
           ease: "Linear",
           onUpdate: () => {
-            this.moveHealthBar();
-            this.moveTeamIdentifier();
+            this.moveUnitAttributes();
             this.depth = this.y;
-            if (this.effectIcon) this.moveEffectIcon();
           },
           duration: 66 * Math.abs(deltaY),
           repeat: 0,
@@ -415,9 +412,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
         this.indY += deltaY;
       }
     }
-    this.moveTeamIdentifier();
-    this.moveHealthBar();
-    this.moveEffectIcon();
+    this.moveUnitAttributes();
     this.myScene.addToObstacleLayer(
       new Phaser.Math.Vector2(this.indX, this.indY)
     );
@@ -501,7 +496,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
                 // display PA bonus in blue
                 if (bonusPA > 0) {
                   this.displayEffect(scene, bonusPA, "pa", false, true);
-                  paDelay = 400;
                 }
               });
             });
@@ -578,12 +572,10 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.scene.time.delayedCall(
       400,
       () => {
-        // if no allies left... game over
         if (this.myScene.gameIsOver()) {
           this.myScene.gameOver();
         }
         this.destroyUnit();
-        // if no enemies left, end the battle
         if (this.myScene.battleIsFinished()) {
           this.myScene.endBattle();
         }
@@ -747,7 +739,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   makeEffectIcon(effectOverTime: EffectOverTime) {
     const isOnTop = this.y < this.myScene.tileHeight * 2;
-    //draw the bar
     const icon = this.scene.add.image(
       this.x,
       isOnTop ? this.y + 27 : this.y - this.displayHeight - 2,
@@ -761,7 +752,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   }
 
   moveEffectIcon() {
-    let isOnTop = this.y < this.myScene.tileHeight * 2;
+    const isOnTop = this.y < this.myScene.tileHeight * 2;
     this.effectIcon.x = this.x;
     this.effectIcon.y = isOnTop ? this.y + 27 : this.y - this.displayHeight - 2;
   }
@@ -771,7 +762,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.indY = y;
     this.x = this.tilePosToPixelsX();
     this.y = this.tilePosToPixelsY();
-    this.moveHealthBar();
-    this.moveTeamIdentifier();
+    this.moveUnitAttributes();
   }
 }

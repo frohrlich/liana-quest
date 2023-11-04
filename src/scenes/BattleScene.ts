@@ -1,9 +1,9 @@
 import Phaser from "phaser";
-import { Unit } from "../classes/Unit";
+import { Unit } from "../classes/battle/Unit";
 import findPath from "../utils/findPath";
-import { Npc } from "../classes/Npc";
-import { Player } from "../classes/Player";
-import { Spell } from "../classes/Spell";
+import { Npc } from "../classes/battle/Npc";
+import { Player } from "../classes/battle/Player";
+import { Spell } from "../classes/battle/Spell";
 import { UIScene } from "./UIScene";
 import isVisible from "../utils/lineOfSight";
 import { UnitData, unitsAvailable } from "../data/UnitData";
@@ -54,41 +54,44 @@ export class BattleScene extends Phaser.Scene {
   preload(): void {}
 
   create(data: any): void {
+    // refresh scene to its original state
     this.turnIndex = 0;
     this.isPlayerTurn = true;
     this.spellVisible = false;
 
-    // id of the enemy from the world scene
+    // get id of the enemy from the world scene
     this.enemyId = data.enemyId;
 
     this.createTilemap();
     this.addUnitsOnStart(data);
+
     // camera settings
     const zoom = 2;
-    this.cameras.main.setZoom(zoom);
-    this.cameras.main.setBounds(
-      0,
-      0,
-      this.map.widthInPixels,
-      this.map.heightInPixels
-    );
-    this.cameras.main.roundPixels = true;
+    this.setupCamera(zoom);
 
     // game grid
-    this.grid = this.add.grid(
-      0,
-      0,
-      this.map.widthInPixels * zoom,
-      this.map.heightInPixels * zoom,
-      this.map.tileWidth,
-      this.map.tileHeight,
-      0xffffff,
-      0,
-      0x000000,
-      0.1
-    );
+    this.addGrid(zoom);
 
-    // on clicking on a tile
+    this.addSpellUnselectListener();
+
+    // create the timeline
+    this.timeline = createTimeline(this.allies, this.enemies);
+
+    // clean up event listener on Scene shutdown
+    this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.off(Phaser.Input.Events.POINTER_UP);
+    });
+
+    // start UI
+    this.scene.run("UIScene");
+    this.uiScene = this.scene.get("UIScene") as UIScene;
+
+    // and finally, player gets to choose their starter position
+    this.chooseStartPosition();
+  }
+
+  // add event listener for spell unselect when clicking outside spell range
+  private addSpellUnselectListener() {
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
       (pointer: Phaser.Input.Pointer) => {
@@ -100,7 +103,7 @@ export class BattleScene extends Phaser.Scene {
 
           // if in spell mode
           if (this.spellVisible) {
-            // if cliked outside spell range, deselect spell
+            // if cliked outside spell range, unselect spell and go back to movement mode
             if (
               !this.spellRange.some((tile) => {
                 return tile.x == targetVec.x && tile.y == targetVec.y;
@@ -113,50 +116,32 @@ export class BattleScene extends Phaser.Scene {
         }
       }
     );
-
-    // create the timeline
-    this.timeline = createTimeline(this.allies, this.enemies);
-
-    // remember to clean up on Scene shutdown
-    this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.input.off(Phaser.Input.Events.POINTER_UP);
-    });
-
-    this.scene.run("UIScene");
-    this.uiScene = this.scene.get("UIScene") as UIScene;
-
-    this.chooseStartPosition();
   }
 
-  displayBattleStartScreen() {
-    const screenCenterX = this.cameras.main.displayWidth / 2;
-    const screenCenterY = this.cameras.main.displayHeight / 2;
-    const battleStartText = "The battle begins !";
-    const battleStart = this.add
-      .bitmapText(screenCenterX, screenCenterY, "rainyhearts", battleStartText)
-      .setOrigin(0.5)
-      .setScale(2)
-      .setDepth(99999);
-    const battleStartOverlay = this.add
-      .rectangle(
-        0,
-        0,
-        this.cameras.main.displayWidth,
-        this.cameras.main.displayHeight,
-        0x999999,
-        0.7
-      )
-      .setOrigin(0)
-      .setDepth(99998);
+  private addGrid(zoom: number) {
+    this.grid = this.add.grid(
+      0,
+      0,
+      this.map.widthInPixels * zoom,
+      this.map.heightInPixels * zoom,
+      this.map.tileWidth,
+      this.map.tileHeight,
+      0xffffff,
+      0,
+      0x000000,
+      0.1
+    );
+  }
 
-    this.time.addEvent({
-      delay: 1500,
-      callback: () => {
-        battleStart.destroy();
-        battleStartOverlay.destroy();
-      },
-      callbackScope: this,
-    });
+  private setupCamera(zoom: number) {
+    this.cameras.main.setZoom(zoom);
+    this.cameras.main.setBounds(
+      0,
+      0,
+      this.map.widthInPixels,
+      this.map.heightInPixels
+    );
+    this.cameras.main.roundPixels = true;
   }
 
   chooseStartPosition() {
@@ -164,7 +149,7 @@ export class BattleScene extends Phaser.Scene {
     const enemyColor = 0xff0000;
 
     this.playerStarterTiles.forEach((tile) => {
-      // overlay the tile with an interactive transparent rectangle
+      // overlay the tiles with an interactive transparent rectangle
       let overlay = this.add.rectangle(
         tile.pixelX + 0.5 * tile.width,
         tile.pixelY + 0.5 * tile.height,
@@ -176,6 +161,7 @@ export class BattleScene extends Phaser.Scene {
       overlay.setInteractive();
       this.overlays.push(overlay);
 
+      // on click, teleport to new starter position
       overlay.on("pointerup", () => {
         this.currentPlayer.teleportToTile(tile.x, tile.y);
       });
@@ -223,6 +209,37 @@ export class BattleScene extends Phaser.Scene {
     );
   }
 
+  displayBattleStartScreen() {
+    const screenCenterX = this.cameras.main.displayWidth / 2;
+    const screenCenterY = this.cameras.main.displayHeight / 2;
+    const battleStartText = "The battle begins !";
+    const battleStart = this.add
+      .bitmapText(screenCenterX, screenCenterY, "rainyhearts", battleStartText)
+      .setOrigin(0.5)
+      .setScale(2)
+      .setDepth(99999);
+    const battleStartOverlay = this.add
+      .rectangle(
+        0,
+        0,
+        this.cameras.main.displayWidth,
+        this.cameras.main.displayHeight,
+        0x999999,
+        0.7
+      )
+      .setOrigin(0)
+      .setDepth(99998);
+
+    this.time.addEvent({
+      delay: 1500,
+      callback: () => {
+        battleStart.destroy();
+        battleStartOverlay.destroy();
+      },
+      callbackScope: this,
+    });
+  }
+
   // play this after player chose starter position and pressed start button
   startBattle() {
     this.clearOverlay();
@@ -233,6 +250,7 @@ export class BattleScene extends Phaser.Scene {
     this.highlightAccessibleTiles(this.accessibleTiles);
   }
 
+  // end turn after clicking end turn button (for player) or finishing actions (for npcs)
   endTurn = () => {
     this.uiScene.endTurn();
     // clear previous player highlight on the timeline
@@ -404,7 +422,7 @@ export class BattleScene extends Phaser.Scene {
           this.uiScene.refreshUI();
         }
       });
-      //on hovering over a tile, display path to it
+      // on hovering over a tile, display path to it
       overlay.on("pointerover", () => {
         if (!this.currentPlayer.isMoving) this.highlightPath(tilePos.path);
       });

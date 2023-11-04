@@ -1,12 +1,11 @@
 import Phaser from "phaser";
 import { BattleScene } from "./BattleScene";
-import { UIElement } from "../classes/UIElement";
-import { Spell } from "../classes/Spell";
-import { UISpell } from "../classes/UISpell";
-import { Unit } from "../classes/Unit";
-import { UnitStatDisplay } from "../classes/UnitStatDisplay";
-import { UITimelineSlot } from "../classes/UITimelineSlot";
-import { UIText } from "../classes/UIText";
+import { Spell } from "../classes/battle/Spell";
+import { UISpell } from "../classes/UI/UISpell";
+import { Unit } from "../classes/battle/Unit";
+import { UnitStatDisplay } from "../classes/UI/UnitStatDisplay";
+import { UITimelineSlot } from "../classes/UI/UITimelineSlot";
+import { UIText } from "../classes/UI/UIText";
 
 export class UIScene extends Phaser.Scene {
   graphics!: Phaser.GameObjects.Graphics;
@@ -30,10 +29,6 @@ export class UIScene extends Phaser.Scene {
       key: "UIScene",
     });
   }
-
-  init(params: any): void {}
-
-  preload(): void {}
 
   create(): void {
     this.battleScene = this.scene.get("BattleScene") as BattleScene;
@@ -94,6 +89,7 @@ export class UIScene extends Phaser.Scene {
     this.refreshSpells();
   }
 
+  // change start button to end turn button for the rest of the battle
   createEndTurnButton() {
     this.buttonText.text = "End turn";
     this.buttonText.off("pointerup");
@@ -197,11 +193,9 @@ export class UIScene extends Phaser.Scene {
       }
     );
 
-    let fillIndex;
+    let fillIndex = 0;
     if (this.battleScene.turnIndex < timeline.length) {
       fillIndex = this.battleScene.turnIndex;
-    } else {
-      fillIndex = 0;
     }
     const currentBackground = this.uiTimelineBackgrounds[fillIndex];
     if (currentBackground) currentBackground.fillColor = 0xffffff;
@@ -209,13 +203,13 @@ export class UIScene extends Phaser.Scene {
 
   // draw the outline of the UI
   drawOutline() {
-    let bounds = this.battleScene.cameras.main.getBounds();
-    let zoom = this.battleScene.cameras.main.zoom;
-    let bottom = bounds.bottom * zoom;
-    let width = bounds.width * zoom;
-    let offset = 2;
-    let uiTabWidth = (width - offset * 2) / 3;
-    let height = 30 * this.uiScale;
+    const bounds = this.battleScene.cameras.main.getBounds();
+    const zoom = this.battleScene.cameras.main.zoom;
+    const bottom = bounds.bottom * zoom;
+    const width = bounds.width * zoom;
+    const offset = 2;
+    const uiTabWidth = (width - offset * 2) / 3;
+    const height = 30 * this.uiScale;
 
     this.graphics = this.add.graphics();
     this.graphics.lineStyle(4, 0x79ae55);

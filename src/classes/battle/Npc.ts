@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { Unit } from "./Unit";
 import { Spell } from "./Spell";
 
+// non-player characters in battle
 export class Npc extends Unit {
   constructor(
     scene: Phaser.Scene,
@@ -88,10 +89,6 @@ export class Npc extends Unit {
 
   override nextAction() {
     this.endTurn();
-  }
-
-  override endTurn() {
-    super.endTurn();
   }
 
   // locates an accessible target for a given spell

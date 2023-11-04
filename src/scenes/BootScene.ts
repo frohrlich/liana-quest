@@ -7,13 +7,11 @@ export class BootScene extends Phaser.Scene {
     });
   }
 
-  init(params: any): void {}
-
   preload(): void {
     // map tiles
     this.load.image("tiles", "assets/map/spritesheet.png");
 
-    // map in json format
+    // maps in json format
     this.load.tilemapTiledJSON("map", "assets/map/map.json");
     this.load.tilemapTiledJSON("battlemap1", "assets/map/battleMap1.json");
     this.load.tilemapTiledJSON("battlemap2", "assets/map/battleMap2.json");
@@ -31,15 +29,9 @@ export class BootScene extends Phaser.Scene {
       "assets/fonts/rainyhearts.png",
       "assets/fonts/rainyhearts.xml"
     );
-
-    // illustration image
-    this.load.image("guerriere", "assets/guerriere.png");
   }
 
   create(): void {
-    // this.scene.start("BattleScene");
     this.scene.start("WorldScene");
   }
-
-  override update(time: number): void {}
 }

@@ -1,7 +1,7 @@
 import Phaser from "phaser";
-import { WorldScene } from "../scenes/WorldScene";
+import { WorldScene } from "../../scenes/WorldScene";
 
-// Unit in the world mode, as opposed to the Unit class for battle
+// unit in the world mode, as opposed to the Unit class for battle
 export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   myScene: WorldScene;
   // position on the grid
@@ -17,7 +17,6 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
 
   // time for moving by 1 tile (in ms)
   moveDuration = 180;
-  movementDelay: number;
 
   constructor(
     scene: Phaser.Scene,
@@ -36,6 +35,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     this.y = this.tilePosToPixelsY();
     this.type = name;
 
+    // chain of tweens containing the successive moving tweens in path from tile A to tile B
     this.moveChain.targets = this;
     this.moveChain.onStart = () => {
       // depth is same as y
@@ -58,6 +58,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   moveAlong(path: Phaser.Math.Vector2[]) {
     if (!path || path.length <= 0) {
       if (this.isMoving) {
+        // when end of path is reached, start the chain of movement tweens
         this.scene.tweens.chain(this.moveChain);
       }
       return;
@@ -66,7 +67,8 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     this.moveTo(this.movePath.shift()!);
   }
 
-  // called before actual move to check direction
+  // check next direction to take, update tile position,
+  // and call move function that adds the actual movement to the tween chain
   moveTo(target: Phaser.Math.Vector2) {
     const { x, y } = target;
 
@@ -174,6 +176,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   }
 
   // convert the tile position (index) of the character to actual pixel position
+  // with optional delta
   tilePosToPixelsX(delta: number = 0) {
     return this.myScene.tileWidth * (this.indX + delta) + this.width / 2;
   }
@@ -182,11 +185,13 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     return this.myScene.tileHeight * (this.indY + delta) + this.height / 6;
   }
 
+  // called when user clicks a tile while current movement is not finished
   interruptMovement() {
     this.scene.tweens.killTweensOf(this);
     this.stopMovement();
     this.indX = this.myScene.map.worldToTileX(this.x);
     this.indY = this.myScene.map.worldToTileX(this.y);
+    // replace unit to center of tile it's currently in
     this.x = this.tilePosToPixelsX();
     this.y = this.tilePosToPixelsY();
   }
