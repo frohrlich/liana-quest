@@ -9,7 +9,9 @@ npm start
 
 You can then launch the game via a simple live server (like the one from VSCode).
 
-A demo is also available on the 'demo' branch.
+A demo is also available on the associated Github Page :
+https://frohrlich.github.io/phaser-rpg/
+(based on the 'demo' branch)
 
 ## Credits for the assets :
 
