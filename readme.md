@@ -1,10 +1,13 @@
 To compile the project, just run :
+
+```
 npm install
 npm start
+```
 
 You can then launch the game via a simple live server (like the one from VSCode).
 
---Credits for the assets :
+#Credits for the assets :
 
 - Sprites :
   https://opengameart.org/content/rpg-character-sprites
