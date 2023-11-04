@@ -1,8 +1,16 @@
 # See http://help.github.com/ignore-files/ for more about ignoring files.
 
-# Compiled output
-/dist
-/tmp
+# Source code
+/src
+package-lock.json
+package.json
+tsconfig.json
+webpack.config.json
+readme.md
+/assets/RPG_assets.kra
+/assets/map/*.tmx
+/assets/map/*.tsx
+/assets/map/*.json
 /out-tsc
 /bazel-out
 
