@@ -10,7 +10,6 @@ readme.md
 /assets/RPG_assets.kra
 /assets/map/*.tmx
 /assets/map/*.tsx
-/assets/map/*.json
 /out-tsc
 /bazel-out
 
