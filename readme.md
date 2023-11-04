@@ -1,3 +1,5 @@
+A simple turn-based game made with Phaser 3.
+
 To compile the project, just run :
 
 ```
