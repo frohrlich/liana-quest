@@ -55,7 +55,7 @@ export class Npc extends Unit {
       } else {
         this.tryToMove();
       }
-    } else {
+    } else if (!this.myScene.battleIsFinished() && !this.myScene.gameIsOver()) {
       this.scene.time.addEvent({
         delay: 400,
         callback: this.myScene.endTurn,
