@@ -34,13 +34,13 @@ export const punch = new Spell(51, 1, 1, 2, "Punch", true, false, 55);
 
 export const sting = new Spell(
   60,
-  4,
+  0,
   12,
   2,
   "Sting",
   false,
   false,
-  75,
+  110,
   1,
   1,
   0,
