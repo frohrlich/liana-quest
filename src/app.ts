@@ -10,7 +10,7 @@ const config = {
   parent: "game",
   width: 642,
   height: 430,
-  zoom: 1.4,
+  zoom: 1,
   pixelArt: true,
   backgroundColor: "#000000",
   physics: {

@@ -92,9 +92,15 @@ export class UISpell extends UIElement {
     const lineHeight = this.fontSize;
     const fontSize = this.fontSize;
     let text = "";
-    let addText = `-${this.spell.name}-\ncost: ${this.spell.cost} PA`;
+
+    let addText = `-${this.spell.name}-`;
     let maxLength = addText.length;
     text += addText;
+
+    addText = `\ncost: ${this.spell.cost} PA`;
+    maxLength = Math.max(maxLength, addText.length);
+    text += addText;
+
     // addText = `\n${this.spell.minRange}-${this.spell.maxRange} range`;
     // maxLength = Math.max(maxLength, addText.length);
     // text += addText;
@@ -160,7 +166,9 @@ export class UISpell extends UIElement {
       height += lineHeight;
     }
 
-    let width = maxLength * (this.fontSize * 0.3);
+    console.log(maxLength);
+
+    let width = 26 * scale + maxLength * (this.fontSize * 0.2);
 
     const xPos = this.x + width / 2;
     const yPos = this.y - height / 2;
