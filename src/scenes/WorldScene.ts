@@ -3,6 +3,8 @@ import findPath from "../utils/findPath";
 import { WorldUnit } from "../classes/world/WorldUnit";
 import { WorldNpc } from "../classes/world/WorldNpc";
 import { amazon, snowman, unitsAvailable } from "../data/UnitData";
+import { io } from "socket.io-client";
+import { OnlinePlayer } from "../server/server";
 
 interface UnitPosition {
   indX: number;
@@ -30,6 +32,8 @@ export class WorldScene extends Phaser.Scene {
   enemyPositions: UnitPosition[] = [];
   enemyId: number;
   battleHasStarted: boolean;
+  socket: any;
+  otherPlayers: Phaser.Physics.Arcade.Group;
 
   constructor() {
     super({
@@ -38,6 +42,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   create(data: any): void {
+    this.setupWeb();
+
     this.battleHasStarted = false;
     // enemy id sent back from the victorious battle
     this.enemyId = data.enemyId;
@@ -48,6 +54,23 @@ export class WorldScene extends Phaser.Scene {
     this.addEnemies(30);
 
     this.enableMovingOnClick(this.background, this.obstacles);
+  }
+
+  setupWeb() {
+    this.socket = io();
+    this.otherPlayers = this.physics.add.group();
+    this.socket.on("newPlayer", (playerInfo: OnlinePlayer) => {
+      this.addOtherPlayers(playerInfo);
+    });
+  }
+
+  addOtherPlayers(playerInfo: OnlinePlayer) {
+    const otherPlayer = this.add
+      .sprite(playerInfo.x, playerInfo.y, "player", 4)
+      .setOrigin(0.5, 0.5)
+      .setDisplaySize(53, 40);
+    otherPlayer.type = playerInfo.id;
+    this.otherPlayers.add(otherPlayer);
   }
 
   private setupCamera() {
