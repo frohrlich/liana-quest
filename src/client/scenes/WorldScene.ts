@@ -5,6 +5,7 @@ import { WorldNpc } from "../classes/world/WorldNpc";
 import { amazon, snowman, unitsAvailable } from "../data/UnitData";
 import { io } from "socket.io-client";
 import { OnlinePlayer } from "../../server/server";
+import { WorldOnlinePlayer } from "../classes/world/WorldOnlinePlayer";
 
 interface UnitPosition {
   indX: number;
@@ -33,7 +34,7 @@ export class WorldScene extends Phaser.Scene {
   enemyId: number;
   battleHasStarted: boolean;
   socket: any;
-  otherPlayers: Phaser.Physics.Arcade.Group;
+  otherPlayers: WorldOnlinePlayer[] = [];
 
   constructor() {
     super({
@@ -58,19 +59,36 @@ export class WorldScene extends Phaser.Scene {
 
   setupWeb() {
     this.socket = io();
-    this.otherPlayers = this.physics.add.group();
     this.socket.on("newPlayer", (playerInfo: OnlinePlayer) => {
       this.addOtherPlayers(playerInfo);
+    });
+    this.socket.on("playerDisconnect", (playerId: string) => {
+      this.otherPlayers.forEach((otherPlayer: WorldOnlinePlayer) => {
+        if (playerId === otherPlayer.playerId) {
+          otherPlayer.destroy();
+        }
+      });
     });
   }
 
   addOtherPlayers(playerInfo: OnlinePlayer) {
-    const otherPlayer = this.add
-      .sprite(playerInfo.x, playerInfo.y, "player", 4)
-      .setOrigin(0.5, 0.5)
-      .setDisplaySize(53, 40);
-    otherPlayer.type = playerInfo.id;
-    this.otherPlayers.add(otherPlayer);
+    const frame = 3;
+    const otherPlayer = new WorldOnlinePlayer(
+      this,
+      playerInfo.playerId,
+      playerInfo.indX,
+      playerInfo.indY,
+      "player",
+      frame,
+      "Princess"
+    );
+    otherPlayer.scale = this.unitScale;
+    this.add.existing(otherPlayer);
+    this.otherPlayers.push(otherPlayer);
+
+    if (!this.anims.exists("left" + this.player.type)) {
+      this.createAnimations(frame, this.animFramerate, otherPlayer.type);
+    }
   }
 
   private setupCamera() {
@@ -220,7 +238,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   onMeetEnemy(player: any, enemy: any) {
-    if (!this.battleHasStarted) {
+    if (false && !this.battleHasStarted) {
       this.battleHasStarted = true;
       // shake the world
       this.cameras.main.shake(300);

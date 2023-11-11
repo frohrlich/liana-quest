@@ -5,14 +5,15 @@ import * as http from "http";
 const port = 8081;
 
 export interface OnlinePlayer {
-  id: string;
-  x: number;
-  y: number;
+  playerId: string;
+  indX: number;
+  indY: number;
+  type: string;
 }
 
 interface Movement {
-  x: number;
-  y: number;
+  indX: number;
+  indY: number;
 }
 
 interface ServerToClientEvents {
@@ -58,9 +59,10 @@ io.on("connection", function (socket) {
 
   // create a new player and add it to our players object
   players[socket.id] = {
-    x: Math.floor(Math.random() * 250),
-    y: Math.floor(Math.random() * 250),
+    indX: Math.floor(Math.random() * 10),
+    indY: Math.floor(Math.random() * 10),
     playerId: socket.id,
+    type: "Princess",
   };
   // send the players object to the new player
   socket.emit("currentPlayers", players);
@@ -77,8 +79,8 @@ io.on("connection", function (socket) {
 
   // when a player moves, update the player data
   socket.on("playerMovement", function (movementData: Movement) {
-    players[socket.id].x = movementData.x;
-    players[socket.id].y = movementData.y;
+    players[socket.id].indX = movementData.indX;
+    players[socket.id].indY = movementData.indY;
     // emit a message to all players about the player that moved
     socket.broadcast.emit("playerMoved", players[socket.id]);
   });
