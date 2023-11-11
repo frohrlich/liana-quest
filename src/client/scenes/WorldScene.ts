@@ -1,8 +1,6 @@
 import Phaser from "phaser";
-import findPath from "../utils/findPath";
-import { WorldUnit } from "../classes/world/WorldUnit";
 import { WorldNpc } from "../classes/world/WorldNpc";
-import { UnitData, amazon, snowman, unitsAvailable } from "../data/UnitData";
+import { UnitData, unitsAvailable } from "../data/UnitData";
 import { io } from "socket.io-client";
 import { OnlinePlayer } from "../../server/server";
 import { WorldOnlinePlayer } from "../classes/world/WorldOnlinePlayer";
@@ -76,43 +74,11 @@ export class WorldScene extends Phaser.Scene {
     });
     this.socket.on("playerMoved", (playerInfo: OnlinePlayer) => {
       if (playerInfo.playerId === this.player.playerId) {
-        const startVec = new Phaser.Math.Vector2(
-          this.player.indX,
-          this.player.indY
-        );
-        const targetVec = new Phaser.Math.Vector2(
-          playerInfo.indX,
-          playerInfo.indY
-        );
-        const path = findPath(
-          startVec,
-          targetVec,
-          this.background,
-          this.obstacles
-        );
-        if (path && path.length > 0) {
-          this.player.moveAlong(path);
-        }
+        this.player.moveToPosition(playerInfo.indX, playerInfo.indY);
       } else {
         this.otherPlayers.forEach((otherPlayer) => {
           if (playerInfo.playerId === otherPlayer.playerId) {
-            const startVec = new Phaser.Math.Vector2(
-              otherPlayer.indX,
-              otherPlayer.indY
-            );
-            const targetVec = new Phaser.Math.Vector2(
-              playerInfo.indX,
-              playerInfo.indY
-            );
-            const path = findPath(
-              startVec,
-              targetVec,
-              this.background,
-              this.obstacles
-            );
-            if (path && path.length > 0) {
-              otherPlayer.moveAlong(path);
-            }
+            otherPlayer.moveToPosition(playerInfo.indX, playerInfo.indY);
           }
         });
       }
@@ -131,6 +97,7 @@ export class WorldScene extends Phaser.Scene {
       playerInfo.type
     );
     otherPlayer.scale = this.unitScale;
+    otherPlayer.changeDirection(playerInfo.direction);
     this.add.existing(otherPlayer);
     this.otherPlayers.push(otherPlayer);
 
@@ -158,10 +125,10 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private addPlayer(playerInfo: OnlinePlayer) {
-    const startIndX = playerInfo.indX;
-    const startIndY = playerInfo.indY;
-    const playerPosX = this.player ? this.player.indX : startIndX;
-    const playerPosY = this.player ? this.player.indY : startIndY;
+    // get previous position if player is back from battle
+    // else get info from web
+    let playerPosX = this.player ? this.player.indX : playerInfo.indX;
+    let playerPosY = this.player ? this.player.indY : playerInfo.indY;
     // find unit data from its name given by server
     const playerData = this.findUnitDataByName(playerInfo.type);
     this.player = new WorldOnlinePlayer(
@@ -232,13 +199,14 @@ export class WorldScene extends Phaser.Scene {
 
     for (let i = 0; i < currentEnemyCount; i++) {
       let indX: number, indY: number;
+      const minPosition = 10;
       let id: number;
       let enemyType: string;
       // if enemies not already created, create them randomly on the map
       if (create) {
         do {
-          indX = Phaser.Math.RND.between(0, this.map.width);
-          indY = Phaser.Math.RND.between(0, this.map.height - 1);
+          indX = Phaser.Math.RND.between(minPosition, this.map.width);
+          indY = Phaser.Math.RND.between(minPosition, this.map.height - 1);
         } while (this.obstacles.getTileAt(indX, indY));
         // toss a coin between snowman and dude...
         enemyType = Phaser.Math.RND.between(0, 1) ? "Snowman" : "Dude";
@@ -296,7 +264,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   onMeetEnemy(player: any, enemy: any) {
-    if (false && !this.battleHasStarted) {
+    if (!this.battleHasStarted) {
       this.battleHasStarted = true;
       // shake the world
       this.cameras.main.shake(300);
@@ -322,17 +290,12 @@ export class WorldScene extends Phaser.Scene {
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
       (pointer: Phaser.Input.Pointer) => {
-        if (this.player.isMoving) {
-          this.player.interruptMovement();
-        }
         const { worldX, worldY } = pointer;
-        const startVec = new Phaser.Math.Vector2(
-          this.player.indX,
-          this.player.indY
-        );
         const targetVec = background.worldToTileXY(worldX, worldY);
-        const path = findPath(startVec, targetVec, background, obstacles);
-        if (path && path.length > 0) {
+        if (
+          background.getTileAt(targetVec.x, targetVec.y) &&
+          !obstacles.getTileAt(targetVec.x, targetVec.y)
+        ) {
           this.socket.emit("playerMovement", {
             indX: targetVec.x,
             indY: targetVec.y,

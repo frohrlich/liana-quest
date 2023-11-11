@@ -8,10 +8,11 @@ export interface OnlinePlayer {
   playerId: string;
   indX: number;
   indY: number;
+  direction: string;
   type: string;
 }
 
-interface Movement {
+interface Position {
   indX: number;
   indY: number;
 }
@@ -24,7 +25,9 @@ interface ServerToClientEvents {
 }
 
 interface ClientToServerEvents {
-  playerMovement: (movementData: Movement) => void;
+  playerMovement: (movementData: Position) => void;
+  updateDirection: (direction: string) => void;
+  updatePosition: (position: Position) => void;
 }
 
 interface InterServerEvents {
@@ -55,13 +58,12 @@ app.get("/", function (req, res) {
 });
 
 io.on("connection", function (socket) {
-  console.log("a user connected");
-
   const newPlayer = {
-    indX: Math.floor(Math.random() * 10),
-    indY: Math.floor(Math.random() * 10),
+    indX: Math.floor(Math.random() * 5) + 1,
+    indY: Math.floor(Math.random() * 5) + 1,
     playerId: socket.id,
     type: "Princess",
+    direction: "down",
   };
   // create a new player and add it to our players object
   players.push(newPlayer);
@@ -71,7 +73,6 @@ io.on("connection", function (socket) {
   socket.broadcast.emit("newPlayer", newPlayer);
 
   socket.on("disconnect", function () {
-    console.log("user disconnected");
     // remove this player from our players object
     const index = players.findIndex((player) => player.playerId === socket.id);
     if (index !== -1) {
@@ -82,12 +83,23 @@ io.on("connection", function (socket) {
   });
 
   // when a player moves, update the player data
-  socket.on("playerMovement", function (movementData: Movement) {
+  socket.on("playerMovement", function (movementData: Position) {
     const currentPlayer = findCurrentPlayer(socket);
     currentPlayer.indX = movementData.indX;
     currentPlayer.indY = movementData.indY;
     // emit a message to all players about the player that moved
     io.emit("playerMoved", currentPlayer);
+  });
+
+  socket.on("updateDirection", function (direction: string) {
+    const currentPlayer = findCurrentPlayer(socket);
+    currentPlayer.direction = direction;
+  });
+
+  socket.on("updatePosition", function (position: Position) {
+    const currentPlayer = findCurrentPlayer(socket);
+    currentPlayer.indX = position.indX;
+    currentPlayer.indY = position.indY;
   });
 });
 

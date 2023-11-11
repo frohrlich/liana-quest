@@ -17,4 +17,8 @@ export class WorldOnlinePlayer extends WorldUnit {
     super(scene, indX, indY, texture, frame, name);
     this.playerId = playerId;
   }
+
+  override updateServerDirection() {
+    this.myScene.socket.emit("updateDirection", this.direction);
+  }
 }

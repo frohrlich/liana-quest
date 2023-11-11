@@ -1,5 +1,7 @@
 import Phaser from "phaser";
 import { WorldScene } from "../../scenes/WorldScene";
+import findPath from "../../utils/findPath";
+import { WorldOnlinePlayer } from "./WorldOnlinePlayer";
 
 // unit in the world mode, as opposed to the Unit class for battle
 export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
@@ -33,6 +35,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     this.indY = indY;
     this.x = this.tilePosToPixelsX();
     this.y = this.tilePosToPixelsY();
+    this.depth = this.y;
     this.type = name;
 
     // chain of tweens containing the successive moving tweens in path from tile A to tile B
@@ -43,9 +46,14 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
       this.depth = this.y;
       this.isMoving = true;
     };
-    this.moveChain.onComplete = this.stopMovement;
+    this.moveChain.onComplete = () => {
+      this.updateServerDirection();
+      this.stopMovement();
+    };
     this.moveChain.tweens = [];
   }
+
+  updateServerDirection() {}
 
   setHitboxScale(hitBoxScale: number = 1) {
     this.setSize(
@@ -194,5 +202,22 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     // replace unit to center of tile it's currently in
     this.x = this.tilePosToPixelsX();
     this.y = this.tilePosToPixelsY();
+  }
+
+  moveToPosition(indX: number, indY: number) {
+    if (this.isMoving) {
+      this.interruptMovement();
+    }
+    const startVec = new Phaser.Math.Vector2(this.indX, this.indY);
+    const targetVec = new Phaser.Math.Vector2(indX, indY);
+    const path = findPath(
+      startVec,
+      targetVec,
+      this.myScene.background,
+      this.myScene.obstacles
+    );
+    if (path && path.length > 0) {
+      this.moveAlong(path);
+    }
   }
 }
