@@ -4,7 +4,7 @@ import { WorldUnit } from "../classes/world/WorldUnit";
 import { WorldNpc } from "../classes/world/WorldNpc";
 import { amazon, snowman, unitsAvailable } from "../data/UnitData";
 import { io } from "socket.io-client";
-import { OnlinePlayer } from "../server/server";
+import { OnlinePlayer } from "../../server/server";
 
 interface UnitPosition {
   indX: number;

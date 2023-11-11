@@ -47,10 +47,12 @@ const io = new Server<
 
 let players: OnlinePlayer[] = [];
 
-app.use(express.static(__dirname));
+app.use(express.static("./"));
+
 app.get("/", function (req, res) {
-  res.sendFile(__dirname + "/index.html");
+  res.sendFile("/public/index.html", { root: "./" });
 });
+
 io.on("connection", function (socket) {
   console.log("a user connected");
 
