@@ -57,35 +57,44 @@ app.get("/", function (req, res) {
 io.on("connection", function (socket) {
   console.log("a user connected");
 
-  // create a new player and add it to our players object
-  players[socket.id] = {
+  const newPlayer = {
     indX: Math.floor(Math.random() * 10),
     indY: Math.floor(Math.random() * 10),
     playerId: socket.id,
     type: "Princess",
   };
+  // create a new player and add it to our players object
+  players.push(newPlayer);
   // send the players object to the new player
   socket.emit("currentPlayers", players);
   // update all other players of the new player
-  socket.broadcast.emit("newPlayer", players[socket.id]);
+  socket.broadcast.emit("newPlayer", newPlayer);
 
   socket.on("disconnect", function () {
     console.log("user disconnected");
     // remove this player from our players object
-    delete players[socket.id];
+    const index = players.findIndex((player) => player.playerId === socket.id);
+    if (index !== -1) {
+      players.splice(index, 1);
+    }
     // emit a message to all players to remove this player
     io.emit("playerDisconnect", socket.id);
   });
 
   // when a player moves, update the player data
   socket.on("playerMovement", function (movementData: Movement) {
-    players[socket.id].indX = movementData.indX;
-    players[socket.id].indY = movementData.indY;
+    const currentPlayer = findCurrentPlayer(socket);
+    currentPlayer.indX = movementData.indX;
+    currentPlayer.indY = movementData.indY;
     // emit a message to all players about the player that moved
-    socket.broadcast.emit("playerMoved", players[socket.id]);
+    io.emit("playerMoved", currentPlayer);
   });
 });
 
 server.listen(port, function () {
   console.log(`Listening on ${port}`);
 });
+
+function findCurrentPlayer(socket) {
+  return players.find((player) => player.playerId === socket.id);
+}

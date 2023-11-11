@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import findPath from "../utils/findPath";
 import { WorldUnit } from "../classes/world/WorldUnit";
 import { WorldNpc } from "../classes/world/WorldNpc";
-import { amazon, snowman, unitsAvailable } from "../data/UnitData";
+import { UnitData, amazon, snowman, unitsAvailable } from "../data/UnitData";
 import { io } from "socket.io-client";
 import { OnlinePlayer } from "../../server/server";
 import { WorldOnlinePlayer } from "../classes/world/WorldOnlinePlayer";
@@ -15,11 +15,9 @@ interface UnitPosition {
 }
 
 export class WorldScene extends Phaser.Scene {
-  startPlayerPosX = 3;
-  startPlayerPosY = 6;
-  playerType = amazon;
+  playerType: UnitData;
 
-  player!: WorldUnit;
+  player!: WorldOnlinePlayer;
   spawns!: Phaser.Physics.Arcade.Group;
   unitScale = 1.5;
   animFramerate = 7;
@@ -43,18 +41,13 @@ export class WorldScene extends Phaser.Scene {
   }
 
   create(data: any): void {
-    this.setupWeb();
-
     this.battleHasStarted = false;
     // enemy id sent back from the victorious battle
     this.enemyId = data.enemyId;
 
     this.createTilemap();
-    this.addPlayer();
-    this.setupCamera();
-    this.addEnemies(30);
 
-    this.enableMovingOnClick(this.background, this.obstacles);
+    this.setupWeb();
   }
 
   setupWeb() {
@@ -69,25 +62,84 @@ export class WorldScene extends Phaser.Scene {
         }
       });
     });
+    this.socket.on("currentPlayers", (players: OnlinePlayer[]) => {
+      players.forEach((player) => {
+        if (player.playerId === this.socket.id) {
+          this.addPlayer(player);
+          this.setupCamera();
+          this.addEnemies(30);
+          this.enableMovingOnClick(this.background, this.obstacles);
+        } else {
+          this.addOtherPlayers(player);
+        }
+      });
+    });
+    this.socket.on("playerMoved", (playerInfo: OnlinePlayer) => {
+      if (playerInfo.playerId === this.player.playerId) {
+        const startVec = new Phaser.Math.Vector2(
+          this.player.indX,
+          this.player.indY
+        );
+        const targetVec = new Phaser.Math.Vector2(
+          playerInfo.indX,
+          playerInfo.indY
+        );
+        const path = findPath(
+          startVec,
+          targetVec,
+          this.background,
+          this.obstacles
+        );
+        if (path && path.length > 0) {
+          this.player.moveAlong(path);
+        }
+      } else {
+        this.otherPlayers.forEach((otherPlayer) => {
+          if (playerInfo.playerId === otherPlayer.playerId) {
+            const startVec = new Phaser.Math.Vector2(
+              otherPlayer.indX,
+              otherPlayer.indY
+            );
+            const targetVec = new Phaser.Math.Vector2(
+              playerInfo.indX,
+              playerInfo.indY
+            );
+            const path = findPath(
+              startVec,
+              targetVec,
+              this.background,
+              this.obstacles
+            );
+            if (path && path.length > 0) {
+              otherPlayer.moveAlong(path);
+            }
+          }
+        });
+      }
+    });
   }
 
   addOtherPlayers(playerInfo: OnlinePlayer) {
-    const frame = 3;
+    const playerData = this.findUnitDataByName(playerInfo.type);
     const otherPlayer = new WorldOnlinePlayer(
       this,
       playerInfo.playerId,
       playerInfo.indX,
       playerInfo.indY,
       "player",
-      frame,
-      "Princess"
+      playerData.frame,
+      playerInfo.type
     );
     otherPlayer.scale = this.unitScale;
     this.add.existing(otherPlayer);
     this.otherPlayers.push(otherPlayer);
 
-    if (!this.anims.exists("left" + this.player.type)) {
-      this.createAnimations(frame, this.animFramerate, otherPlayer.type);
+    if (!this.anims.exists("left" + playerInfo.type)) {
+      this.createAnimations(
+        playerData.frame,
+        this.animFramerate,
+        otherPlayer.type
+      );
     }
   }
 
@@ -105,14 +157,16 @@ export class WorldScene extends Phaser.Scene {
     this.cameras.main.roundPixels = true;
   }
 
-  private addPlayer() {
-    const startIndX = this.startPlayerPosX;
-    const startIndY = this.startPlayerPosY;
+  private addPlayer(playerInfo: OnlinePlayer) {
+    const startIndX = playerInfo.indX;
+    const startIndY = playerInfo.indY;
     const playerPosX = this.player ? this.player.indX : startIndX;
     const playerPosY = this.player ? this.player.indY : startIndY;
-    const playerData = this.playerType;
-    this.player = new WorldUnit(
+    // find unit data from its name given by server
+    const playerData = this.findUnitDataByName(playerInfo.type);
+    this.player = new WorldOnlinePlayer(
       this,
+      playerInfo.playerId,
       playerPosX,
       playerPosY,
       "player",
@@ -129,6 +183,10 @@ export class WorldScene extends Phaser.Scene {
         this.player.type
       );
     }
+  }
+
+  private findUnitDataByName(playerName: string) {
+    return unitsAvailable.find((unitData) => unitData.name === playerName);
   }
 
   private createTilemap() {
@@ -275,7 +333,10 @@ export class WorldScene extends Phaser.Scene {
         const targetVec = background.worldToTileXY(worldX, worldY);
         const path = findPath(startVec, targetVec, background, obstacles);
         if (path && path.length > 0) {
-          this.player.moveAlong(path);
+          this.socket.emit("playerMovement", {
+            indX: targetVec.x,
+            indY: targetVec.y,
+          });
         }
       }
     );
