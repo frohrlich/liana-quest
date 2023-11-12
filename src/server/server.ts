@@ -1,5 +1,5 @@
 import express, { Express, Request, Response, Application } from "express";
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import * as http from "http";
 
 const port = 8081;
@@ -19,15 +19,21 @@ interface Position {
 
 interface ServerToClientEvents {
   currentPlayers: (onlinePlayer: OnlinePlayer[]) => void;
+  currentNpcs: (npcs: OnlinePlayer[]) => void;
   newPlayer: (onlinePlayer: OnlinePlayer) => void;
   playerDisconnect: (id: string) => void;
   playerMoved: (onlinePlayer: OnlinePlayer) => void;
+  enemyWasKilled: (id: string) => void;
+  playerVisibilityChanged: (id: string, isVisible: boolean) => void;
 }
 
 interface ClientToServerEvents {
   playerMovement: (movementData: Position) => void;
+  enemyKill: (id: string) => void;
   updateDirection: (direction: string) => void;
   updatePosition: (position: Position) => void;
+  startBattle: () => void;
+  endBattle: (player: OnlinePlayer) => void;
 }
 
 interface InterServerEvents {
@@ -50,6 +56,29 @@ const io = new Server<
 >(server);
 
 let players: OnlinePlayer[] = [];
+let npcs: OnlinePlayer[] = [];
+const enemyCount = 30;
+const minPosition = 10;
+const mapWidth = 60;
+const mapHeight = 34;
+
+// create npcs
+for (let i = 0; i < enemyCount; i++) {
+  const id = i.toString();
+  const indX =
+    Math.floor(Math.random() * (mapWidth - minPosition)) + minPosition;
+  const indY =
+    Math.floor(Math.random() * (mapHeight - minPosition - 1)) + minPosition;
+  // toss a coin between snowman and dude...
+  const enemyType = Math.floor(Math.random() * 2) ? "Snowman" : "Dude";
+  npcs.push({
+    indX: indX,
+    indY: indY,
+    type: enemyType,
+    playerId: id,
+    direction: "down",
+  });
+}
 
 app.use(express.static("./"));
 
@@ -64,22 +93,27 @@ io.on("connection", function (socket) {
     playerId: socket.id,
     type: "Princess",
     direction: "down",
+    visibility: true,
   };
   // create a new player and add it to our players object
-  players.push(newPlayer);
-  // send the players object to the new player
-  socket.emit("currentPlayers", players);
-  // update all other players of the new player
-  socket.broadcast.emit("newPlayer", newPlayer);
+  addNewPlayer(newPlayer, socket);
 
-  socket.on("disconnect", function () {
-    // remove this player from our players object
-    const index = players.findIndex((player) => player.playerId === socket.id);
+  socket.on("startBattle", removePlayer(socket));
+
+  // plays when player returns from battle to world scene
+  socket.on("endBattle", (player: OnlinePlayer) => {
+    addNewPlayer(player, socket);
+  });
+
+  socket.on("disconnect", removePlayer(socket));
+
+  socket.on("enemyKill", function (enemyId: string) {
+    const index = npcs.findIndex((npc) => npc.playerId === enemyId);
     if (index !== -1) {
-      players.splice(index, 1);
+      npcs.splice(index, 1);
     }
     // emit a message to all players to remove this player
-    io.emit("playerDisconnect", socket.id);
+    io.emit("enemyWasKilled", enemyId);
   });
 
   // when a player moves, update the player data
@@ -93,7 +127,9 @@ io.on("connection", function (socket) {
 
   socket.on("updateDirection", function (direction: string) {
     const currentPlayer = findCurrentPlayer(socket);
-    currentPlayer.direction = direction;
+    if (currentPlayer) {
+      currentPlayer.direction = direction;
+    }
   });
 
   socket.on("updatePosition", function (position: Position) {
@@ -106,6 +142,27 @@ io.on("connection", function (socket) {
 server.listen(port, function () {
   console.log(`Listening on ${port}`);
 });
+
+function addNewPlayer(newPlayer: OnlinePlayer, socket) {
+  players.push(newPlayer);
+  // send the players object to the new player
+  socket.emit("currentPlayers", players);
+  // send the npcs object to the new player
+  socket.emit("currentNpcs", npcs);
+  // update all other players of the new player
+  socket.broadcast.emit("newPlayer", newPlayer);
+}
+
+function removePlayer(socket) {
+  return function () {
+    const index = players.findIndex((player) => player.playerId === socket.id);
+    if (index !== -1) {
+      players.splice(index, 1);
+    }
+    // emit a message to all players to remove this player
+    io.emit("playerDisconnect", socket.id);
+  };
+}
 
 function findCurrentPlayer(socket) {
   return players.find((player) => player.playerId === socket.id);

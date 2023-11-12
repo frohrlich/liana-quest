@@ -142,19 +142,24 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   // stop player movement
   // and their animations too
   stopMovement = () => {
-    this.depth = this.y;
-    this.anims.stop();
-    this.changeDirection(this.direction);
-    this.direction = "";
-    this.moveChain.tweens = [];
-    this.isMoving = false;
+    // clutch for when player is destroyed and keeps moving...
+    if (this.anims) {
+      this.depth = this.y;
+      this.anims.stop();
+      this.changeDirection(this.direction);
+      this.direction = "";
+      this.moveChain.tweens = [];
+      this.isMoving = false;
+    }
   };
 
   startMovingAnim = (direction: string) => {
-    // if direction is left, just flip the image for right
-    this.setFlipX(direction.startsWith("left"));
-    // if unit has type 'Amazon', animation for left is 'leftAmazon'
-    this.play(direction + this.type, true);
+    if (this.anims) {
+      // if direction is left, just flip the image for right
+      this.setFlipX(direction.startsWith("left"));
+      // if unit has type 'Amazon', animation for left is 'leftAmazon'
+      this.play(direction + this.type, true);
+    }
   };
 
   // change player direction

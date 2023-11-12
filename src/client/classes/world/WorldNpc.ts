@@ -8,11 +8,12 @@ export class WorldNpc extends WorldUnit {
   // range (in tiles) of a random movement on the map
   movingRange = 3;
   // the id is used to link a world npc to its battle counterpart
-  id: number;
+  id: string;
+  timer: Phaser.Time.TimerEvent;
 
   constructor(
     scene: Phaser.Scene,
-    id: number,
+    id: string,
     indX: number,
     indY: number,
     texture: string,
@@ -27,7 +28,7 @@ export class WorldNpc extends WorldUnit {
   moveRandomly(delay: number, range: number) {
     // random offset before first movement so that all npcs don't move simultaneously
     const movingOffset = Phaser.Math.Between(0, delay);
-    this.scene.time.addEvent({
+    this.timer = this.scene.time.addEvent({
       delay: delay,
       callback: this.moveToRandomNearbyTile,
       args: [range],
@@ -35,6 +36,11 @@ export class WorldNpc extends WorldUnit {
       loop: true,
       startAt: movingOffset,
     });
+  }
+
+  override destroy(fromScene?: boolean): void {
+    this.timer.remove();
+    super.destroy();
   }
 
   moveToRandomNearbyTile(range: number) {

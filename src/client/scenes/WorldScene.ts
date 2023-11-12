@@ -45,7 +45,18 @@ export class WorldScene extends Phaser.Scene {
 
     this.createTilemap();
 
-    this.setupWeb();
+    // if there is a enemy id it means we just got back from battle
+    if (this.enemyId !== undefined) {
+      this.socket.emit("endBattle", {
+        playerId: this.player.playerId,
+        indX: this.player.indX,
+        indY: this.player.indY,
+        direction: this.player.direction,
+        type: this.player.type,
+      });
+    } else {
+      this.setupWeb();
+    }
   }
 
   setupWeb() {
@@ -59,17 +70,41 @@ export class WorldScene extends Phaser.Scene {
           otherPlayer.destroy();
         }
       });
+      const index = this.otherPlayers.findIndex(
+        (player) => player.playerId === playerId
+      );
+      if (index !== -1) {
+        this.otherPlayers.splice(index, 1);
+      }
     });
     this.socket.on("currentPlayers", (players: OnlinePlayer[]) => {
       players.forEach((player) => {
         if (player.playerId === this.socket.id) {
           this.addPlayer(player);
           this.setupCamera();
-          this.addEnemies(30);
           this.enableMovingOnClick(this.background, this.obstacles);
         } else {
           this.addOtherPlayers(player);
         }
+      });
+    });
+    this.socket.on(
+      "playerVisibilityChanged",
+      (id: string, isVisible: boolean) => {
+        this.otherPlayers.forEach((player) => {
+          if (player.playerId === id) {
+            player.setVisible(isVisible);
+          }
+        });
+      }
+    );
+    this.socket.on("currentNpcs", (npcs: OnlinePlayer[]) => {
+      this.setupCamera();
+      this.addEnemies(npcs);
+    });
+    this.socket.on("enemyWasKilled", (id: string) => {
+      this.spawns.getChildren().forEach((enemy) => {
+        if ((enemy as WorldNpc).id === id) enemy.destroy();
       });
     });
     this.socket.on("playerMoved", (playerInfo: OnlinePlayer) => {
@@ -179,59 +214,25 @@ export class WorldScene extends Phaser.Scene {
       .setDepth(9999);
   }
 
-  private addEnemies(enemyNumber: number) {
+  private addEnemies(enemies: OnlinePlayer[]) {
     this.spawns = this.physics.add.group({
       classType: Phaser.GameObjects.Sprite,
     });
 
-    // if no enemies already, create them
-    const create = this.enemyPositions.length === 0;
-
     // if we just defeated an enemy in battle, delete it from the world map
     if (this.enemyId !== undefined) {
-      const index = this.enemyPositions.findIndex(
-        (enemy) => enemy.id === this.enemyId
-      );
-      if (index !== -1) this.enemyPositions.splice(index, 1);
+      this.socket.emit("enemyKill", this.enemyId);
     }
 
-    const currentEnemyCount = create ? enemyNumber : this.enemyPositions.length;
-
-    for (let i = 0; i < currentEnemyCount; i++) {
-      let indX: number, indY: number;
-      const minPosition = 10;
-      let id: number;
-      let enemyType: string;
-      // if enemies not already created, create them randomly on the map
-      if (create) {
-        do {
-          indX = Phaser.Math.RND.between(minPosition, this.map.width);
-          indY = Phaser.Math.RND.between(minPosition, this.map.height - 1);
-        } while (this.obstacles.getTileAt(indX, indY));
-        // toss a coin between snowman and dude...
-        enemyType = Phaser.Math.RND.between(0, 1) ? "Snowman" : "Dude";
-
-        // remember the enemy's position to recreate it later
-        id = i;
-        this.enemyPositions.push({
-          indX: indX,
-          indY: indY,
-          type: enemyType,
-          id: id,
-        });
-        // else if enemies already created, replace them to their previous position
-      } else {
-        const myPosition = this.enemyPositions[i];
-        indX = myPosition.indX;
-        indY = myPosition.indY;
-        enemyType = myPosition.type;
-        id = myPosition.id;
-      }
+    for (let i = 0; i < enemies.length; i++) {
+      const myPosition = enemies[i];
+      const indX = myPosition.indX;
+      const indY = myPosition.indY;
+      const enemyType = myPosition.type;
+      const id = myPosition.playerId;
 
       // find enemy data from its type
-      const enemyData = unitsAvailable.find(
-        (unitData) => unitData.name === enemyType
-      );
+      const enemyData = this.findUnitDataByName(enemyType);
 
       if (!this.anims.exists("left" + enemyData.name)) {
         this.createAnimations(
@@ -268,18 +269,29 @@ export class WorldScene extends Phaser.Scene {
       this.battleHasStarted = true;
       // shake the world
       this.cameras.main.shake(300);
+      this.socket.emit("startBattle");
       // start battle
       this.time.addEvent({
         delay: 300,
-        callback: () =>
+        callback: () => {
+          this.resetScene();
           this.scene.start("BattleScene", {
             playerType: player.type,
             enemyType: enemy.type,
             enemyId: enemy.id,
-          }),
+          });
+        },
         callbackScope: this,
       });
     }
+  }
+
+  resetScene() {
+    this.spawns.clear(true, true);
+    this.otherPlayers.forEach((player) => {
+      player.destroy(true);
+    });
+    this.otherPlayers = [];
   }
 
   enableMovingOnClick(
