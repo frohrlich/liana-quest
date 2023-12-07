@@ -1,6 +1,7 @@
 import express, { Express, Request, Response, Application } from "express";
 import { Server, Socket } from "socket.io";
 import * as http from "http";
+import findPath, { Vector2 } from "./utils/findPath";
 
 const port = 8081;
 
@@ -23,6 +24,7 @@ interface ServerToClientEvents {
   newPlayer: (onlinePlayer: OnlinePlayer) => void;
   playerDisconnect: (id: string) => void;
   playerMoved: (onlinePlayer: OnlinePlayer) => void;
+  npcMoved: (onlinePlayer: OnlinePlayer) => void;
   enemyWasKilled: (id: string) => void;
   playerVisibilityChanged: (id: string, isVisible: boolean) => void;
 }
@@ -59,26 +61,70 @@ let players: OnlinePlayer[] = [];
 let npcs: OnlinePlayer[] = [];
 const enemyCount = 30;
 const minPosition = 10;
-const mapWidth = 60;
-const mapHeight = 34;
 
-// create npcs
-for (let i = 0; i < enemyCount; i++) {
-  const id = i.toString();
-  const indX =
-    Math.floor(Math.random() * (mapWidth - minPosition)) + minPosition;
-  const indY =
-    Math.floor(Math.random() * (mapHeight - minPosition - 1)) + minPosition;
-  // toss a coin between snowman and dude...
-  const enemyType = Math.floor(Math.random() * 2) ? "Snowman" : "Dude";
-  npcs.push({
-    indX: indX,
-    indY: indY,
-    type: enemyType,
-    playerId: id,
-    direction: "down",
-  });
-}
+// load map
+let tmx = require("tmx-parser");
+
+tmx.parseFile("./assets/map/map.tmx", function (err, map) {
+  if (err) throw err;
+  const background = map.layers[0];
+  const obstacles = map.layers[1];
+
+  // create npcs at random locations
+  for (let i = 0; i < enemyCount; i++) {
+    const id = i.toString();
+    let indX: number, indY: number;
+    do {
+      indX =
+        Math.floor(Math.random() * (map.width - minPosition)) + minPosition;
+      indY =
+        Math.floor(Math.random() * (map.height - minPosition - 1)) +
+        minPosition;
+    } while (obstacles.tileAt(indX, indY)); // but not on obstacles
+    // toss a coin between snowman and dude...
+    const enemyType = Math.floor(Math.random() * 2) ? "Snowman" : "Dude";
+    const npc: OnlinePlayer = {
+      indX: indX,
+      indY: indY,
+      type: enemyType,
+      playerId: id,
+      direction: "down",
+    };
+    npcs.push(npc);
+
+    // npc random movement over time
+    // random offset before first movement so that all npcs don't move simultaneously
+    const delay = 10000;
+    const range = 3;
+    const movingOffset = Math.floor(Math.random() * delay);
+    let myInterval: any;
+    setTimeout(() => {
+      myInterval = setInterval(function () {
+        let nearbyTiles: Position[] = [];
+        // first calculate the accessible tiles around npc
+        for (let i = 0; i < background.tiles.length; i++) {
+          let tileX = i % map.width;
+          let tileY = Math.floor(i / map.width);
+          if (
+            obstacles.tileAt(tileX, tileY) === undefined &&
+            tileX >= indX - range &&
+            tileY >= indY - range &&
+            tileX <= indX + range &&
+            tileY <= indY + range
+          ) {
+            nearbyTiles.push({ indX: tileX, indY: tileY });
+          }
+        }
+
+        // then chooses one randomly
+        const randMove = Math.floor(Math.random() * (nearbyTiles.length - 1));
+        npc.indX = nearbyTiles[randMove].indX;
+        npc.indY = nearbyTiles[randMove].indY;
+        io.emit("npcMoved", npc);
+      }, delay);
+    }, movingOffset);
+  }
+});
 
 app.use(express.static("./"));
 

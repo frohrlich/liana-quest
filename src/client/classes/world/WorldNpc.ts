@@ -22,53 +22,11 @@ export class WorldNpc extends WorldUnit {
   ) {
     super(scene, indX, indY, texture, frame, name);
     this.id = id;
-    this.moveRandomly(this.movingDelay, this.movingRange);
-  }
-
-  moveRandomly(delay: number, range: number) {
-    // random offset before first movement so that all npcs don't move simultaneously
-    const movingOffset = Phaser.Math.Between(0, delay);
-    this.timer = this.scene.time.addEvent({
-      delay: delay,
-      callback: this.moveToRandomNearbyTile,
-      args: [range],
-      callbackScope: this,
-      loop: true,
-      startAt: movingOffset,
-    });
+    // this.moveRandomly(this.movingDelay, this.movingRange);
   }
 
   override destroy(fromScene?: boolean): void {
     this.timer.remove();
     super.destroy();
-  }
-
-  moveToRandomNearbyTile(range: number) {
-    const startVec = new Phaser.Math.Vector2(this.indX, this.indY);
-    // first calculate the accessible tiles around npc
-    const nearbyTiles = this.myScene.background.filterTiles(
-      (tile: Phaser.Tilemaps.Tile) =>
-        !this.myScene.obstacles.getTileAt(tile.x, tile.y),
-      this.scene,
-      this.indX - range,
-      this.indY - range,
-      range * 2 + 1,
-      range * 2 + 1
-    );
-    // then chooses one randomly
-    const randMove = Phaser.Math.Between(0, nearbyTiles.length - 1);
-    const targetVec = new Phaser.Math.Vector2(
-      nearbyTiles[randMove].x,
-      nearbyTiles[randMove].y
-    );
-    const path = findPath(
-      startVec,
-      targetVec,
-      this.myScene.background,
-      this.myScene.obstacles
-    );
-    if (path) {
-      this.moveAlong(path);
-    }
   }
 }

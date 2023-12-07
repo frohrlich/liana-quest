@@ -118,6 +118,14 @@ export class WorldScene extends Phaser.Scene {
         });
       }
     });
+    this.socket.on("npcMoved", (npcInfo: OnlinePlayer) => {
+      this.spawns.getChildren().forEach((npc) => {
+        let myNpc = npc as WorldNpc;
+        if (npcInfo.playerId === myNpc.id) {
+          myNpc.moveToPosition(npcInfo.indX, npcInfo.indY);
+        }
+      });
+    });
   }
 
   addOtherPlayers(playerInfo: OnlinePlayer) {
@@ -225,11 +233,11 @@ export class WorldScene extends Phaser.Scene {
     }
 
     for (let i = 0; i < enemies.length; i++) {
-      const myPosition = enemies[i];
-      const indX = myPosition.indX;
-      const indY = myPosition.indY;
-      const enemyType = myPosition.type;
-      const id = myPosition.playerId;
+      const myEnemyData = enemies[i];
+      const indX = myEnemyData.indX;
+      const indY = myEnemyData.indY;
+      const enemyType = myEnemyData.type;
+      const id = myEnemyData.playerId;
 
       // find enemy data from its type
       const enemyData = this.findUnitDataByName(enemyType);
@@ -265,7 +273,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   onMeetEnemy(player: any, enemy: any) {
-    if (!this.battleHasStarted) {
+    if (false && !this.battleHasStarted) {
       this.battleHasStarted = true;
       // shake the world
       this.cameras.main.shake(300);
