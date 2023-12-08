@@ -9,7 +9,6 @@ export class WorldNpc extends WorldUnit {
   movingRange = 3;
   // the id is used to link a world npc to its battle counterpart
   id: string;
-  timer: Phaser.Time.TimerEvent;
 
   constructor(
     scene: Phaser.Scene,
@@ -22,11 +21,5 @@ export class WorldNpc extends WorldUnit {
   ) {
     super(scene, indX, indY, texture, frame, name);
     this.id = id;
-    // this.moveRandomly(this.movingDelay, this.movingRange);
-  }
-
-  override destroy(fromScene?: boolean): void {
-    this.timer.remove();
-    super.destroy();
   }
 }

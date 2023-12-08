@@ -126,6 +126,15 @@ export class WorldScene extends Phaser.Scene {
         }
       });
     });
+    this.socket.on("npcHidden", (npcId: string) => {
+      this.spawns.getChildren().forEach((npc) => {
+        let myNpc = npc as WorldNpc;
+        if (npcId === myNpc.id) {
+          // hide and deactivate npc temporarily
+          myNpc.setActive(false).setVisible(false).body.enable = false;
+        }
+      });
+    });
   }
 
   addOtherPlayers(playerInfo: OnlinePlayer) {
@@ -273,11 +282,11 @@ export class WorldScene extends Phaser.Scene {
   }
 
   onMeetEnemy(player: any, enemy: any) {
-    if (false && !this.battleHasStarted) {
+    if (!this.battleHasStarted) {
       this.battleHasStarted = true;
       // shake the world
       this.cameras.main.shake(300);
-      this.socket.emit("startBattle");
+      this.socket.emit("startBattle", enemy.id);
       // start battle
       this.time.addEvent({
         delay: 300,

@@ -25,6 +25,7 @@ interface ServerToClientEvents {
   playerDisconnect: (id: string) => void;
   playerMoved: (onlinePlayer: OnlinePlayer) => void;
   npcMoved: (onlinePlayer: OnlinePlayer) => void;
+  npcHidden: (id: string) => void;
   enemyWasKilled: (id: string) => void;
   playerVisibilityChanged: (id: string, isVisible: boolean) => void;
 }
@@ -34,7 +35,7 @@ interface ClientToServerEvents {
   enemyKill: (id: string) => void;
   updateDirection: (direction: string) => void;
   updatePosition: (position: Position) => void;
-  startBattle: () => void;
+  startBattle: (enemyId: string) => void;
   endBattle: (player: OnlinePlayer) => void;
 }
 
@@ -60,7 +61,7 @@ const io = new Server<
 let players: OnlinePlayer[] = [];
 let npcs: OnlinePlayer[] = [];
 const enemyCount = 30;
-const minPosition = 10;
+const minPosition = 5;
 
 // load map
 let tmx = require("tmx-parser");
@@ -144,14 +145,19 @@ io.on("connection", function (socket) {
   // create a new player and add it to our players object
   addNewPlayer(newPlayer, socket);
 
-  socket.on("startBattle", removePlayer(socket));
+  socket.on("startBattle", (enemyId: string) => {
+    removePlayer(socket);
+    hideEnemy(enemyId);
+  });
 
   // plays when player returns from battle to world scene
   socket.on("endBattle", (player: OnlinePlayer) => {
     addNewPlayer(player, socket);
   });
 
-  socket.on("disconnect", removePlayer(socket));
+  socket.on("disconnect", () => {
+    removePlayer(socket);
+  });
 
   socket.on("enemyKill", function (enemyId: string) {
     const index = npcs.findIndex((npc) => npc.playerId === enemyId);
@@ -200,14 +206,21 @@ function addNewPlayer(newPlayer: OnlinePlayer, socket) {
 }
 
 function removePlayer(socket) {
-  return function () {
-    const index = players.findIndex((player) => player.playerId === socket.id);
-    if (index !== -1) {
-      players.splice(index, 1);
-    }
-    // emit a message to all players to remove this player
-    io.emit("playerDisconnect", socket.id);
-  };
+  const index = players.findIndex((player) => player.playerId === socket.id);
+  if (index !== -1) {
+    players.splice(index, 1);
+  }
+  // emit a message to all players to remove this player
+  io.emit("playerDisconnect", socket.id);
+}
+
+function hideEnemy(enemyId: string) {
+  const index = npcs.findIndex((npc) => npc.playerId === enemyId);
+  if (index !== -1) {
+    npcs.splice(index, 1);
+  }
+  // emit a message to all players to hide this npc during the fight
+  io.emit("npcHidden", enemyId);
 }
 
 function findCurrentPlayer(socket) {
