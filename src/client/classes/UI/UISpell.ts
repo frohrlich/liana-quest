@@ -166,8 +166,6 @@ export class UISpell extends UIElement {
       height += lineHeight;
     }
 
-    console.log(maxLength);
-
     let width = 26 * scale + maxLength * (this.fontSize * 0.2);
 
     const xPos = this.x + width / 2;

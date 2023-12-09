@@ -1,13 +1,12 @@
 A simple turn-based game made with Phaser 3.
 
-To compile the project, just run :
+To compile and start the project, just run :
 
 ```
 npm install
 npm start
+node dist/server.js
 ```
-
-You can then launch the game via a simple live server (like the one from VSCode).
 
 A demo is also available on the associated Github Page :
 https://frohrlich.github.io/phaser-rpg/

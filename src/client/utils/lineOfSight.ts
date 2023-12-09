@@ -1,5 +1,5 @@
-import Phaser from 'phaser';
-import { BattleScene } from '../scenes/BattleScene';
+import Phaser from "phaser";
+import { BattleScene } from "../scenes/BattleScene";
 
 // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
 
