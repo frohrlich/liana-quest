@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "webpack",
-    "start": "webpack --watch",
-    "run": "node dist/server.js"
+    "start": "node dist/server.js"
   },
   "author": "",
   "license": "ISC",
