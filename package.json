@@ -5,10 +5,14 @@
   "main": "index.js",
   "scripts": {
     "build": "webpack",
-    "start": "webpack --watch"
+    "start": "webpack --watch",
+    "run": "node dist/server.js"
   },
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": "20.10.0"
+  },
   "devDependencies": {
     "@types/express": "^4.17.21",
     "live-server": "^1.1.0",
