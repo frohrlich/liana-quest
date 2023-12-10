@@ -121,7 +121,7 @@ tmx.parseFile("./assets/map/map.tmx", function (err, map) {
         const randMove = Math.floor(Math.random() * (nearbyTiles.length - 1));
         npc.indX = nearbyTiles[randMove].indX;
         npc.indY = nearbyTiles[randMove].indY;
-        io.emit("npcMoved", npc);
+        io.to("world").emit("npcMoved", npc);
       }, delay);
     }, movingOffset);
   }
@@ -142,17 +142,22 @@ io.on("connection", function (socket) {
     direction: "down",
     visibility: true,
   };
+
+  socket.join("world");
+
   // create a new player and add it to our players object
   addNewPlayer(newPlayer, socket);
 
   socket.on("startBattle", (enemyId: string) => {
     removePlayer(socket);
+    socket.leave("world");
     hideEnemy(enemyId);
   });
 
   // plays when player returns from battle to world scene
   socket.on("endBattle", (player: OnlinePlayer) => {
     addNewPlayer(player, socket);
+    socket.join("world");
   });
 
   socket.on("disconnect", () => {
@@ -165,7 +170,7 @@ io.on("connection", function (socket) {
       npcs.splice(index, 1);
     }
     // emit a message to all players to remove this player
-    io.emit("enemyWasKilled", enemyId);
+    io.to("world").emit("enemyWasKilled", enemyId);
   });
 
   // when a player moves, update the player data
@@ -174,7 +179,7 @@ io.on("connection", function (socket) {
     currentPlayer.indX = movementData.indX;
     currentPlayer.indY = movementData.indY;
     // emit a message to all players about the player that moved
-    io.emit("playerMoved", currentPlayer);
+    io.to("world").emit("playerMoved", currentPlayer);
   });
 
   socket.on("updateDirection", function (direction: string) {
@@ -211,7 +216,7 @@ function removePlayer(socket) {
     players.splice(index, 1);
   }
   // emit a message to all players to remove this player
-  io.emit("playerDisconnect", socket.id);
+  io.to("world").emit("playerDisconnect", socket.id);
 }
 
 function hideEnemy(enemyId: string) {
@@ -220,7 +225,7 @@ function hideEnemy(enemyId: string) {
     npcs.splice(index, 1);
   }
   // emit a message to all players to hide this npc during the fight
-  io.emit("npcHidden", enemyId);
+  io.to("world").emit("npcHidden", enemyId);
 }
 
 function findCurrentPlayer(socket) {

@@ -163,7 +163,9 @@ export class BattleScene extends Phaser.Scene {
 
       // on click, teleport to new starter position
       overlay.on("pointerup", () => {
-        this.currentPlayer.teleportToTile(tile.x, tile.y);
+        if (!this.isUnitThere(tile.x, tile.y)) {
+          this.currentPlayer.teleportToTile(tile.x, tile.y);
+        }
       });
       overlay.on("pointerover", () => {
         tile.tint = 0x0000ff;

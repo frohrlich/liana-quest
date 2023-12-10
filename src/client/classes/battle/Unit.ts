@@ -757,9 +757,11 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.effectIcon.y = isOnTop ? this.y + 27 : this.y - this.displayHeight - 2;
   }
 
-  teleportToTile(x: number, y: number) {
-    this.indX = x;
-    this.indY = y;
+  teleportToTile(indX: number, indY: number) {
+    this.myScene.removeFromObstacleLayer(this);
+    this.indX = indX;
+    this.indY = indY;
+    this.myScene.addToObstacleLayer(new Phaser.Math.Vector2(indX, indY));
     this.x = this.tilePosToPixelsX();
     this.y = this.tilePosToPixelsY();
     this.moveUnitAttributes();
