@@ -326,9 +326,10 @@ export class BattleScene extends Phaser.Scene {
 
   private createTilemap() {
     // choose map randomly among a set
-    const mapCount = 3;
-    const randomMapIndex = Phaser.Math.RND.between(1, mapCount);
-    this.map = this.make.tilemap({ key: `battlemap${randomMapIndex}` });
+    // const mapCount = 3;
+    // const randomMapIndex = Phaser.Math.RND.between(1, mapCount);
+    // this.map = this.make.tilemap({ key: `battlemap${randomMapIndex}` });
+    this.map = this.make.tilemap({ key: `battlemap4` });
     this.tileWidth = this.map.tileWidth;
     this.tileHeight = this.map.tileHeight;
 
