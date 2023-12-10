@@ -13,7 +13,7 @@ const config = {
   scale: {
     mode: Phaser.Scale.FIT,
     parent: "game",
-    width: 642,
+    width: 930, // xiaomi mi a3 : 19.5:9 ratio
     height: 430,
   },
   physics: {
