@@ -15,7 +15,7 @@ export class BootScene extends Phaser.Scene {
 
     // maps in json format
     this.load.tilemapTiledJSON("map", "assets/map/map.json");
-    this.load.tilemapTiledJSON("battlemap4", "assets/map/battleMap4.json");
+    this.load.tilemapTiledJSON("battlemap4", "assets/map/battlemap4.json");
     // this.load.tilemapTiledJSON("battlemap1", "assets/map/battleMap1.json");
     // this.load.tilemapTiledJSON("battlemap2", "assets/map/battleMap2.json");
     // this.load.tilemapTiledJSON("battlemap3", "assets/map/battleMap3.json");
