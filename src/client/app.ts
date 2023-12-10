@@ -30,5 +30,6 @@ export class RpgGame extends Phaser.Game {
   }
 }
 window.onload = () => {
+  window.screen.orientation["lock"]("landscape");
   var game = new RpgGame(config);
 };
