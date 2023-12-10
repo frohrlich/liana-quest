@@ -1,0 +1,27 @@
+@font-face {
+  font-family: "rainyhearts";
+  src: url("../assets/fonts/rainyhearts.woff2") format("woff2"),
+    url("../assets/fonts/rainyhearts.woff") format("woff"),
+    url("../assets/fonts/rainyhearts.tff") format("tff");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+.fullScreenButton-div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: rgb(30, 46, 27);
+}
+
+#fullscreen-button {
+  width: 80%;
+  height: 20vh;
+  border: 1px solid black;
+  border-radius: 20px;
+  background-color: green;
+  font-size: 96px;
+  font-family: "rainyhearts";
+}
