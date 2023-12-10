@@ -7,12 +7,14 @@ import { WorldScene } from "./scenes/WorldScene";
 
 const config = {
   type: Phaser.AUTO,
-  parent: "game",
-  width: 642,
-  height: 430,
-  zoom: 1,
   pixelArt: true,
   backgroundColor: "#000000",
+  scale: {
+    mode: Phaser.Scale.FIT,
+    parent: "game",
+    width: 642,
+    height: 430,
+  },
   physics: {
     default: "arcade",
     arcade: {
