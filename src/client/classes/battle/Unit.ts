@@ -574,9 +574,8 @@ export class Unit extends Phaser.GameObjects.Sprite {
       () => {
         if (this.myScene.gameIsOver()) {
           this.myScene.gameOver();
-        }
-        this.destroyUnit();
-        if (this.myScene.battleIsFinished()) {
+        } else if (this.myScene.battleIsFinished()) {
+          this.destroyUnit();
           this.myScene.endBattle();
         }
       },

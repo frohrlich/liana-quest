@@ -8,7 +8,7 @@
   font-display: swap;
 }
 
-.fullScreenButton-div {
+#fullscreenButton-div {
   display: flex;
   justify-content: center;
   align-items: center;

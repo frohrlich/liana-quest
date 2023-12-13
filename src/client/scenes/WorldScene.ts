@@ -135,6 +135,15 @@ export class WorldScene extends Phaser.Scene {
         }
       });
     });
+    this.socket.on("npcWonFight", (npcId: string) => {
+      this.spawns.getChildren().forEach((npc) => {
+        let myNpc = npc as WorldNpc;
+        if (npcId === myNpc.id) {
+          // show npc again
+          myNpc.setActive(true).setVisible(true).body.enable = true;
+        }
+      });
+    });
   }
 
   addOtherPlayers(playerInfo: OnlinePlayer) {
@@ -271,6 +280,11 @@ export class WorldScene extends Phaser.Scene {
       this.spawns.add(myEnemy, true);
       myEnemy.setHitboxScale(1.5);
       myEnemy.scale = this.unitScale;
+
+      // hide npc if it's currently in a fight
+      if (!myEnemyData.isVisible) {
+        myEnemy.setActive(false).setVisible(false).body.enable = false;
+      }
     }
     this.physics.add.overlap(
       this.player,

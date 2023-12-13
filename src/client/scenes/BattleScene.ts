@@ -8,6 +8,7 @@ import { UIScene } from "./UIScene";
 import isVisible from "../utils/lineOfSight";
 import { UnitData, unitsAvailable } from "../data/UnitData";
 import { heal, javelin, punch, sting } from "../data/SpellData";
+import { WorldScene } from "./WorldScene";
 
 // Store a tile and the path to it
 interface TilePath {
@@ -1080,6 +1081,11 @@ export class BattleScene extends Phaser.Scene {
 
   gameOver() {
     this.resetScene();
+    // tell world scene to make npc reappear
+    (this.scene.get("WorldScene") as WorldScene).socket.emit(
+      "npcWinFight",
+      this.enemyId
+    );
     this.scene.start("GameOverScene");
   }
 

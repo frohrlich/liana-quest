@@ -11,6 +11,7 @@ export interface OnlinePlayer {
   indY: number;
   direction: string;
   type: string;
+  isVisible: boolean;
 }
 
 interface Position {
@@ -27,12 +28,14 @@ interface ServerToClientEvents {
   npcMoved: (onlinePlayer: OnlinePlayer) => void;
   npcHidden: (id: string) => void;
   enemyWasKilled: (id: string) => void;
+  npcWonFight: (id: string) => void;
   playerVisibilityChanged: (id: string, isVisible: boolean) => void;
 }
 
 interface ClientToServerEvents {
   playerMovement: (movementData: Position) => void;
   enemyKill: (id: string) => void;
+  npcWinFight: (id: string) => void;
   updateDirection: (direction: string) => void;
   updatePosition: (position: Position) => void;
   startBattle: (enemyId: string) => void;
@@ -90,6 +93,7 @@ tmx.parseFile("./assets/map/map.tmx", function (err, map) {
       type: enemyType,
       playerId: id,
       direction: "down",
+      isVisible: true,
     };
     npcs.push(npc);
 
@@ -101,27 +105,30 @@ tmx.parseFile("./assets/map/map.tmx", function (err, map) {
     let myInterval: any;
     setTimeout(() => {
       myInterval = setInterval(function () {
-        let nearbyTiles: Position[] = [];
-        // first calculate the accessible tiles around npc
-        for (let i = 0; i < background.tiles.length; i++) {
-          let tileX = i % map.width;
-          let tileY = Math.floor(i / map.width);
-          if (
-            obstacles.tileAt(tileX, tileY) === undefined &&
-            tileX >= indX - range &&
-            tileY >= indY - range &&
-            tileX <= indX + range &&
-            tileY <= indY + range
-          ) {
-            nearbyTiles.push({ indX: tileX, indY: tileY });
+        // hidden npcs (in a fight) don't move
+        if (npc.isVisible) {
+          let nearbyTiles: Position[] = [];
+          // first calculate the accessible tiles around npc
+          for (let i = 0; i < background.tiles.length; i++) {
+            let tileX = i % map.width;
+            let tileY = Math.floor(i / map.width);
+            if (
+              obstacles.tileAt(tileX, tileY) === undefined &&
+              tileX >= indX - range &&
+              tileY >= indY - range &&
+              tileX <= indX + range &&
+              tileY <= indY + range
+            ) {
+              nearbyTiles.push({ indX: tileX, indY: tileY });
+            }
           }
-        }
 
-        // then chooses one randomly
-        const randMove = Math.floor(Math.random() * (nearbyTiles.length - 1));
-        npc.indX = nearbyTiles[randMove].indX;
-        npc.indY = nearbyTiles[randMove].indY;
-        io.to("world").emit("npcMoved", npc);
+          // then chooses one randomly
+          const randMove = Math.floor(Math.random() * (nearbyTiles.length - 1));
+          npc.indX = nearbyTiles[randMove].indX;
+          npc.indY = nearbyTiles[randMove].indY;
+          io.to("world").emit("npcMoved", npc);
+        }
       }, delay);
     }, movingOffset);
   }
@@ -140,7 +147,7 @@ io.on("connection", function (socket) {
     playerId: socket.id,
     type: "Princess",
     direction: "down",
-    visibility: true,
+    isVisible: true,
   };
 
   socket.join("world");
@@ -171,6 +178,15 @@ io.on("connection", function (socket) {
     }
     // emit a message to all players to remove this player
     io.to("world").emit("enemyWasKilled", enemyId);
+  });
+
+  socket.on("npcWinFight", function (enemyId: string) {
+    const index = npcs.findIndex((npc) => npc.playerId === enemyId);
+    if (index !== -1) {
+      npcs[index].isVisible = true;
+    }
+    // emit a message to all players to make this npc visible again
+    io.to("world").emit("npcWonFight", enemyId);
   });
 
   // when a player moves, update the player data
@@ -207,7 +223,7 @@ function addNewPlayer(newPlayer: OnlinePlayer, socket) {
   // send the npcs object to the new player
   socket.emit("currentNpcs", npcs);
   // update all other players of the new player
-  socket.broadcast.emit("newPlayer", newPlayer);
+  socket.broadcast.to("world").emit("newPlayer", newPlayer);
 }
 
 function removePlayer(socket) {
@@ -222,7 +238,7 @@ function removePlayer(socket) {
 function hideEnemy(enemyId: string) {
   const index = npcs.findIndex((npc) => npc.playerId === enemyId);
   if (index !== -1) {
-    npcs.splice(index, 1);
+    npcs[index].isVisible = false;
   }
   // emit a message to all players to hide this npc during the fight
   io.to("world").emit("npcHidden", enemyId);
