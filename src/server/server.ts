@@ -69,7 +69,7 @@ const minPosition = 5;
 // load map
 let tmx = require("tmx-parser");
 
-tmx.parseFile("./assets/map/map.tmx", function (err, map) {
+tmx.parseFile("./public/assets/map/map.tmx", function (err, map) {
   if (err) throw err;
   const background = map.layers[0];
   const obstacles = map.layers[1];

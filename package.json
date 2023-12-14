@@ -4,7 +4,7 @@
   "description": "A Phaser 3 RPG Project.",
   "main": "index.js",
   "scripts": {
-    "build": "webpack",
+    "build": "webpack --mode=production",
     "buildDev": "webpack --watch",
     "start": "node dist/server.js",
     "startDev": "nodemon dist/server.js"

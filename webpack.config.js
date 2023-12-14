@@ -17,7 +17,7 @@ module.exports = [
     },
     output: {
       filename: "app.js",
-      path: path.resolve(__dirname, "dist"),
+      path: path.resolve(__dirname, "public/js"),
     },
     mode: "development",
   },

@@ -8,10 +8,6 @@ npm start
 node dist/server.js
 ```
 
-A demo is also available on the associated Github Page :
-https://frohrlich.github.io/phaser-rpg/
-(based on the 'demo' branch)
-
 ## Credits for the assets :
 
 - Sprites :

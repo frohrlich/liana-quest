@@ -2,6 +2,7 @@
 
 # Compiled output
 /dist
+/public/js/app.js
 /tmp
 /out-tsc
 /bazel-out
@@ -37,6 +38,7 @@ yarn-error.log
 testem.log
 /typings
 /*.env
+public/assets/RPG_assets.kra
 
 # System files
 .DS_Store
