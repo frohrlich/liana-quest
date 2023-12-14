@@ -31,9 +31,9 @@ export class BootScene extends Phaser.Scene {
 
     // fonts
     this.load.bitmapFont(
-      "rainyhearts",
-      "public/assets/fonts/rainyhearts.png",
-      "public/assets/fonts/rainyhearts.xml"
+      "dogicapixel",
+      "public/assets/fonts/dogicapixel.png",
+      "public/assets/fonts/dogicapixel.xml"
     );
   }
 

@@ -217,7 +217,7 @@ export class BattleScene extends Phaser.Scene {
     const screenCenterY = this.cameras.main.displayHeight / 2;
     const battleStartText = "The battle begins !";
     const battleStart = this.add
-      .bitmapText(screenCenterX, screenCenterY, "rainyhearts", battleStartText)
+      .bitmapText(screenCenterX, screenCenterY, "dogicapixel", battleStartText)
       .setOrigin(0.5)
       .setScale(2)
       .setDepth(99999);

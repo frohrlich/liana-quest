@@ -536,7 +536,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
       .bitmapText(
         this.x - 2,
         isOnTop ? this.y + 20 : this.y - this.displayHeight + 5,
-        "rainyhearts",
+        "dogicapixel",
         (positive ? "+" : "-") + value.toString(),
         fontSize
       )

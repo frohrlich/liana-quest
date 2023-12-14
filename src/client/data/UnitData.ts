@@ -40,7 +40,7 @@ export const princess: UnitData = {
   HP: 50,
   PM: 3,
   PA: 6,
-  spells: "sting",
+  spells: "sting, punch, deadly javelin",
   frame: 3,
   name: "Princess",
 };

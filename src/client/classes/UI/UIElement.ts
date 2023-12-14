@@ -30,7 +30,7 @@ export abstract class UIElement {
       .bitmapText(
         this.x + this.margin,
         this.y + this.margin,
-        "rainyhearts",
+        "dogicapixel",
         text,
         this.fontSize * scale
       )

@@ -66,13 +66,13 @@ export class UIScene extends Phaser.Scene {
     const yPos = this.topY + this.uiTabHeight / 2;
 
     this.add
-      .rectangle(xPos, yPos, this.uiTabWidth * 0.65, this.uiTabHeight * 0.65)
+      .rectangle(xPos, yPos, this.uiTabWidth * 0.85, this.uiTabHeight * 0.65)
       .setStrokeStyle(2, 0xcccccc)
       .setFillStyle(0x293154);
 
     let fontSize = this.battleScene.tileWidth * this.uiScale;
     this.buttonText = this.add
-      .bitmapText(xPos, yPos, "rainyhearts", "Fight !", fontSize)
+      .bitmapText(xPos, yPos, "dogicapixel", "Fight !", fontSize)
       .setTint(this.uiFontColor)
       .setOrigin(0.5, 0.5)
       .setInteractive()

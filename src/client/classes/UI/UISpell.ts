@@ -166,7 +166,7 @@ export class UISpell extends UIElement {
       height += lineHeight;
     }
 
-    let width = 26 * scale + maxLength * (this.fontSize * 0.2);
+    let width = 20 * scale + maxLength * (this.fontSize * 0.6);
 
     const xPos = this.x + width / 2;
     const yPos = this.y - height / 2;
@@ -197,7 +197,7 @@ export class UISpell extends UIElement {
     this.infoText = this.myScene.add.bitmapText(
       this.infoRectangle.x - this.infoRectangle.displayWidth / 2 + 2,
       this.infoRectangle.y - this.infoRectangle.displayHeight / 2 + 2,
-      "rainyhearts",
+      "dogicapixel",
       text,
       fontSize
     );
@@ -253,7 +253,7 @@ export class UISpell extends UIElement {
     this.spellCooldown = this.myScene.add.bitmapText(
       this.icon.x,
       this.icon.y + 1,
-      "rainyhearts",
+      "dogicapixel",
       this.spell.cooldown.toString(),
       this.fontSize * 2
     );

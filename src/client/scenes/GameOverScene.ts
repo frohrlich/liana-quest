@@ -15,7 +15,7 @@ export class GameOverScene extends Phaser.Scene {
     let myText = this.add.bitmapText(
       gameWidth / 2,
       gameHeight / 2,
-      "rainyhearts",
+      "dogicapixel",
       text.toUpperCase(),
       80
     );
