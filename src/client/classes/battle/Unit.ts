@@ -211,10 +211,10 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   moveHealthBar() {
     const isOnTop = this.y < this.myScene.tileHeight * 2;
-    const barWidth = this.displayWidth * 0.8;
+    const barWidth = this.displayWidth * 1.2;
     this.healthBar.x = this.x - barWidth / 2;
     // if unit is on top of screen health bar must be below it
-    this.healthBar.y = isOnTop ? this.y + 15 : this.y - this.displayHeight + 5;
+    this.healthBar.y = isOnTop ? this.y + 18 : this.y - this.displayHeight + 2;
   }
 
   moveTeamIdentifier() {
@@ -678,12 +678,12 @@ export class Unit extends Phaser.GameObjects.Sprite {
     //color the bar
     bar.fillStyle(color, 0.8);
     //fill the bar with a rectangle
-    const barWidth = unit.displayWidth * 0.8;
-    bar.fillRect(0, 0, barWidth, 5);
+    const barWidth = unit.displayWidth * 1.2;
+    bar.fillRect(0, 0, barWidth, 8);
     //position the bar
     bar.x = unit.x - barWidth / 2;
     const isOnTop = this.y < this.myScene.tileHeight * 2;
-    bar.y = isOnTop ? this.y + 15 : this.y - this.displayHeight + 5;
+    bar.y = isOnTop ? this.y + 18 : this.y - this.displayHeight + 2;
     //return the bar
     bar.setDepth(10000);
     return bar;
@@ -702,7 +702,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     } else {
       const hpPercentage = Math.max(this.hp / this.maxHp, 0) * 100;
       this.setBarValue(this.healthBar, hpPercentage + 2);
-      const barWidth = this.displayWidth * 0.8;
+      const barWidth = this.displayWidth * 1.2;
       const barAlpha = 0.8;
       if (hpPercentage <= 25) {
         this.healthBar.fillStyle(0xff0000, barAlpha);
@@ -711,7 +711,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
       } else {
         this.healthBar.fillStyle(0x2ecc71, barAlpha);
       }
-      this.healthBar.fillRect(0, 0, barWidth, 5);
+      this.healthBar.fillRect(0, 0, barWidth, 8);
     }
   }
 
