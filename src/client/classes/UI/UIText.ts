@@ -9,7 +9,7 @@ export class UIText extends UIElement {
 
   constructor(scene: Phaser.Scene, tab: number, posY: number, text: string) {
     super(scene, tab, posY);
-    this.text = this.addText(1, text);
+    this.text = this.addText(1, true, text);
     this.text.setOrigin(0.5);
     const margin = this.myScene.uiScale * 2;
     this.text.y += margin;

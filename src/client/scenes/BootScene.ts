@@ -41,6 +41,11 @@ export class BootScene extends Phaser.Scene {
       "public/assets/fonts/dogicapixel.png",
       "public/assets/fonts/dogicapixel.xml"
     );
+    this.load.bitmapFont(
+      "dogicapixelbold",
+      "public/assets/fonts/dogicapixelbold.png",
+      "public/assets/fonts/dogicapixelbold.xml"
+    );
   }
 
   create(): void {

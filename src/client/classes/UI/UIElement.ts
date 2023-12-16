@@ -25,12 +25,16 @@ export abstract class UIElement {
     this.y = this.myScene.topY + (this.fontSize + this.margin) * this.posY;
   }
 
-  addText(scale: number, ...text: string[]): Phaser.GameObjects.BitmapText {
+  addText(
+    scale: number,
+    bold: boolean,
+    ...text: string[]
+  ): Phaser.GameObjects.BitmapText {
     return this.myScene.add
       .bitmapText(
         this.x + this.margin,
         this.y + this.margin,
-        "dogicapixel",
+        "dogicapixel" + (bold ? "bold" : ""),
         text,
         this.fontSize * scale
       )

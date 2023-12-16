@@ -17,6 +17,7 @@ interface TilePath {
 }
 
 export class BattleScene extends Phaser.Scene {
+  fontSize: 8;
   animFramerate: number = 5;
   currentPlayer!: Player;
   allies: Unit[] = [];
@@ -217,7 +218,13 @@ export class BattleScene extends Phaser.Scene {
     const screenCenterY = this.cameras.main.displayHeight / 2;
     const battleStartText = "The battle begins !";
     const battleStart = this.add
-      .bitmapText(screenCenterX, screenCenterY, "dogicapixel", battleStartText)
+      .bitmapText(
+        screenCenterX,
+        screenCenterY,
+        "dogicapixel",
+        battleStartText,
+        this.fontSize * 8
+      )
       .setOrigin(0.5)
       .setScale(2)
       .setDepth(99999);

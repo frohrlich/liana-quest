@@ -62,6 +62,7 @@ export class UIScene extends Phaser.Scene {
   }
 
   createStartButton() {
+    const textTopMargin = 2;
     const xPos = this.uiTabWidth * 2.5;
     const yPos = this.topY + this.uiTabHeight / 2;
 
@@ -72,7 +73,13 @@ export class UIScene extends Phaser.Scene {
 
     let fontSize = this.battleScene.tileWidth * this.uiScale;
     this.buttonText = this.add
-      .bitmapText(xPos, yPos, "dogicapixel", "Fight !", fontSize)
+      .bitmapText(
+        xPos,
+        yPos + textTopMargin,
+        "dogicapixel",
+        "Fight !",
+        fontSize
+      )
       .setTint(this.uiFontColor)
       .setOrigin(0.5, 0.5)
       .setInteractive()

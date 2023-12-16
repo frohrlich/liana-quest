@@ -5,19 +5,26 @@ import { Unit } from "../battle/Unit";
 // display unit stats (pa, pm, hp etc) on the UI
 export class UnitStatDisplay extends UIElement {
   unit: Unit;
+  unitName: Phaser.GameObjects.BitmapText;
   text: Phaser.GameObjects.BitmapText;
 
   constructor(scene: Phaser.Scene, tab: number, posY: number, unit: Unit) {
     super(scene, tab, posY);
     this.unit = unit;
+    this.unitName = this.addText(1, true, `${this.unit.type}`);
+    this.unitName.y -= 2;
+
     this.text = this.addText(
       1,
-      `${this.unit.type}\nPA: ${this.unit.pa}\nPM: ${this.unit.pm}\nHP: ${this.unit.hp}`
+      false,
+      `PA: ${this.unit.pa}\nPM: ${this.unit.pm}\nHP: ${this.unit.hp}`
     );
+    this.text.y += this.fontSize + 1;
   }
 
   displayStats() {
-    this.text.text = `${this.unit.type}\nPA: ${this.unit.pa}\nPM: ${this.unit.pm}\nHP: ${this.unit.hp}`;
+    this.unitName.text = `${this.unit.type}`;
+    this.text.text = `PA: ${this.unit.pa}\nPM: ${this.unit.pm}\nHP: ${this.unit.hp}`;
   }
 
   override refresh() {

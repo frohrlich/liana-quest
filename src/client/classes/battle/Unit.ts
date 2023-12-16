@@ -6,10 +6,10 @@ import { EffectOverTime } from "./EffectOverTime";
 
 export class Unit extends Phaser.GameObjects.Sprite {
   // use these to manipulate sprite positions around units
-  healthBarOverUnitOffset = 2;
+  healthBarOverUnitOffset = 7;
   healthBarUnderUnitOffset = 22;
-  effectIconOverUnitOffset = 2;
-  effectIconUnderUnitOffset = 31;
+  effectIconOverUnitOffset = 19;
+  effectIconUnderUnitOffset = 41;
 
   myScene: BattleScene;
   // position on the grid
@@ -216,13 +216,16 @@ export class Unit extends Phaser.GameObjects.Sprite {
   }
 
   moveHealthBar() {
-    const isOnTop = this.y < this.myScene.tileHeight * 2;
     const barWidth = this.displayWidth * 1.2;
     this.healthBar.x = this.x - barWidth / 2;
     // if unit is on top of screen health bar must be below it
-    this.healthBar.y = isOnTop
+    this.healthBar.y = this.isOnTop()
       ? this.y + this.healthBarUnderUnitOffset
       : this.y - this.displayHeight - this.healthBarOverUnitOffset;
+  }
+
+  private isOnTop() {
+    return this.y < this.myScene.tileHeight * 3;
   }
 
   moveTeamIdentifier() {
@@ -681,17 +684,17 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   // create health bar
   makeBar(unit: Unit, color: number) {
+    const barAlpha = 1;
     //draw the bar
     const bar = this.scene.add.graphics();
     //color the bar
-    bar.fillStyle(color, 0.8);
+    bar.fillStyle(color, barAlpha);
     //fill the bar with a rectangle
     const barWidth = unit.displayWidth * 1.2;
     bar.fillRect(0, 0, barWidth, 8);
     //position the bar
     bar.x = unit.x - barWidth / 2;
-    const isOnTop = this.y < this.myScene.tileHeight * 2;
-    bar.y = isOnTop
+    bar.y = this.isOnTop()
       ? this.y + this.healthBarUnderUnitOffset
       : this.y - this.displayHeight - this.healthBarOverUnitOffset;
     //return the bar
@@ -747,25 +750,23 @@ export class Unit extends Phaser.GameObjects.Sprite {
   }
 
   makeEffectIcon(effectOverTime: EffectOverTime) {
-    const isOnTop = this.y < this.myScene.tileHeight * 2;
     const icon = this.scene.add.image(
       this.x,
-      isOnTop
+      this.isOnTop()
         ? this.y + this.effectIconUnderUnitOffset
         : this.y - this.displayHeight - this.effectIconOverUnitOffset,
       "player",
       effectOverTime.frame
     );
-    icon.scale = 0.7;
+    icon.scale = 1;
     icon.setDepth(9999);
     icon.setVisible(false);
     return icon;
   }
 
   moveEffectIcon() {
-    const isOnTop = this.y < this.myScene.tileHeight * 2;
     this.effectIcon.x = this.x;
-    this.effectIcon.y = isOnTop
+    this.effectIcon.y = this.isOnTop()
       ? this.y + this.effectIconUnderUnitOffset
       : this.y - this.displayHeight - this.effectIconOverUnitOffset;
   }

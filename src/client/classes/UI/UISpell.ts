@@ -4,14 +4,19 @@ import { Spell } from "../battle/Spell";
 import { BattleScene } from "../../scenes/BattleScene";
 
 export class UISpell extends UIElement {
+  iconScale = 1.1;
+
   spell: Spell;
   icon: Phaser.GameObjects.Image;
   highlightIcon: Phaser.GameObjects.Image;
   battleScene: BattleScene;
   isHighlighted: boolean = false;
+
   infoRectangle: Phaser.GameObjects.Rectangle;
   infoText: Phaser.GameObjects.BitmapText;
+  spellNameInfoText: Phaser.GameObjects.BitmapText;
   outlineRectangle: Phaser.GameObjects.Rectangle;
+
   spellCooldown: Phaser.GameObjects.BitmapText;
   disabled: boolean;
 
@@ -29,10 +34,12 @@ export class UISpell extends UIElement {
     this.infoRectangle.visible = show;
     this.outlineRectangle.visible = show;
     this.infoText.visible = show;
+    this.spellNameInfoText.visible = show;
   }
 
   addIcon() {
     const scale = this.myScene.uiScale;
+
     this.icon = this.myScene.add.image(
       this.x,
       this.y,
@@ -45,11 +52,13 @@ export class UISpell extends UIElement {
       "player",
       this.spell.frame + 1
     );
-    this.icon.scale = this.highlightIcon.scale = scale * 0.9;
-    this.icon.y += this.icon.displayHeight / 2 + 2;
+    this.icon.scale = this.highlightIcon.scale = scale * this.iconScale;
+    this.icon.depth = 50000;
+    this.icon.y += this.icon.displayHeight / 2 - 2;
     this.icon.setInteractive();
-    this.highlightIcon.y += this.highlightIcon.displayHeight / 2 + 2;
+    this.highlightIcon.y += this.highlightIcon.displayHeight / 2 - 2;
     this.highlightIcon.visible = false;
+    this.highlightIcon.depth = 50000;
     this.highlightIcon.setInteractive();
 
     this.icon.on("pointerup", () => {
@@ -89,17 +98,19 @@ export class UISpell extends UIElement {
   addInfoText() {
     const scale = this.myScene.uiScale;
     let height = 14 * scale;
-    const lineHeight = this.fontSize;
+    const infoOffset = this.icon.displayWidth;
+    const lineHeight = this.fontSize + 1;
     const fontSize = this.fontSize;
     let text = "";
 
-    let addText = `-${this.spell.name}-`;
-    let maxLength = addText.length;
-    text += addText;
+    // first, spell name text in bold
+    let spellNameText = `${this.spell.name}`;
+    let maxLength = spellNameText.length;
 
-    addText = `\ncost: ${this.spell.cost} PA`;
+    let addText = `\ncost: ${this.spell.cost} PA`;
     maxLength = Math.max(maxLength, addText.length);
     text += addText;
+    height += lineHeight;
 
     // addText = `\n${this.spell.minRange}-${this.spell.maxRange} range`;
     // maxLength = Math.max(maxLength, addText.length);
@@ -168,8 +179,8 @@ export class UISpell extends UIElement {
 
     let width = 20 * scale + maxLength * (this.fontSize * 0.6);
 
-    const xPos = this.x + width;
-    const yPos = this.y - height;
+    const xPos = this.x + width / 2 + infoOffset;
+    const yPos = this.y - height / 2 - infoOffset;
 
     this.infoRectangle = this.myScene.add.rectangle(
       xPos,
@@ -188,15 +199,27 @@ export class UISpell extends UIElement {
       width + scale,
       height + scale
     );
-    this.outlineRectangle.depth = 20000;
+    // this.outlineRectangle.depth = 20000;
     this.outlineRectangle.setStrokeStyle(scale + 0.5, 0xffffff);
-    this.outlineRectangle.isStroked = true;
     this.outlineRectangle.alpha = 0.9;
     this.outlineRectangle.visible = false;
 
-    this.infoText = this.myScene.add.bitmapText(
+    this.spellNameInfoText = this.myScene.add.bitmapText(
       this.infoRectangle.x - this.infoRectangle.displayWidth / 2 + 2,
-      this.infoRectangle.y - this.infoRectangle.displayHeight / 2 + 2,
+      this.infoRectangle.y - this.infoRectangle.displayHeight / 2 + 3,
+      "dogicapixelbold",
+      spellNameText,
+      fontSize
+    );
+    this.spellNameInfoText.depth = 20001;
+    this.spellNameInfoText.visible = false;
+    this.spellNameInfoText.alpha = 0.9;
+
+    this.infoText = this.myScene.add.bitmapText(
+      this.infoRectangle.x - this.infoRectangle.displayWidth / 2 + 4,
+      this.infoRectangle.y -
+        this.infoRectangle.displayHeight / 2 +
+        lineHeight / 2,
       "dogicapixel",
       text,
       fontSize
@@ -252,12 +275,13 @@ export class UISpell extends UIElement {
     if (this.spellCooldown) this.spellCooldown.destroy();
     this.spellCooldown = this.myScene.add.bitmapText(
       this.icon.x,
-      this.icon.y + 1,
+      this.icon.y + 2,
       "dogicapixel",
       this.spell.cooldown.toString(),
-      this.fontSize * 2
+      this.fontSize * 1.8
     );
     this.spellCooldown.setOrigin(0.5);
+    this.spellCooldown.depth = 50001;
     this.spellCooldown.visible = false;
   }
 
@@ -266,6 +290,7 @@ export class UISpell extends UIElement {
     this.icon.destroy();
     this.infoRectangle.destroy();
     this.infoText.destroy();
+    this.spellNameInfoText.destroy();
     this.outlineRectangle.destroy();
     this.spellCooldown.destroy();
   }
