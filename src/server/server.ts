@@ -68,11 +68,13 @@ const minPosition = 5;
 
 // load map
 let tmx = require("tmx-parser");
+let background;
+let obstacles;
 
 tmx.parseFile("./public/assets/map/map.tmx", function (err, map) {
   if (err) throw err;
-  const background = map.layers[0];
-  const obstacles = map.layers[1];
+  background = map.layers[0];
+  obstacles = map.layers[1];
 
   // create npcs at random locations
   for (let i = 0; i < enemyCount; i++) {
@@ -125,9 +127,18 @@ tmx.parseFile("./public/assets/map/map.tmx", function (err, map) {
 
           // then chooses one randomly
           const randMove = Math.floor(Math.random() * (nearbyTiles.length - 1));
-          npc.indX = nearbyTiles[randMove].indX;
-          npc.indY = nearbyTiles[randMove].indY;
-          io.to("world").emit("npcMoved", npc);
+          const startVec: Vector2 = { x: npc.indX, y: npc.indY };
+          const targetVec: Vector2 = {
+            x: nearbyTiles[randMove].indX,
+            y: nearbyTiles[randMove].indY,
+          };
+
+          // only move if there is actually a path to the destination
+          if (findPath(startVec, targetVec, background, obstacles)) {
+            npc.indX = nearbyTiles[randMove].indX;
+            npc.indY = nearbyTiles[randMove].indY;
+            io.to("world").emit("npcMoved", npc);
+          }
         }
       }, delay);
     }, movingOffset);
@@ -192,10 +203,20 @@ io.on("connection", function (socket) {
   // when a player moves, update the player data
   socket.on("playerMovement", function (movementData: Position) {
     const currentPlayer = findCurrentPlayer(socket);
-    currentPlayer.indX = movementData.indX;
-    currentPlayer.indY = movementData.indY;
-    // emit a message to all players about the player that moved
-    io.to("world").emit("playerMoved", currentPlayer);
+
+    const startVec: Vector2 = { x: currentPlayer.indX, y: currentPlayer.indY };
+    const targetVec: Vector2 = {
+      x: movementData.indX,
+      y: movementData.indY,
+    };
+
+    // check if movement is actually possible
+    if (findPath(startVec, targetVec, background, obstacles)) {
+      currentPlayer.indX = movementData.indX;
+      currentPlayer.indY = movementData.indY;
+      // emit a message to all players about the player that moved
+      io.to("world").emit("playerMoved", currentPlayer);
+    }
   });
 
   socket.on("updateDirection", function (direction: string) {
