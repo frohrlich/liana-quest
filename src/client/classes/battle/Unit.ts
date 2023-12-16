@@ -10,6 +10,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   healthBarUnderUnitOffset = 27;
   effectIconOverUnitOffset = 19;
   effectIconUnderUnitOffset = 46;
+  healthBarScale = 1.2;
 
   myScene: BattleScene;
   // position on the grid
@@ -690,8 +691,8 @@ export class Unit extends Phaser.GameObjects.Sprite {
     //color the bar
     bar.fillStyle(color, barAlpha);
     //fill the bar with a rectangle
-    const barWidth = unit.displayWidth * 1.2;
-    bar.fillRect(0, 0, barWidth, 8);
+    const barWidth = unit.displayWidth * 1.2 * this.healthBarScale;
+    bar.fillRect(0, 0, barWidth, 8 * this.healthBarScale);
     //position the bar
     bar.x = unit.x - barWidth / 2;
     bar.y = this.isOnTop()
