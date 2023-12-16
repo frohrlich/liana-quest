@@ -5,6 +5,7 @@ import { UIScene } from "./scenes/UIScene";
 import { GameOverScene } from "./scenes/GameOverScene";
 import { WorldScene } from "./scenes/WorldScene";
 import screenfull from "screenfull";
+import { UAParser } from "ua-parser-js";
 
 const config = {
   type: Phaser.AUTO,
@@ -31,18 +32,25 @@ export class RpgGame extends Phaser.Game {
   }
 }
 window.onload = () => {
+  const parser = new UAParser();
+  const isNotDesktop =
+    parser.getDevice().type === "mobile" ||
+    parser.getDevice().type === "tablet";
+
   const gameDiv = document.getElementById("game");
   const fullscreenButton = document.getElementById("fullscreen-button");
   const fullscreenButtonDiv = document.getElementById("fullscreenButton-div");
   fullscreenButton.addEventListener("click", () => {
-    if (screenfull.isEnabled) {
-      screenfull.request(gameDiv);
-      gameDiv.hidden = false;
-      fullscreenButton.hidden = true;
-      fullscreenButtonDiv.hidden = true;
-      window.screen.orientation["lock"]("landscape");
-    } else {
-      alert("Error ! Please refresh your navigator.");
+    gameDiv.hidden = false;
+    fullscreenButton.hidden = true;
+    fullscreenButtonDiv.style.display = "none";
+    if (isNotDesktop) {
+      if (screenfull.isEnabled) {
+        screenfull.request(gameDiv);
+        window.screen.orientation["lock"]("landscape");
+      } else {
+        alert("Error ! Please refresh your navigator.");
+      }
     }
   });
 
