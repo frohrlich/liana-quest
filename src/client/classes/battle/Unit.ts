@@ -5,6 +5,12 @@ import { UITimelineSlot } from "../UI/UITimelineSlot";
 import { EffectOverTime } from "./EffectOverTime";
 
 export class Unit extends Phaser.GameObjects.Sprite {
+  // use these to manipulate sprite positions around units
+  healthBarOverUnitOffset = 2;
+  healthBarUnderUnitOffset = 22;
+  effectIconOverUnitOffset = 2;
+  effectIconUnderUnitOffset = 31;
+
   myScene: BattleScene;
   // position on the grid
   indX: number;
@@ -214,7 +220,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
     const barWidth = this.displayWidth * 1.2;
     this.healthBar.x = this.x - barWidth / 2;
     // if unit is on top of screen health bar must be below it
-    this.healthBar.y = isOnTop ? this.y + 18 : this.y - this.displayHeight + 2;
+    this.healthBar.y = isOnTop
+      ? this.y + this.healthBarUnderUnitOffset
+      : this.y - this.displayHeight - this.healthBarOverUnitOffset;
   }
 
   moveTeamIdentifier() {
@@ -535,7 +543,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     let malus = scene.add
       .bitmapText(
         this.x - 2,
-        isOnTop ? this.y + 20 : this.y - this.displayHeight + 5,
+        isOnTop ? this.y + 22 : this.y - this.displayHeight + 3,
         "dogicapixel",
         (positive ? "+" : "-") + value.toString(),
         fontSize
@@ -683,7 +691,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
     //position the bar
     bar.x = unit.x - barWidth / 2;
     const isOnTop = this.y < this.myScene.tileHeight * 2;
-    bar.y = isOnTop ? this.y + 18 : this.y - this.displayHeight + 2;
+    bar.y = isOnTop
+      ? this.y + this.healthBarUnderUnitOffset
+      : this.y - this.displayHeight - this.healthBarOverUnitOffset;
     //return the bar
     bar.setDepth(10000);
     return bar;
@@ -740,7 +750,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
     const isOnTop = this.y < this.myScene.tileHeight * 2;
     const icon = this.scene.add.image(
       this.x,
-      isOnTop ? this.y + 27 : this.y - this.displayHeight - 2,
+      isOnTop
+        ? this.y + this.effectIconUnderUnitOffset
+        : this.y - this.displayHeight - this.effectIconOverUnitOffset,
       "player",
       effectOverTime.frame
     );
@@ -753,7 +765,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
   moveEffectIcon() {
     const isOnTop = this.y < this.myScene.tileHeight * 2;
     this.effectIcon.x = this.x;
-    this.effectIcon.y = isOnTop ? this.y + 27 : this.y - this.displayHeight - 2;
+    this.effectIcon.y = isOnTop
+      ? this.y + this.effectIconUnderUnitOffset
+      : this.y - this.displayHeight - this.effectIconOverUnitOffset;
   }
 
   teleportToTile(indX: number, indY: number) {

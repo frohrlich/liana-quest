@@ -168,8 +168,8 @@ export class UISpell extends UIElement {
 
     let width = 20 * scale + maxLength * (this.fontSize * 0.6);
 
-    const xPos = this.x + width / 2;
-    const yPos = this.y - height / 2;
+    const xPos = this.x + width;
+    const yPos = this.y - height;
 
     this.infoRectangle = this.myScene.add.rectangle(
       xPos,
