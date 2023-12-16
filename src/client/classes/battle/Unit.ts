@@ -7,9 +7,9 @@ import { EffectOverTime } from "./EffectOverTime";
 export class Unit extends Phaser.GameObjects.Sprite {
   // use these to manipulate sprite positions around units
   healthBarOverUnitOffset = 7;
-  healthBarUnderUnitOffset = 27;
+  healthBarUnderUnitOffset = 32;
   effectIconOverUnitOffset = 19;
-  effectIconUnderUnitOffset = 46;
+  effectIconUnderUnitOffset = 53;
   healthBarScale = 1.2;
 
   myScene: BattleScene;
@@ -217,7 +217,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   }
 
   moveHealthBar() {
-    const barWidth = this.displayWidth * 1.2;
+    const barWidth = this.displayWidth * 1.2 * this.healthBarScale;
     this.healthBar.x = this.x - barWidth / 2;
     // if unit is on top of screen health bar must be below it
     this.healthBar.y = this.isOnTop()
