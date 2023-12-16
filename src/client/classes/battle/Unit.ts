@@ -7,9 +7,9 @@ import { EffectOverTime } from "./EffectOverTime";
 export class Unit extends Phaser.GameObjects.Sprite {
   // use these to manipulate sprite positions around units
   healthBarOverUnitOffset = 7;
-  healthBarUnderUnitOffset = 22;
+  healthBarUnderUnitOffset = 27;
   effectIconOverUnitOffset = 19;
-  effectIconUnderUnitOffset = 41;
+  effectIconUnderUnitOffset = 46;
 
   myScene: BattleScene;
   // position on the grid

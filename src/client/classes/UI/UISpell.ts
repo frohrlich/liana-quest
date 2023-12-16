@@ -98,7 +98,7 @@ export class UISpell extends UIElement {
   addInfoText() {
     const scale = this.myScene.uiScale;
     let height = 14 * scale;
-    const infoOffset = this.icon.displayWidth;
+    const infoOffset = this.icon.displayWidth / 2;
     const lineHeight = this.fontSize + 1;
     const fontSize = this.fontSize;
     let text = "";
