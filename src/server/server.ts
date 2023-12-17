@@ -14,7 +14,7 @@ export interface OnlinePlayer {
   isVisible: boolean;
 }
 
-interface Position {
+export interface Position {
   indX: number;
   indY: number;
 }
@@ -27,6 +27,8 @@ interface ServerToClientEvents {
   playerMoved: (onlinePlayer: OnlinePlayer) => void;
   npcMoved: (onlinePlayer: OnlinePlayer) => void;
   npcHidden: (id: string) => void;
+  addBattleIcon: (id: OnlinePlayer) => void;
+  removeBattleIcon: (id: string) => void;
   enemyWasKilled: (id: string) => void;
   npcWonFight: (id: string) => void;
   playerVisibilityChanged: (id: string, isVisible: boolean) => void;
@@ -39,6 +41,7 @@ interface ClientToServerEvents {
   updateDirection: (direction: string) => void;
   updatePosition: (position: Position) => void;
   startBattle: (enemyId: string) => void;
+  fightPreparationIsOver: (enemyId: string) => void;
   endBattle: (player: OnlinePlayer) => void;
 }
 
@@ -169,13 +172,19 @@ io.on("connection", function (socket) {
   socket.on("startBattle", (enemyId: string) => {
     removePlayer(socket);
     socket.leave("world");
-    hideEnemy(enemyId);
+    hideEnemyAndShowBattleIcon(enemyId);
   });
 
   // plays when player returns from battle to world scene
   socket.on("endBattle", (player: OnlinePlayer) => {
     addNewPlayer(player, socket);
     socket.join("world");
+  });
+
+  // is emitted when a fight has really started (preparation phase is over)
+  // and players on the world scene cannot join it anymore
+  socket.on("fightPreparationIsOver", (enemyId: string) => {
+    io.to("world").emit("removeBattleIcon", enemyId);
   });
 
   socket.on("disconnect", () => {
@@ -256,13 +265,17 @@ function removePlayer(socket) {
   io.to("world").emit("playerDisconnect", socket.id);
 }
 
-function hideEnemy(enemyId: string) {
+function hideEnemyAndShowBattleIcon(enemyId: string) {
   const index = npcs.findIndex((npc) => npc.playerId === enemyId);
+  let myNpc: OnlinePlayer;
   if (index !== -1) {
-    npcs[index].isVisible = false;
+    myNpc = npcs[index];
+    myNpc.isVisible = false;
+    // emit a message to all players to hide this npc during the fight
+    io.to("world").emit("npcHidden", enemyId);
+    // emit a message to all players to show battle icon in place of the npc that just got into a fight
+    io.to("world").emit("addBattleIcon", myNpc);
   }
-  // emit a message to all players to hide this npc during the fight
-  io.to("world").emit("npcHidden", enemyId);
 }
 
 function findCurrentPlayer(socket) {

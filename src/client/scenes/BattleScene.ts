@@ -46,6 +46,7 @@ export class BattleScene extends Phaser.Scene {
   enemyId: any;
   playerStarterTiles: Phaser.Tilemaps.Tile[];
   enemyStarterTiles: Phaser.Tilemaps.Tile[];
+  worldScene: WorldScene;
 
   constructor() {
     super({
@@ -87,6 +88,8 @@ export class BattleScene extends Phaser.Scene {
     // start UI
     this.scene.run("UIScene");
     this.uiScene = this.scene.get("UIScene") as UIScene;
+
+    this.worldScene = this.scene.get("WorldScene") as WorldScene;
 
     // and finally, player gets to choose their starter position
     this.chooseStartPosition();
@@ -252,6 +255,7 @@ export class BattleScene extends Phaser.Scene {
 
   // play this after player chose starter position and pressed start button
   startBattle() {
+    this.worldScene.socket.emit("fightPreparationIsOver", this.enemyId);
     this.clearOverlay();
     this.enemyStarterTiles = [];
     this.playerStarterTiles = [];
@@ -1089,10 +1093,7 @@ export class BattleScene extends Phaser.Scene {
   gameOver() {
     this.resetScene();
     // tell world scene to make npc reappear
-    (this.scene.get("WorldScene") as WorldScene).socket.emit(
-      "npcWinFight",
-      this.enemyId
-    );
+    this.worldScene.socket.emit("npcWinFight", this.enemyId);
     this.scene.start("GameOverScene");
   }
 

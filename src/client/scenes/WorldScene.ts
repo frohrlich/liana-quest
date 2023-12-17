@@ -2,8 +2,9 @@ import Phaser from "phaser";
 import { WorldNpc } from "../classes/world/WorldNpc";
 import { UnitData, unitsAvailable } from "../data/UnitData";
 import { io } from "socket.io-client";
-import { OnlinePlayer } from "../../server/server";
+import { OnlinePlayer, Position } from "../../server/server";
 import { WorldOnlinePlayer } from "../classes/world/WorldOnlinePlayer";
+import { BattleIcon } from "../classes/world/BattleIcon";
 
 interface UnitPosition {
   indX: number;
@@ -17,8 +18,10 @@ export class WorldScene extends Phaser.Scene {
 
   player!: WorldOnlinePlayer;
   spawns!: Phaser.Physics.Arcade.Group;
+  battleIcons: BattleIcon[] = [];
   unitScale = 1.5;
   animFramerate = 7;
+  npcBattleShieldFrame = 54;
 
   background: Phaser.Tilemaps.TilemapLayer;
   tileWidth: number;
@@ -134,6 +137,23 @@ export class WorldScene extends Phaser.Scene {
           myNpc.setActive(false).setVisible(false).body.enable = false;
         }
       });
+    });
+    // when a battle starts, show the shield to join battle
+    this.socket.on("addBattleIcon", (onlinePlayer: OnlinePlayer) => {
+      const battleIcon = new BattleIcon(
+        this,
+        onlinePlayer.playerId,
+        this.map.tileToWorldX(onlinePlayer.indX),
+        this.map.tileToWorldY(onlinePlayer.indY),
+        "player",
+        this.npcBattleShieldFrame
+      );
+      this.battleIcons.push(battleIcon);
+      this.add.existing(battleIcon).setScale(this.unitScale);
+    });
+    // when a battle preparation phase is over, remove the shield
+    this.socket.on("removeBattleIcon", (enemyId: string) => {
+      this.battleIcons.find((icon) => icon.id === enemyId).destroy();
     });
     this.socket.on("npcWonFight", (npcId: string) => {
       this.spawns.getChildren().forEach((npc) => {
