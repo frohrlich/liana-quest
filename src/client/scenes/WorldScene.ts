@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { WorldNpc } from "../classes/world/WorldNpc";
 import { UnitData, unitsAvailable } from "../data/UnitData";
 import { io } from "socket.io-client";
-import { OnlinePlayer, Position } from "../../server/server";
+import { OnlinePlayer } from "../../server/scenes/ServerWorldScene";
 import { WorldOnlinePlayer } from "../classes/world/WorldOnlinePlayer";
 import { BattleIcon } from "../classes/world/BattleIcon";
 
