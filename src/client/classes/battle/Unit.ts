@@ -44,6 +44,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   effectOverTime: EffectOverTime = null;
   effectIcon: Phaser.GameObjects.Image;
   summonedUnits: Unit[] = [];
+  id: string;
 
   constructor(
     scene: Phaser.Scene,
@@ -327,6 +328,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     ) {
       const summonedUnit = this.myScene.addUnit(
         spell.summons,
+        this.id + this.summonedUnits.length,
         targetVec.x,
         targetVec.y,
         false,

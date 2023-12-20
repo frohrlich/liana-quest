@@ -1,10 +1,11 @@
 import Phaser from "phaser";
 import { WorldNpc } from "../classes/world/WorldNpc";
 import { UnitData, unitsAvailable } from "../data/UnitData";
-import { io } from "socket.io-client";
+import { Socket, io } from "socket.io-client";
 import { OnlinePlayer } from "../../server/scenes/ServerWorldScene";
 import { WorldOnlinePlayer } from "../classes/world/WorldOnlinePlayer";
 import { BattleIcon } from "../classes/world/BattleIcon";
+import { ServerUnit } from "../../server/scenes/ServerBattleScene";
 
 interface UnitPosition {
   indX: number;
@@ -32,7 +33,7 @@ export class WorldScene extends Phaser.Scene {
   enemyPositions: UnitPosition[] = [];
   enemyId: number;
   battleHasStarted: boolean;
-  socket: any;
+  socket: Socket;
   otherPlayers: WorldOnlinePlayer[] = [];
 
   constructor() {
@@ -64,9 +65,11 @@ export class WorldScene extends Phaser.Scene {
 
   setupWeb() {
     this.socket = io();
+
     this.socket.on("newPlayer", (playerInfo: OnlinePlayer) => {
       this.addOtherPlayers(playerInfo);
     });
+
     this.socket.on("playerDisconnect", (playerId: string) => {
       this.otherPlayers.forEach((otherPlayer: WorldOnlinePlayer) => {
         if (playerId === otherPlayer.playerId) {
@@ -80,6 +83,7 @@ export class WorldScene extends Phaser.Scene {
         this.otherPlayers.splice(index, 1);
       }
     });
+
     this.socket.on("currentPlayers", (players: OnlinePlayer[]) => {
       players.forEach((player) => {
         if (player.playerId === this.socket.id) {
@@ -91,6 +95,7 @@ export class WorldScene extends Phaser.Scene {
         }
       });
     });
+
     this.socket.on(
       "playerVisibilityChanged",
       (id: string, isVisible: boolean) => {
@@ -101,15 +106,18 @@ export class WorldScene extends Phaser.Scene {
         });
       }
     );
+
     this.socket.on("currentNpcs", (npcs: OnlinePlayer[]) => {
       this.setupCamera();
       this.addEnemies(npcs);
     });
+
     this.socket.on("enemyWasKilled", (id: string) => {
       this.spawns.getChildren().forEach((enemy) => {
         if ((enemy as WorldNpc).id === id) enemy.destroy();
       });
     });
+
     this.socket.on("playerMoved", (playerInfo: OnlinePlayer) => {
       if (playerInfo.playerId === this.player.playerId) {
         this.player.moveToPosition(playerInfo.indX, playerInfo.indY);
@@ -121,6 +129,7 @@ export class WorldScene extends Phaser.Scene {
         });
       }
     });
+
     this.socket.on("npcMoved", (npcInfo: OnlinePlayer) => {
       this.spawns.getChildren().forEach((npc) => {
         let myNpc = npc as WorldNpc;
@@ -129,6 +138,7 @@ export class WorldScene extends Phaser.Scene {
         }
       });
     });
+
     this.socket.on("npcHidden", (npcId: string) => {
       this.spawns.getChildren().forEach((npc) => {
         let myNpc = npc as WorldNpc;
@@ -138,23 +148,31 @@ export class WorldScene extends Phaser.Scene {
         }
       });
     });
+
     // when a battle starts, show the shield to join battle
-    this.socket.on("addBattleIcon", (onlinePlayer: OnlinePlayer) => {
+    this.socket.on("addBattleIcon", (npc: OnlinePlayer) => {
       const battleIcon = new BattleIcon(
         this,
-        onlinePlayer.playerId,
-        this.map.tileToWorldX(onlinePlayer.indX),
-        this.map.tileToWorldY(onlinePlayer.indY),
+        npc.playerId,
+        this.map.tileToWorldX(npc.indX),
+        this.map.tileToWorldY(npc.indY),
         "player",
         this.npcBattleShieldFrame
       );
       this.battleIcons.push(battleIcon);
       this.add.existing(battleIcon).setScale(this.unitScale);
+      battleIcon.setInteractive();
+
+      battleIcon.on("pointerup", () => {
+        this.socket.emit("playerClickedBattleIcon", npc.playerId);
+      });
     });
+
     // when a battle preparation phase is over, remove the shield
     this.socket.on("removeBattleIcon", (enemyId: string) => {
       this.battleIcons.find((icon) => icon.id === enemyId).destroy();
     });
+
     this.socket.on("npcWonFight", (npcId: string) => {
       this.spawns.getChildren().forEach((npc) => {
         let myNpc = npc as WorldNpc;
@@ -164,6 +182,27 @@ export class WorldScene extends Phaser.Scene {
         }
       });
     });
+
+    this.socket.on(
+      "battleHasStarted",
+      (allies: ServerUnit[], enemies: ServerUnit[], mapName: string) => {
+        // shake the world
+        this.cameras.main.shake(300);
+        // start battle
+        this.time.addEvent({
+          delay: 300,
+          callback: () => {
+            this.resetScene();
+            this.scene.start("BattleScene", {
+              alliesInfo: allies,
+              enemiesInfo: enemies,
+              mapName: mapName,
+            });
+          },
+          callbackScope: this,
+        });
+      }
+    );
   }
 
   addOtherPlayers(playerInfo: OnlinePlayer) {
@@ -318,22 +357,7 @@ export class WorldScene extends Phaser.Scene {
   onMeetEnemy(player: any, enemy: any) {
     if (!this.battleHasStarted) {
       this.battleHasStarted = true;
-      // shake the world
-      this.cameras.main.shake(300);
       this.socket.emit("startBattle", enemy.id);
-      // start battle
-      this.time.addEvent({
-        delay: 300,
-        callback: () => {
-          this.resetScene();
-          this.scene.start("BattleScene", {
-            playerType: player.type,
-            enemyType: enemy.type,
-            enemyId: enemy.id,
-          });
-        },
-        callbackScope: this,
-      });
     }
   }
 

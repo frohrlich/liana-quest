@@ -9,6 +9,9 @@ import isVisible from "../utils/lineOfSight";
 import { UnitData, unitsAvailable } from "../data/UnitData";
 import { heal, javelin, punch, sting } from "../data/SpellData";
 import { WorldScene } from "./WorldScene";
+import { ServerUnit } from "../../server/scenes/ServerBattleScene";
+import { Socket } from "socket.io-client";
+import { Position } from "../../server/scenes/ServerWorldScene";
 
 // Store a tile and the path to it
 interface TilePath {
@@ -22,6 +25,7 @@ export class BattleScene extends Phaser.Scene {
   currentPlayer!: Player;
   allies: Unit[] = [];
   enemies: Unit[] = [];
+  units: Unit[] = [];
   clickedTile!: Phaser.Tilemaps.Tile | null;
   tileWidth!: number;
   tileHeight!: number;
@@ -47,6 +51,8 @@ export class BattleScene extends Phaser.Scene {
   playerStarterTiles: Phaser.Tilemaps.Tile[];
   enemyStarterTiles: Phaser.Tilemaps.Tile[];
   worldScene: WorldScene;
+  socket: Socket;
+  playerId: string;
 
   constructor() {
     super({
@@ -57,15 +63,19 @@ export class BattleScene extends Phaser.Scene {
   preload(): void {}
 
   create(data: any): void {
+    this.worldScene = this.scene.get("WorldScene") as WorldScene;
+    this.socket = this.worldScene.socket;
+    this.playerId = this.socket.id;
+
     // refresh scene to its original state
     this.turnIndex = 0;
     this.isPlayerTurn = true;
     this.spellVisible = false;
 
     // get id of the enemy from the world scene
-    this.enemyId = data.enemyId;
+    this.enemyId = data.enemiesInfo[0].playerId;
 
-    this.createTilemap();
+    this.createTilemap(data);
     this.addUnitsOnStart(data);
 
     // camera settings
@@ -89,10 +99,8 @@ export class BattleScene extends Phaser.Scene {
     this.scene.run("UIScene");
     this.uiScene = this.scene.get("UIScene") as UIScene;
 
-    this.worldScene = this.scene.get("WorldScene") as WorldScene;
-
     // and finally, player gets to choose their starter position
-    this.chooseStartPosition();
+    this.setupStartPosition();
   }
 
   // add event listener for spell unselect when clicking outside spell range
@@ -149,7 +157,7 @@ export class BattleScene extends Phaser.Scene {
     this.cameras.main.roundPixels = true;
   }
 
-  chooseStartPosition() {
+  setupStartPosition() {
     const playerColor = 0x0000ff;
     const enemyColor = 0xff0000;
 
@@ -169,7 +177,10 @@ export class BattleScene extends Phaser.Scene {
       // on click, teleport to new starter position
       overlay.on("pointerup", () => {
         if (!this.isUnitThere(tile.x, tile.y)) {
-          this.currentPlayer.teleportToTile(tile.x, tile.y);
+          this.socket.emit("playerChangedStartPosition", this.playerId, {
+            indX: tile.x,
+            indY: tile.y,
+          });
         }
       });
       overlay.on("pointerover", () => {
@@ -192,6 +203,25 @@ export class BattleScene extends Phaser.Scene {
       );
       this.overlays.push(overlay);
     });
+
+    this.socket.on(
+      "playerHasChangedStartPosition",
+      (playerId: string, position: Position) => {
+        this.findUnitById(playerId).teleportToTile(
+          position.indX,
+          position.indY
+        );
+      }
+    );
+
+    this.socket.on("playerJoinedBattle", (newPlayer: ServerUnit) => {
+      const myUnit = this.addUnitFromServerInfo(newPlayer, newPlayer.isAlly);
+      this.addUnitAtBeginningOfTimeline(myUnit);
+    });
+  }
+
+  findUnitById(playerId: string) {
+    return this.timeline.find((unit) => unit.id === playerId);
   }
 
   private calculatePlayerStarterTiles() {
@@ -255,7 +285,7 @@ export class BattleScene extends Phaser.Scene {
 
   // play this after player chose starter position and pressed start button
   startBattle() {
-    this.worldScene.socket.emit("fightPreparationIsOver", this.enemyId);
+    this.socket.emit("fightPreparationIsOver", this.enemyId);
     this.clearOverlay();
     this.enemyStarterTiles = [];
     this.playerStarterTiles = [];
@@ -295,33 +325,36 @@ export class BattleScene extends Phaser.Scene {
   private addUnitsOnStart(data: any) {
     this.calculatePlayerStarterTiles();
     this.calculateEnemyStarterTiles();
-    // player
+
+    // allies
+    this.addTeamOnStart(data, true);
+    this.currentPlayer = this.allies[0];
+    // enemies
+    this.addTeamOnStart(data, false);
+  }
+
+  private addTeamOnStart(data: any, isAlly: boolean) {
+    const unitsInfo = isAlly ? data.alliesInfo : data.enemiesInfo;
+    unitsInfo.forEach((info: ServerUnit) => {
+      this.addUnitFromServerInfo(info, isAlly);
+    });
+  }
+
+  private addUnitFromServerInfo(info: ServerUnit, isAlly: boolean) {
     // see if we find a unit with the name given by the world scene in the array
     // of all available units
     const playerData = unitsAvailable.find(
-      (unitData) => unitData.name === data.playerType
+      (unitData) => unitData.name === info.type
     );
     if (playerData) {
-      const randTile = Phaser.Math.RND.between(
-        0,
-        this.playerStarterTiles.length - 1
+      return this.addUnit(
+        playerData,
+        info.playerId,
+        info.indX,
+        info.indY,
+        !info.isPlayable,
+        isAlly
       );
-      const { x, y } = this.playerStarterTiles[randTile];
-      this.currentPlayer = this.addUnit(playerData, x, y, false, true);
-    } else {
-      throw new Error("Error : unit not found");
-    }
-    // enemy
-    const enemyData = unitsAvailable.find(
-      (unitData) => unitData.name === data.enemyType
-    );
-    if (enemyData) {
-      const randTile = Phaser.Math.RND.between(
-        0,
-        this.enemyStarterTiles.length - 1
-      );
-      const { x, y } = this.enemyStarterTiles[randTile];
-      this.addUnit(enemyData, x, y, true, false);
     } else {
       throw new Error("Error : unit not found");
     }
@@ -336,11 +369,8 @@ export class BattleScene extends Phaser.Scene {
     this.enemies = [];
   }
 
-  private createTilemap() {
-    // choose map randomly among a set
-    const mapCount = 3;
-    const randomMapIndex = Phaser.Math.RND.between(1, mapCount);
-    this.map = this.make.tilemap({ key: `battlemap${randomMapIndex}` });
+  private createTilemap(data: any) {
+    this.map = this.make.tilemap({ key: data.mapName });
 
     this.tileWidth = this.map.tileWidth;
     this.tileHeight = this.map.tileHeight;
@@ -523,6 +553,7 @@ export class BattleScene extends Phaser.Scene {
   // add a unit to the scene
   addUnit(
     unitData: UnitData,
+    unitServerId: string,
     startX: number,
     startY: number,
     npc: boolean,
@@ -560,6 +591,7 @@ export class BattleScene extends Phaser.Scene {
       );
     }
     unit.type = unitData.name;
+    unit.id = unitServerId;
     this.add.existing(unit);
 
     // create unit animations with base sprite and framerate
@@ -578,6 +610,7 @@ export class BattleScene extends Phaser.Scene {
     } else {
       this.enemies.push(unit);
     }
+    this.units.push(unit);
     // add spells
     unit.addSpells.apply(unit, this.decodeSpellString(unitData.spells));
     // unit is now considered as an obstacle for other units
@@ -1054,6 +1087,11 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
+  addUnitAtBeginningOfTimeline(unit: Unit) {
+    this.timeline.push(unit);
+    this.uiScene.updateTimeline(this.timeline);
+  }
+
   // add summoned unit after the summoner in the timeline
   addSummonedUnitToTimeline(summoner: Unit, summoned: Unit) {
     const index = this.timeline.findIndex(
@@ -1093,7 +1131,7 @@ export class BattleScene extends Phaser.Scene {
   gameOver() {
     this.resetScene();
     // tell world scene to make npc reappear
-    this.worldScene.socket.emit("npcWinFight", this.enemyId);
+    this.socket.emit("npcWinFight", this.enemyId);
     this.scene.start("GameOverScene");
   }
 

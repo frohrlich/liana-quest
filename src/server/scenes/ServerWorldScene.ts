@@ -1,5 +1,6 @@
 import findPath, { Vector2 } from "../utils/findPath";
 import { Server } from "socket.io";
+import { ServerBattleScene } from "./ServerBattleScene";
 
 export interface OnlinePlayer {
   playerId: string;
@@ -18,33 +19,25 @@ export interface Position {
 export class ServerWorldScene {
   players: OnlinePlayer[] = [];
   npcs: OnlinePlayer[] = [];
+  battlesOngoing: ServerBattleScene[] = [];
   enemyCount = 30;
-  minPosition = 5;
+  minPosition = 0;
   io: Server;
+  background: any;
+  obstacles: any;
+  map: any;
 
   constructor(io: Server) {
     this.io = io;
 
-    // load map
-    let tmx = require("tmx-parser");
-    let background;
-    let obstacles;
-
-    tmx.parseFile("./public/assets/map/map.tmx", (err, map) => {
-      if (err) throw err;
-      background = map.layers[0];
-      obstacles = map.layers[1];
-
-      // create npcs at random locations
-      this.createRandomNpcs(map, obstacles, background);
-    });
+    this.createMap();
 
     io.on("connection", (socket) => {
       const newPlayer = {
         indX: Math.floor(Math.random() * 5) + 1,
         indY: Math.floor(Math.random() * 5) + 1,
         playerId: socket.id,
-        type: "Princess",
+        type: "Amazon",
         direction: "down",
         isVisible: true,
       };
@@ -55,9 +48,32 @@ export class ServerWorldScene {
       this.addNewPlayer(newPlayer, socket);
 
       socket.on("startBattle", (enemyId: string) => {
+        const myPlayer = this.findCurrentPlayer(socket);
+        const myNpc = this.findNpcById(enemyId);
+        if (myNpc && myPlayer) {
+          this.removePlayer(socket);
+          socket.leave("world");
+          const battleId = "battle" + enemyId;
+          socket.join(battleId);
+          this.battlesOngoing.push(
+            new ServerBattleScene(io, socket, myPlayer, myNpc, battleId)
+          );
+          this.hideEnemyAndShowBattleIcon(enemyId);
+        }
+      });
+
+      socket.on("playerClickedBattleIcon", (npcId: string) => {
+        const myPlayer = this.findCurrentPlayer(socket);
         this.removePlayer(socket);
         socket.leave("world");
-        this.hideEnemyAndShowBattleIcon(enemyId);
+        const battleId = "battle" + npcId;
+        socket.join(battleId);
+        const myBattle = this.battlesOngoing.find(
+          (battle) => battle.id === battleId
+        );
+        if (myBattle) {
+          myBattle.addPlayerAfterBattleStart(socket, myPlayer, true);
+        }
       });
 
       // plays when player returns from battle to world scene
@@ -98,21 +114,23 @@ export class ServerWorldScene {
       socket.on("playerMovement", (movementData: Position) => {
         const currentPlayer = this.findCurrentPlayer(socket);
 
-        const startVec: Vector2 = {
-          x: currentPlayer.indX,
-          y: currentPlayer.indY,
-        };
-        const targetVec: Vector2 = {
-          x: movementData.indX,
-          y: movementData.indY,
-        };
+        if (currentPlayer) {
+          const startVec: Vector2 = {
+            x: currentPlayer.indX,
+            y: currentPlayer.indY,
+          };
+          const targetVec: Vector2 = {
+            x: movementData.indX,
+            y: movementData.indY,
+          };
 
-        // check if movement is actually possible
-        if (findPath(startVec, targetVec, background, obstacles)) {
-          currentPlayer.indX = movementData.indX;
-          currentPlayer.indY = movementData.indY;
-          // emit a message to all players about the player that moved
-          io.to("world").emit("playerMoved", currentPlayer);
+          // check if movement is actually possible
+          if (findPath(startVec, targetVec, this.background, this.obstacles)) {
+            currentPlayer.indX = movementData.indX;
+            currentPlayer.indY = movementData.indY;
+            // emit a message to all players about the player that moved
+            io.to("world").emit("playerMoved", currentPlayer);
+          }
         }
       });
 
@@ -131,18 +149,36 @@ export class ServerWorldScene {
     });
   }
 
-  private createRandomNpcs(map: any, obstacles: any, background: any) {
+  private findNpcById(enemyId: string) {
+    return this.npcs.find((npc) => npc.playerId === enemyId);
+  }
+
+  private createMap() {
+    let tmx = require("tmx-parser");
+
+    tmx.parseFile("./public/assets/map/map.tmx", (err, map) => {
+      if (err) throw err;
+      this.map = map;
+      this.background = map.layers[0];
+      this.obstacles = map.layers[1];
+
+      // create npcs at random locations
+      this.createRandomNpcs();
+    });
+  }
+
+  private createRandomNpcs() {
     for (let i = 0; i < this.enemyCount; i++) {
       const id = i.toString();
       let indX: number, indY: number;
       do {
         indX =
-          Math.floor(Math.random() * (map.width - this.minPosition)) +
+          Math.floor(Math.random() * (this.map.width - this.minPosition)) +
           this.minPosition;
         indY =
-          Math.floor(Math.random() * (map.height - this.minPosition - 1)) +
+          Math.floor(Math.random() * (this.map.height - this.minPosition - 1)) +
           this.minPosition;
-      } while (obstacles.tileAt(indX, indY)); // but not on obstacles
+      } while (this.obstacles.tileAt(indX, indY)); // but not on obstacles
 
       // toss a coin between snowman and dude...
       const enemyType = Math.floor(Math.random() * 2) ? "Snowman" : "Dude";
@@ -161,9 +197,9 @@ export class ServerWorldScene {
       this.makeNpcMoveRandomly(
         delay,
         npc,
-        background,
-        map,
-        obstacles,
+        this.background,
+        this.map,
+        this.obstacles,
         indX,
         range,
         indY

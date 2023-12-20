@@ -6,10 +6,12 @@ import {
   Position,
   ServerWorldScene,
 } from "./scenes/ServerWorldScene";
+import { ServerUnit } from "./scenes/ServerBattleScene";
 
 const port = 8081;
 
 interface ServerToClientEvents {
+  // world events
   currentPlayers: (onlinePlayer: OnlinePlayer[]) => void;
   currentNpcs: (npcs: OnlinePlayer[]) => void;
   newPlayer: (onlinePlayer: OnlinePlayer) => void;
@@ -22,9 +24,18 @@ interface ServerToClientEvents {
   enemyWasKilled: (id: string) => void;
   npcWonFight: (id: string) => void;
   playerVisibilityChanged: (id: string, isVisible: boolean) => void;
+
+  // battle events
+  battleHasStarted: (
+    allies: ServerUnit[],
+    enemies: ServerUnit[],
+    mapName: string
+  ) => void;
+  playerHasChangedStartPosition: (playerId: string, position: Position) => void;
 }
 
 interface ClientToServerEvents {
+  // world events
   playerMovement: (movementData: Position) => void;
   enemyKill: (id: string) => void;
   npcWinFight: (id: string) => void;
@@ -33,6 +44,10 @@ interface ClientToServerEvents {
   startBattle: (enemyId: string) => void;
   fightPreparationIsOver: (enemyId: string) => void;
   endBattle: (player: OnlinePlayer) => void;
+  playerClickedBattleIcon: (npcId: string) => void;
+
+  // battle events
+  playerChangedStartPosition: (playerId: string, position: Position) => void;
 }
 
 const app: Application = express();
