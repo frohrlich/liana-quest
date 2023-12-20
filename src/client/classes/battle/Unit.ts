@@ -575,7 +575,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     }
   }
 
-  private die() {
+  die() {
     this.summonedUnits.forEach((unit) => {
       if (!unit.isDead()) unit.die();
     });
@@ -589,9 +589,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
         if (this.myScene.gameIsOver()) {
           this.myScene.gameOver();
         } else if (this.myScene.battleIsFinished()) {
-          this.destroyUnit();
           this.myScene.endBattle();
         }
+        this.destroyUnit();
       },
       undefined,
       this

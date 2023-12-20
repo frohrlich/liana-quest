@@ -19,7 +19,7 @@ export interface Position {
 export class ServerWorldScene {
   players: OnlinePlayer[] = [];
   npcs: OnlinePlayer[] = [];
-  battlesOngoing: ServerBattleScene[] = [];
+  ongoingBattles: ServerBattleScene[] = [];
   enemyCount = 30;
   minPosition = 0;
   io: Server;
@@ -55,7 +55,7 @@ export class ServerWorldScene {
           socket.leave("world");
           const battleId = "battle" + enemyId;
           socket.join(battleId);
-          this.battlesOngoing.push(
+          this.ongoingBattles.push(
             new ServerBattleScene(io, socket, myPlayer, myNpc, battleId)
           );
           this.hideEnemyAndShowBattleIcon(enemyId);
@@ -68,7 +68,7 @@ export class ServerWorldScene {
         socket.leave("world");
         const battleId = "battle" + npcId;
         socket.join(battleId);
-        const myBattle = this.battlesOngoing.find(
+        const myBattle = this.ongoingBattles.find(
           (battle) => battle.id === battleId
         );
         if (myBattle) {
@@ -90,6 +90,7 @@ export class ServerWorldScene {
 
       socket.on("disconnect", () => {
         this.removePlayer(socket);
+        this.removePlayerFromBattles(socket);
       });
 
       socket.on("enemyKill", (enemyId: string) => {
@@ -279,6 +280,18 @@ export class ServerWorldScene {
     }
     // emit a message to all players to remove this player
     this.io.to("world").emit("playerDisconnect", socket.id);
+  }
+
+  removePlayerFromBattles(socket) {
+    this.ongoingBattles.forEach((battle) => {
+      const index = battle.units.findIndex(
+        (player) => player.playerId === socket.id
+      );
+      if (index !== -1) {
+        battle.units.splice(index, 1);
+        this.io.to(battle.id).emit("playerDisconnect", socket.id);
+      }
+    });
   }
 
   hideEnemyAndShowBattleIcon(enemyId: string) {

@@ -101,6 +101,18 @@ export class BattleScene extends Phaser.Scene {
 
     // and finally, player gets to choose their starter position
     this.setupStartPosition();
+
+    this.addDisconnectListener();
+  }
+
+  addDisconnectListener() {
+    this.socket.on("playerDisconnect", (playerId: string) => {
+      this.units.forEach((otherPlayer: Unit) => {
+        if (playerId === otherPlayer.id) {
+          otherPlayer.die();
+        }
+      });
+    });
   }
 
   // add event listener for spell unselect when clicking outside spell range
