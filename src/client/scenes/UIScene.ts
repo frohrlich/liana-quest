@@ -23,6 +23,7 @@ export class UIScene extends Phaser.Scene {
   handle!: Phaser.GameObjects.Rectangle;
   unitStats!: UnitStatDisplay;
   buttonText: Phaser.GameObjects.BitmapText;
+  button: Phaser.GameObjects.Rectangle;
 
   constructor() {
     super({
@@ -66,7 +67,7 @@ export class UIScene extends Phaser.Scene {
     const xPos = this.uiTabWidth * 2.5;
     const yPos = this.topY + this.uiTabHeight / 2;
 
-    this.add
+    this.button = this.add
       .rectangle(xPos, yPos, this.uiTabWidth * 0.85, this.uiTabHeight * 0.65)
       .setStrokeStyle(2, 0xcccccc)
       .setFillStyle(0x293154);
@@ -84,9 +85,13 @@ export class UIScene extends Phaser.Scene {
       .setOrigin(0.5, 0.5)
       .setInteractive()
       .on("pointerup", () => {
-        this.startBattle();
-        this.battleScene.startBattle();
+        this.battleScene.playerIsReady();
       });
+  }
+
+  setButtonToReady() {
+    this.button.setFillStyle(0x00ff00);
+    this.buttonText.tint = 0x000000;
   }
 
   // play this after player chose starter position and pressed start button
@@ -98,6 +103,8 @@ export class UIScene extends Phaser.Scene {
 
   // change start button to end turn button for the rest of the battle
   createEndTurnButton() {
+    this.button.setFillStyle(0x293154);
+    this.buttonText.setTint(this.uiFontColor);
     this.buttonText.text = "End turn";
     this.buttonText.off("pointerup");
     this.buttonText.on("pointerup", () => {

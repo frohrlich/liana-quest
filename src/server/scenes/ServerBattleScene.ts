@@ -1,15 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { OnlinePlayer, Position } from "./ServerWorldScene";
 import { unitsAvailable } from "../../client/data/UnitData";
-
-export interface ServerUnit {
-  playerId: string;
-  isPlayable: boolean;
-  isAlly: boolean;
-  indX: number;
-  indY: number;
-  type: string;
-}
+import { ServerUnit } from "./ServerUnit";
 
 export class ServerBattleScene {
   io: Server;
@@ -18,6 +10,7 @@ export class ServerBattleScene {
   allies: ServerUnit[] = [];
   enemies: ServerUnit[] = [];
   units: ServerUnit[] = [];
+  timeline: ServerUnit[] = [];
 
   currentPlayer: ServerUnit;
   map: any;
@@ -55,32 +48,64 @@ export class ServerBattleScene {
       (playerId: string, position: Position) => {
         if (this.isInPreparationMode) {
           const myUnit = this.findUnitById(playerId);
-
-          // check if new start position is authorized
-          if (
-            !this.obstacles.tileAt(position.indX, position.indY) &&
-            !this.isUnitThere(position.indX, position.indY) &&
-            ((myUnit.isAlly && myUnit.indX <= this.map.width / 3) ||
-              (!myUnit.isAlly && myUnit.indX >= (this.map.width * 2) / 3))
-          ) {
-            myUnit.indX = position.indX;
-            myUnit.indY = position.indY;
-            // send info to all participants in battle that someone changed starter position
-            this.io
-              .to(this.id)
-              .emit("playerHasChangedStartPosition", playerId, position);
+          if (!myUnit.isReady) {
+            // check if new start position is authorized
+            if (
+              !this.obstacles.tileAt(position.indX, position.indY) &&
+              !this.isUnitThere(position.indX, position.indY) &&
+              ((myUnit.isAlly && myUnit.indX <= this.map.width / 3) ||
+                (!myUnit.isAlly && myUnit.indX >= (this.map.width * 2) / 3))
+            ) {
+              myUnit.indX = position.indX;
+              myUnit.indY = position.indY;
+              // send info to all participants in battle that someone changed starter position
+              this.io
+                .to(this.id)
+                .emit("playerHasChangedStartPosition", playerId, position);
+            }
           }
         }
       }
     );
+
+    // on clicking start battle button
+    socket.on("playerIsReady", (playerId: string) => {
+      const myPlayer = this.findUnitById(playerId);
+      if (myPlayer) {
+        myPlayer.isReady = true;
+        socket.emit("readyIsConfirmed");
+      }
+      if (this.everyoneIsReady()) {
+        this.startBattleMainPhase();
+      }
+    });
+  }
+
+  private startBattleMainPhase() {
+    this.isInPreparationMode = false;
+    this.io.to(this.id).emit("startMainBattlePhase");
+    this.io
+      .to("world")
+      .emit("fightPreparationIsOver", this.enemies[0].playerId);
+
+    this.socket.on("playerClickedEndTurn", (playerId) => {
+      const myUnit = this.findUnitById(playerId);
+      myUnit.endTurn();
+      this.io.to(this.id).emit("endPlayerTurn", myUnit);
+    });
+  }
+
+  everyoneIsReady() {
+    return this.units.every((unit) => unit.isReady);
   }
 
   addUnitsOnStart(newPlayer: OnlinePlayer, enemy: OnlinePlayer) {
-    this.addUnitOnStart(newPlayer, true);
-    this.addUnitOnStart(enemy, false);
+    this.addUnitOnStart(newPlayer, true, true);
+    this.addUnitOnStart(enemy, false, false);
+    this.createTimeline();
   }
 
-  addUnitOnStart(unit: OnlinePlayer, isAlly: boolean) {
+  addUnitOnStart(unit: OnlinePlayer, isAlly: boolean, isPlayable: boolean) {
     const playerData = unitsAvailable.find(
       (unitData) => unitData.name === unit.type
     );
@@ -93,17 +118,18 @@ export class ServerBattleScene {
         indX = starterTiles[randTile].indX;
         indY = starterTiles[randTile].indY;
       } while (this.isUnitThere(indX, indY));
-      const myPlayer = {
-        playerId: unit.playerId,
-        isPlayable: true,
-        isAlly: isAlly,
-        indX: indX,
-        indY: indY,
-        type: unit.type,
-      };
-      this.units.push(myPlayer);
-      isAlly ? this.allies.push(myPlayer) : this.enemies.push(myPlayer);
-      return myPlayer;
+      const myUnit = new ServerUnit(
+        !isPlayable, // npcs are ready by default so the battle can start
+        unit.playerId,
+        isPlayable,
+        isAlly,
+        indX,
+        indY,
+        unit.type
+      );
+      this.units.push(myUnit);
+      isAlly ? this.allies.push(myUnit) : this.enemies.push(myUnit);
+      return myUnit;
     } else {
       throw new Error("Error : unit not found");
     }
@@ -114,7 +140,8 @@ export class ServerBattleScene {
     player: OnlinePlayer,
     isAlly: boolean
   ) {
-    const newPlayer = this.addUnitOnStart(player, isAlly);
+    const newPlayer = this.addUnitOnStart(player, isAlly, true);
+    this.timeline.push(newPlayer);
     this.tellPlayerBattleHasStarted(socket);
     // update all other players of the new player
     socket.broadcast.to(this.id).emit("playerJoinedBattle", newPlayer);
@@ -163,5 +190,18 @@ export class ServerBattleScene {
   // return true if there is a unit at the specified position
   private isUnitThere(x: number, y: number): boolean {
     return this.units.some((unit) => unit.indX == x && unit.indY == y);
+  }
+
+  // play order : alternate between allies and enemies
+  createTimeline() {
+    const maxSize = Math.max(this.allies.length, this.enemies.length);
+    for (let i = 0; i < maxSize; i++) {
+      if (this.allies.length > i) {
+        this.timeline.push(this.allies[i]);
+      }
+      if (this.enemies.length > i) {
+        this.timeline.push(this.enemies[i]);
+      }
+    }
   }
 }

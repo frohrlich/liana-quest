@@ -51,8 +51,8 @@ export class ServerWorldScene {
         const myPlayer = this.findCurrentPlayer(socket);
         const myNpc = this.findNpcById(enemyId);
         if (myNpc && myPlayer) {
-          this.removePlayer(socket);
           socket.leave("world");
+          this.removePlayer(socket);
           const battleId = "battle" + enemyId;
           socket.join(battleId);
           this.ongoingBattles.push(

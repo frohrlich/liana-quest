@@ -5,7 +5,7 @@ import { Socket, io } from "socket.io-client";
 import { OnlinePlayer } from "../../server/scenes/ServerWorldScene";
 import { WorldOnlinePlayer } from "../classes/world/WorldOnlinePlayer";
 import { BattleIcon } from "../classes/world/BattleIcon";
-import { ServerUnit } from "../../server/scenes/ServerBattleScene";
+import { ServerUnit } from "../../server/scenes/ServerUnit";
 
 interface UnitPosition {
   indX: number;

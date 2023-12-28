@@ -9,7 +9,7 @@ import isVisible from "../utils/lineOfSight";
 import { UnitData, unitsAvailable } from "../data/UnitData";
 import { heal, javelin, punch, sting } from "../data/SpellData";
 import { WorldScene } from "./WorldScene";
-import { ServerUnit } from "../../server/scenes/ServerBattleScene";
+import { ServerUnit } from "../../server/scenes/ServerUnit";
 import { Socket } from "socket.io-client";
 import { Position } from "../../server/scenes/ServerWorldScene";
 
@@ -228,7 +228,15 @@ export class BattleScene extends Phaser.Scene {
 
     this.socket.on("playerJoinedBattle", (newPlayer: ServerUnit) => {
       const myUnit = this.addUnitFromServerInfo(newPlayer, newPlayer.isAlly);
-      this.addUnitAtBeginningOfTimeline(myUnit);
+      this.addUnitAtEndOfTimeline(myUnit);
+    });
+
+    this.socket.on("startMainBattlePhase", () => {
+      this.startBattle();
+    });
+
+    this.socket.on("readyIsConfirmed", () => {
+      this.uiScene.setButtonToReady();
     });
   }
 
@@ -296,11 +304,15 @@ export class BattleScene extends Phaser.Scene {
   }
 
   // play this after player chose starter position and pressed start button
+  playerIsReady() {
+    this.socket.emit("playerIsReady", this.socket.id);
+  }
+
   startBattle() {
-    this.socket.emit("fightPreparationIsOver", this.enemyId);
     this.clearOverlay();
     this.enemyStarterTiles = [];
     this.playerStarterTiles = [];
+    this.uiScene.startBattle();
     this.displayBattleStartScreen();
     this.refreshAccessibleTiles();
     this.highlightAccessibleTiles(this.accessibleTiles);
@@ -340,7 +352,7 @@ export class BattleScene extends Phaser.Scene {
 
     // allies
     this.addTeamOnStart(data, true);
-    this.currentPlayer = this.allies[0];
+    this.currentPlayer = this.allies[0] as Player;
     // enemies
     this.addTeamOnStart(data, false);
   }
@@ -1099,7 +1111,7 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  addUnitAtBeginningOfTimeline(unit: Unit) {
+  addUnitAtEndOfTimeline(unit: Unit) {
     this.timeline.push(unit);
     this.uiScene.updateTimeline(this.timeline);
   }

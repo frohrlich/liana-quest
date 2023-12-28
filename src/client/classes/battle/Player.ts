@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { Unit } from "./Unit";
 import { Spell } from "./Spell";
+import { ServerUnit } from "../../../server/scenes/ServerUnit";
 
 // playable character in battle
 export class Player extends Unit {
@@ -18,6 +19,12 @@ export class Player extends Unit {
     isAlly: boolean
   ) {
     super(scene, x, y, texture, frame, indX, indY, maxPm, maxPa, maxHp, isAlly);
+
+    this.myScene.socket.on("endPlayerTurn", (playerInfo: ServerUnit) => {
+      if (playerInfo.playerId === this.id) {
+        this.endTurnAfterServerConfirmation(playerInfo);
+      }
+    });
   }
 
   // plays at the end of deplacement
@@ -28,6 +35,11 @@ export class Player extends Unit {
   }
 
   override endTurn(): void {
+    this.myScene.socket.emit("playerClickedEndTurn", this.id);
+  }
+
+  private endTurnAfterServerConfirmation(playerInfo: ServerUnit) {
+    this.synchronizeWithServerUnit(playerInfo);
     const scene = this.myScene;
     scene.clearAccessibleTiles();
     scene.clearOverlay();

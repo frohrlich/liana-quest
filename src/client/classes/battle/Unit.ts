@@ -3,6 +3,7 @@ import { BattleScene } from "../../scenes/BattleScene";
 import { Spell } from "./Spell";
 import { UITimelineSlot } from "../UI/UITimelineSlot";
 import { EffectOverTime } from "./EffectOverTime";
+import { ServerUnit } from "../../../server/scenes/ServerUnit";
 
 export class Unit extends Phaser.GameObjects.Sprite {
   // use these to manipulate sprite positions around units
@@ -113,12 +114,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.healthBar.setVisible(false);
     if (this.effectIcon) this.effectIcon.setVisible(false);
     this.myScene.uiScene.changeStatsUnit(this.myScene.currentPlayer);
-  }
-
-  // refills movement points at turn beginning
-  refillPoints() {
-    this.pm = this.maxPm;
-    this.pa = this.maxPa;
   }
 
   // move along a path
@@ -277,16 +272,18 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   nextAction() {}
 
-  endTurn() {
-    this.decrementSpellCooldowns();
-    this.refillPoints();
-    this.myScene.endTurn();
+  synchronizeWithServerUnit(serverUnit: ServerUnit) {
+    this.maxHp = serverUnit.maxHp;
+    this.hp = serverUnit.hp;
+    this.maxPa = serverUnit.maxPa;
+    this.pa = serverUnit.pa;
+    this.maxPm = serverUnit.maxPm;
+    this.pm = serverUnit.pm;
+    this.id = serverUnit.playerId;
   }
 
-  private decrementSpellCooldowns() {
-    this.spells.forEach((spell) => {
-      spell.cooldown--;
-    });
+  endTurn() {
+    this.myScene.endTurn();
   }
 
   isDead(): boolean {
@@ -781,6 +778,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.myScene.addToObstacleLayer(new Phaser.Math.Vector2(indX, indY));
     this.x = this.tilePosToPixelsX();
     this.y = this.tilePosToPixelsY();
+    this.depth = this.y;
     this.moveUnitAttributes();
   }
 }

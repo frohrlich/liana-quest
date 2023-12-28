@@ -31,7 +31,7 @@ export const dude: UnitData = {
   HP: 80,
   PM: 3,
   PA: 6,
-  spells: "sting",
+  spells: "punch",
   frame: 0,
   name: "Dude",
 };
