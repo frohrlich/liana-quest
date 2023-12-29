@@ -88,7 +88,7 @@ export class Npc extends Unit {
   }
 
   override nextAction() {
-    this.endTurn();
+    // this.endTurn();
   }
 
   // locates an accessible target for a given spell

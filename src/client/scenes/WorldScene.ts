@@ -185,7 +185,12 @@ export class WorldScene extends Phaser.Scene {
 
     this.socket.on(
       "battleHasStarted",
-      (allies: ServerUnit[], enemies: ServerUnit[], mapName: string) => {
+      (
+        allies: ServerUnit[],
+        enemies: ServerUnit[],
+        timeline: ServerUnit[],
+        mapName: string
+      ) => {
         // shake the world
         this.cameras.main.shake(300);
         // start battle
@@ -196,6 +201,7 @@ export class WorldScene extends Phaser.Scene {
             this.scene.start("BattleScene", {
               alliesInfo: allies,
               enemiesInfo: enemies,
+              timeline: timeline,
               mapName: mapName,
             });
           },

@@ -29,6 +29,7 @@ interface ServerToClientEvents {
   battleHasStarted: (
     allies: ServerUnit[],
     enemies: ServerUnit[],
+    timeline: ServerUnit[],
     mapName: string
   ) => void;
   playerHasChangedStartPosition: (playerId: string, position: Position) => void;

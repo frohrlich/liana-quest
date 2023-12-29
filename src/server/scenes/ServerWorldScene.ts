@@ -82,12 +82,6 @@ export class ServerWorldScene {
         socket.join("world");
       });
 
-      // is emitted when a fight has really started (preparation phase is over)
-      // and players on the world scene cannot join it anymore
-      socket.on("fightPreparationIsOver", (enemyId: string) => {
-        io.to("world").emit("removeBattleIcon", enemyId);
-      });
-
       socket.on("disconnect", () => {
         this.removePlayer(socket);
         this.removePlayerFromBattles(socket);
@@ -284,13 +278,7 @@ export class ServerWorldScene {
 
   removePlayerFromBattles(socket) {
     this.ongoingBattles.forEach((battle) => {
-      const index = battle.units.findIndex(
-        (player) => player.playerId === socket.id
-      );
-      if (index !== -1) {
-        battle.units.splice(index, 1);
-        this.io.to(battle.id).emit("playerDisconnect", socket.id);
-      }
+      battle.removeUnitFromBattle(socket.id);
     });
   }
 

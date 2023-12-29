@@ -2,6 +2,7 @@ import { Server, Socket } from "socket.io";
 import { OnlinePlayer, Position } from "./ServerWorldScene";
 import { unitsAvailable } from "../../client/data/UnitData";
 import { ServerUnit } from "./ServerUnit";
+import findPath, { Vector2 } from "../utils/findPath";
 
 export class ServerBattleScene {
   io: Server;
@@ -37,7 +38,13 @@ export class ServerBattleScene {
   }
 
   tellPlayerBattleHasStarted(socket: Socket) {
-    socket.emit("battleHasStarted", this.allies, this.enemies, this.mapName);
+    socket.emit(
+      "battleHasStarted",
+      this.allies,
+      this.enemies,
+      this.timeline,
+      this.mapName
+    );
     this.isInPreparationMode = true;
     this.listenToPreparationModeEvents(socket);
   }
@@ -76,22 +83,58 @@ export class ServerBattleScene {
         socket.emit("readyIsConfirmed");
       }
       if (this.everyoneIsReady()) {
-        this.startBattleMainPhase();
+        this.startBattleMainPhase(socket);
       }
     });
   }
 
-  private startBattleMainPhase() {
+  private startBattleMainPhase(socket) {
     this.isInPreparationMode = false;
+    // tell all battle participants that the battle begins
     this.io.to(this.id).emit("startMainBattlePhase");
-    this.io
-      .to("world")
-      .emit("fightPreparationIsOver", this.enemies[0].playerId);
 
-    this.socket.on("playerClickedEndTurn", (playerId) => {
+    // then notify first player to begin turn (if it's not an npc)
+    const currentPlayer = this.timeline[0];
+    if (currentPlayer.isPlayable) {
+      this.io
+        .to(currentPlayer.playerId)
+        .emit("yourTurnBegins", currentPlayer.playerId);
+    }
+
+    // tell world map you can't join battle anymore
+    this.io.to("world").emit("removeBattleIcon", this.enemies[0].playerId);
+
+    socket.on("playerClickedEndTurn", (playerId) => {
       const myUnit = this.findUnitById(playerId);
       myUnit.endTurn();
       this.io.to(this.id).emit("endPlayerTurn", myUnit);
+    });
+
+    socket.on("playerMove", (movementData: Vector2) => {
+      const currentPlayer = this.findUnitById(socket.id);
+
+      if (currentPlayer) {
+        const startVec: Vector2 = {
+          x: currentPlayer.indX,
+          y: currentPlayer.indY,
+        };
+        const targetVec = movementData;
+
+        const path = findPath(
+          startVec,
+          targetVec,
+          this.background,
+          this.obstacles
+        );
+        // check if movement is actually possible
+        if (path && path.length > 0 && path.length <= currentPlayer.pm) {
+          currentPlayer.indX = movementData.x;
+          currentPlayer.indY = movementData.y;
+          currentPlayer.pm -= path.length;
+          // emit a message to all players about the unit that moved
+          this.io.to(this.id).emit("unitMoved", currentPlayer);
+        }
+      }
     });
   }
 
@@ -144,7 +187,9 @@ export class ServerBattleScene {
     this.timeline.push(newPlayer);
     this.tellPlayerBattleHasStarted(socket);
     // update all other players of the new player
-    socket.broadcast.to(this.id).emit("playerJoinedBattle", newPlayer);
+    socket.broadcast
+      .to(this.id)
+      .emit("playerJoinedBattle", newPlayer, this.timeline);
   }
 
   private createTilemapAndStartUpBattle(player: any, enemy: any) {
@@ -202,6 +247,29 @@ export class ServerBattleScene {
       if (this.enemies.length > i) {
         this.timeline.push(this.enemies[i]);
       }
+    }
+  }
+
+  removeUnitFromBattle(id: any) {
+    let index = this.units.findIndex((player) => player.playerId === id);
+    if (index !== -1) {
+      this.units.splice(index, 1);
+      this.io.to(this.id).emit("playerDisconnect", id);
+    }
+
+    index = this.allies.findIndex((player) => player.playerId === id);
+    if (index !== -1) {
+      this.allies.splice(index, 1);
+    }
+
+    index = this.enemies.findIndex((player) => player.playerId === id);
+    if (index !== -1) {
+      this.enemies.splice(index, 1);
+    }
+
+    index = this.timeline.findIndex((player) => player.playerId === id);
+    if (index !== -1) {
+      this.timeline.splice(index, 1);
     }
   }
 }

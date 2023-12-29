@@ -36,7 +36,7 @@ export class BattleScene extends Phaser.Scene {
   background!: Phaser.Tilemaps.TilemapLayer | null;
   turnIndex: number;
   timeline: Unit[] = [];
-  isPlayerTurn: boolean;
+  isPlayerTurn: boolean = false;
   accessibleTiles: TilePath[] = [];
   spellVisible: boolean;
   spellRange: Phaser.Tilemaps.Tile[] = [];
@@ -47,7 +47,7 @@ export class BattleScene extends Phaser.Scene {
   pathOverlay: Phaser.GameObjects.Rectangle[] = [];
   enemyType: string;
   grid: Phaser.GameObjects.Grid;
-  enemyId: any;
+  enemyId: string;
   playerStarterTiles: Phaser.Tilemaps.Tile[];
   enemyStarterTiles: Phaser.Tilemaps.Tile[];
   worldScene: WorldScene;
@@ -69,7 +69,6 @@ export class BattleScene extends Phaser.Scene {
 
     // refresh scene to its original state
     this.turnIndex = 0;
-    this.isPlayerTurn = true;
     this.spellVisible = false;
 
     // get id of the enemy from the world scene
@@ -88,7 +87,7 @@ export class BattleScene extends Phaser.Scene {
     this.addSpellUnselectListener();
 
     // create the timeline
-    this.timeline = createTimeline(this.allies, this.enemies);
+    this.syncTimelineWithServer(data.timeline);
 
     // clean up event listener on Scene shutdown
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -226,10 +225,14 @@ export class BattleScene extends Phaser.Scene {
       }
     );
 
-    this.socket.on("playerJoinedBattle", (newPlayer: ServerUnit) => {
-      const myUnit = this.addUnitFromServerInfo(newPlayer, newPlayer.isAlly);
-      this.addUnitAtEndOfTimeline(myUnit);
-    });
+    this.socket.on(
+      "playerJoinedBattle",
+      (newPlayer: ServerUnit, timeline: ServerUnit[]) => {
+        this.addUnitFromServerInfo(newPlayer, newPlayer.isAlly);
+        this.syncTimelineWithServer(timeline);
+        this.uiScene.updateTimeline(this.timeline);
+      }
+    );
 
     this.socket.on("startMainBattlePhase", () => {
       this.startBattle();
@@ -240,8 +243,22 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
+  clearAllTilesTint() {
+    this.background.forEachTile((tile) => (tile.tint = 0xffffff));
+  }
+
+  syncTimelineWithServer(timeline: ServerUnit[]) {
+    this.timeline = [];
+    timeline.forEach((unit) => {
+      const myUnit = this.findUnitById(unit.playerId);
+      if (myUnit) {
+        this.timeline.push(myUnit);
+      }
+    });
+  }
+
   findUnitById(playerId: string) {
-    return this.timeline.find((unit) => unit.id === playerId);
+    return this.units.find((unit) => unit.id === playerId);
   }
 
   private calculatePlayerStarterTiles() {
@@ -313,9 +330,34 @@ export class BattleScene extends Phaser.Scene {
     this.enemyStarterTiles = [];
     this.playerStarterTiles = [];
     this.uiScene.startBattle();
+    this.listenToMainBattleEvents();
     this.displayBattleStartScreen();
-    this.refreshAccessibleTiles();
-    this.highlightAccessibleTiles(this.accessibleTiles);
+  }
+
+  listenToMainBattleEvents() {
+    this.socket.on("yourTurnBegins", (playerId: string) => {
+      const myPlayer = this.findUnitById(playerId);
+      if (myPlayer && myPlayer instanceof Player) {
+        this.startPlayerTurn(myPlayer);
+      }
+    });
+
+    this.socket.on("unitMoved", (unit: ServerUnit) => {
+      const myUnit = this.findUnitById(unit.playerId);
+      if (myUnit) {
+        const path = this.getPathToPosition(
+          unit.indX,
+          unit.indY,
+          myUnit.indX,
+          myUnit.indY,
+          myUnit.pm
+        );
+        if (path && path.length > 0) {
+          myUnit.moveAlong(path);
+          this.uiScene.refreshUI();
+        }
+      }
+    });
   }
 
   // end turn after clicking end turn button (for player) or finishing actions (for npcs)
@@ -371,12 +413,13 @@ export class BattleScene extends Phaser.Scene {
       (unitData) => unitData.name === info.type
     );
     if (playerData) {
+      const isPlayable = info.playerId === this.socket.id;
       return this.addUnit(
         playerData,
         info.playerId,
         info.indX,
         info.indY,
-        !info.isPlayable,
+        !isPlayable,
         isAlly
       );
     } else {
@@ -487,8 +530,7 @@ export class BattleScene extends Phaser.Scene {
       // on clicking on a tile, move
       overlay.on("pointerup", () => {
         if (!this.currentPlayer.isMoving) {
-          this.currentPlayer.moveAlong(tilePos.path);
-          this.uiScene.refreshUI();
+          this.socket.emit("playerMove", tilePos.pos);
         }
       });
       // on hovering over a tile, display path to it
@@ -1090,12 +1132,12 @@ export class BattleScene extends Phaser.Scene {
 
   // return true if there is a unit at the specified position
   isUnitThere(x: number, y: number): boolean {
-    return this.timeline.some((unit) => unit.indX == x && unit.indY == y);
+    return this.units.some((unit) => unit.indX == x && unit.indY == y);
   }
 
   // return unit at the specified position
   getUnitAtPos(x: number, y: number) {
-    return this.timeline.find((unit) => unit.indX == x && unit.indY == y);
+    return this.units.find((unit) => unit.indX == x && unit.indY == y);
   }
 
   removeUnitFromTimeline(unit: Unit) {
@@ -1109,11 +1151,6 @@ export class BattleScene extends Phaser.Scene {
         this.uiScene.updateTimeline(this.timeline);
       }
     }
-  }
-
-  addUnitAtEndOfTimeline(unit: Unit) {
-    this.timeline.push(unit);
-    this.uiScene.updateTimeline(this.timeline);
   }
 
   // add summoned unit after the summoner in the timeline
@@ -1137,7 +1174,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   clearPointerEvents() {
-    this.timeline.forEach((unit) => {
+    this.units.forEach((unit) => {
       unit.off("pointerup");
       unit.off("pointerover");
       unit.off("pointerout");
@@ -1150,6 +1187,7 @@ export class BattleScene extends Phaser.Scene {
       overlay.destroy(true);
     });
     this.overlays = [];
+    this.clearAllTilesTint();
   }
 
   gameOver() {
@@ -1180,18 +1218,3 @@ export class BattleScene extends Phaser.Scene {
     return this.enemies.length === 0;
   }
 }
-
-// play order : alternate between allies and enemies
-let createTimeline = (allies: Unit[], enemies: Unit[]) => {
-  const maxSize = Math.max(allies.length, enemies.length);
-  let timeline: Unit[] = [];
-  for (let i = 0; i < maxSize; i++) {
-    if (allies.length > i) {
-      timeline.push(allies[i]);
-    }
-    if (enemies.length > i) {
-      timeline.push(enemies[i]);
-    }
-  }
-  return timeline;
-};
