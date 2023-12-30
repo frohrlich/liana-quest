@@ -2,8 +2,8 @@ import findPath, { Vector2 } from "../utils/findPath";
 import { Server } from "socket.io";
 import { ServerBattleScene } from "./ServerBattleScene";
 
-export interface OnlinePlayer {
-  playerId: string;
+export interface ServerWorldUnit {
+  id: string;
   indX: number;
   indY: number;
   direction: string;
@@ -17,8 +17,8 @@ export interface Position {
 }
 
 export class ServerWorldScene {
-  players: OnlinePlayer[] = [];
-  npcs: OnlinePlayer[] = [];
+  players: ServerWorldUnit[] = [];
+  npcs: ServerWorldUnit[] = [];
   ongoingBattles: ServerBattleScene[] = [];
   enemyCount = 30;
   minPosition = 0;
@@ -36,7 +36,7 @@ export class ServerWorldScene {
       const newPlayer = {
         indX: Math.floor(Math.random() * 5) + 1,
         indY: Math.floor(Math.random() * 5) + 1,
-        playerId: socket.id,
+        id: socket.id,
         type: "Amazon",
         direction: "down",
         isVisible: true,
@@ -77,7 +77,7 @@ export class ServerWorldScene {
       });
 
       // plays when player returns from battle to world scene
-      socket.on("endBattle", (player: OnlinePlayer) => {
+      socket.on("endBattle", (player: ServerWorldUnit) => {
         this.addNewPlayer(player, socket);
         socket.join("world");
       });
@@ -88,7 +88,7 @@ export class ServerWorldScene {
       });
 
       socket.on("enemyKill", (enemyId: string) => {
-        const index = this.npcs.findIndex((npc) => npc.playerId === enemyId);
+        const index = this.npcs.findIndex((npc) => npc.id === enemyId);
         if (index !== -1) {
           this.npcs.splice(index, 1);
         }
@@ -97,7 +97,7 @@ export class ServerWorldScene {
       });
 
       socket.on("npcWinFight", (enemyId: string) => {
-        const index = this.npcs.findIndex((npc) => npc.playerId === enemyId);
+        const index = this.npcs.findIndex((npc) => npc.id === enemyId);
         if (index !== -1) {
           this.npcs[index].isVisible = true;
         }
@@ -145,7 +145,7 @@ export class ServerWorldScene {
   }
 
   private findNpcById(enemyId: string) {
-    return this.npcs.find((npc) => npc.playerId === enemyId);
+    return this.npcs.find((npc) => npc.id === enemyId);
   }
 
   private createMap() {
@@ -177,11 +177,11 @@ export class ServerWorldScene {
 
       // toss a coin between snowman and dude...
       const enemyType = Math.floor(Math.random() * 2) ? "Snowman" : "Dude";
-      const npc: OnlinePlayer = {
+      const npc: ServerWorldUnit = {
         indX: indX,
         indY: indY,
         type: enemyType,
-        playerId: id,
+        id: id,
         direction: "down",
         isVisible: true,
       };
@@ -205,7 +205,7 @@ export class ServerWorldScene {
   // npc random movement over time
   private makeNpcMoveRandomly(
     delay: number,
-    npc: OnlinePlayer,
+    npc: ServerWorldUnit,
     background: any,
     map: any,
     obstacles: any,
@@ -255,7 +255,7 @@ export class ServerWorldScene {
     }, movingOffset);
   }
 
-  addNewPlayer(newPlayer: OnlinePlayer, socket) {
+  addNewPlayer(newPlayer: ServerWorldUnit, socket) {
     this.players.push(newPlayer);
     // send the players object to the new player
     socket.emit("currentPlayers", this.players);
@@ -266,9 +266,7 @@ export class ServerWorldScene {
   }
 
   removePlayer(socket) {
-    const index = this.players.findIndex(
-      (player) => player.playerId === socket.id
-    );
+    const index = this.players.findIndex((player) => player.id === socket.id);
     if (index !== -1) {
       this.players.splice(index, 1);
     }
@@ -283,8 +281,8 @@ export class ServerWorldScene {
   }
 
   hideEnemyAndShowBattleIcon(enemyId: string) {
-    const index = this.npcs.findIndex((npc) => npc.playerId === enemyId);
-    let myNpc: OnlinePlayer;
+    const index = this.npcs.findIndex((npc) => npc.id === enemyId);
+    let myNpc: ServerWorldUnit;
     if (index !== -1) {
       myNpc = this.npcs[index];
       myNpc.isVisible = false;
@@ -296,6 +294,6 @@ export class ServerWorldScene {
   }
 
   findCurrentPlayer(socket) {
-    return this.players.find((player) => player.playerId === socket.id);
+    return this.players.find((player) => player.id === socket.id);
   }
 }

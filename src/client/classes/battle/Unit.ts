@@ -279,7 +279,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.pa = serverUnit.pa;
     this.maxPm = serverUnit.maxPm;
     this.pm = serverUnit.pm;
-    this.id = serverUnit.playerId;
+    this.id = serverUnit.id;
   }
 
   endTurn() {

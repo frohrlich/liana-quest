@@ -21,7 +21,7 @@ export class Player extends Unit {
     super(scene, x, y, texture, frame, indX, indY, maxPm, maxPa, maxHp, isAlly);
 
     this.myScene.socket.on("endPlayerTurn", (playerInfo: ServerUnit) => {
-      if (playerInfo.playerId === this.id) {
+      if (playerInfo.id === this.id) {
         this.endTurnAfterServerConfirmation(playerInfo);
       }
     });

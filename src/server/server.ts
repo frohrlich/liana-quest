@@ -2,7 +2,7 @@ import express, { Express, Request, Response, Application } from "express";
 import { Server, Socket } from "socket.io";
 import * as http from "http";
 import {
-  OnlinePlayer,
+  ServerWorldUnit,
   Position,
   ServerWorldScene,
 } from "./scenes/ServerWorldScene";
@@ -12,14 +12,14 @@ const port = 8081;
 
 interface ServerToClientEvents {
   // world events
-  currentPlayers: (onlinePlayer: OnlinePlayer[]) => void;
-  currentNpcs: (npcs: OnlinePlayer[]) => void;
-  newPlayer: (onlinePlayer: OnlinePlayer) => void;
+  currentPlayers: (onlinePlayer: ServerWorldUnit[]) => void;
+  currentNpcs: (npcs: ServerWorldUnit[]) => void;
+  newPlayer: (onlinePlayer: ServerWorldUnit) => void;
   playerDisconnect: (id: string) => void;
-  playerMoved: (onlinePlayer: OnlinePlayer) => void;
-  npcMoved: (onlinePlayer: OnlinePlayer) => void;
+  playerMoved: (onlinePlayer: ServerWorldUnit) => void;
+  npcMoved: (onlinePlayer: ServerWorldUnit) => void;
   npcHidden: (id: string) => void;
-  addBattleIcon: (id: OnlinePlayer) => void;
+  addBattleIcon: (id: ServerWorldUnit) => void;
   removeBattleIcon: (id: string) => void;
   enemyWasKilled: (id: string) => void;
   npcWonFight: (id: string) => void;
@@ -44,7 +44,7 @@ interface ClientToServerEvents {
   updatePosition: (position: Position) => void;
   startBattle: (enemyId: string) => void;
   fightPreparationIsOver: (enemyId: string) => void;
-  endBattle: (player: OnlinePlayer) => void;
+  endBattle: (player: ServerWorldUnit) => void;
   playerClickedBattleIcon: (npcId: string) => void;
 
   // battle events

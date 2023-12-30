@@ -6,8 +6,6 @@ export class WorldNpc extends WorldUnit {
   movingDelay = 10000;
   // range (in tiles) of a random movement on the map
   movingRange = 3;
-  // the id is used to link a world npc to its battle counterpart
-  id: string;
 
   constructor(
     scene: Phaser.Scene,
@@ -18,7 +16,6 @@ export class WorldNpc extends WorldUnit {
     frame: number,
     name: string
   ) {
-    super(scene, indX, indY, texture, frame, name);
-    this.id = id;
+    super(scene, id, indX, indY, texture, frame, name);
   }
 }

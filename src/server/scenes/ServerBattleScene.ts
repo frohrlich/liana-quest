@@ -1,5 +1,5 @@
 import { Server, Socket } from "socket.io";
-import { OnlinePlayer, Position } from "./ServerWorldScene";
+import { ServerWorldUnit, Position } from "./ServerWorldScene";
 import { unitsAvailable } from "../../client/data/UnitData";
 import { ServerUnit } from "./ServerUnit";
 import findPath, { Vector2 } from "../utils/findPath";
@@ -26,8 +26,8 @@ export class ServerBattleScene {
   constructor(
     io: Server,
     socket: Socket,
-    player: OnlinePlayer,
-    enemy: OnlinePlayer,
+    player: ServerWorldUnit,
+    enemy: ServerWorldUnit,
     id: string
   ) {
     this.io = io;
@@ -96,13 +96,11 @@ export class ServerBattleScene {
     // then notify first player to begin turn (if it's not an npc)
     const currentPlayer = this.timeline[0];
     if (currentPlayer.isPlayable) {
-      this.io
-        .to(currentPlayer.playerId)
-        .emit("yourTurnBegins", currentPlayer.playerId);
+      this.io.to(currentPlayer.id).emit("yourTurnBegins", currentPlayer.id);
     }
 
     // tell world map you can't join battle anymore
-    this.io.to("world").emit("removeBattleIcon", this.enemies[0].playerId);
+    this.io.to("world").emit("removeBattleIcon", this.enemies[0].id);
 
     socket.on("playerClickedEndTurn", (playerId) => {
       const myUnit = this.findUnitById(playerId);
@@ -142,13 +140,13 @@ export class ServerBattleScene {
     return this.units.every((unit) => unit.isReady);
   }
 
-  addUnitsOnStart(newPlayer: OnlinePlayer, enemy: OnlinePlayer) {
+  addUnitsOnStart(newPlayer: ServerWorldUnit, enemy: ServerWorldUnit) {
     this.addUnitOnStart(newPlayer, true, true);
     this.addUnitOnStart(enemy, false, false);
     this.createTimeline();
   }
 
-  addUnitOnStart(unit: OnlinePlayer, isAlly: boolean, isPlayable: boolean) {
+  addUnitOnStart(unit: ServerWorldUnit, isAlly: boolean, isPlayable: boolean) {
     const playerData = unitsAvailable.find(
       (unitData) => unitData.name === unit.type
     );
@@ -163,7 +161,7 @@ export class ServerBattleScene {
       } while (this.isUnitThere(indX, indY));
       const myUnit = new ServerUnit(
         !isPlayable, // npcs are ready by default so the battle can start
-        unit.playerId,
+        unit.id,
         isPlayable,
         isAlly,
         indX,
@@ -180,7 +178,7 @@ export class ServerBattleScene {
 
   addPlayerAfterBattleStart(
     socket: Socket,
-    player: OnlinePlayer,
+    player: ServerWorldUnit,
     isAlly: boolean
   ) {
     const newPlayer = this.addUnitOnStart(player, isAlly, true);
@@ -229,7 +227,7 @@ export class ServerBattleScene {
   }
 
   private findUnitById(id: string) {
-    return this.units.find((unit) => unit.playerId === id);
+    return this.units.find((unit) => unit.id === id);
   }
 
   // return true if there is a unit at the specified position
@@ -251,23 +249,23 @@ export class ServerBattleScene {
   }
 
   removeUnitFromBattle(id: any) {
-    let index = this.units.findIndex((player) => player.playerId === id);
+    let index = this.units.findIndex((player) => player.id === id);
     if (index !== -1) {
       this.units.splice(index, 1);
       this.io.to(this.id).emit("playerDisconnect", id);
     }
 
-    index = this.allies.findIndex((player) => player.playerId === id);
+    index = this.allies.findIndex((player) => player.id === id);
     if (index !== -1) {
       this.allies.splice(index, 1);
     }
 
-    index = this.enemies.findIndex((player) => player.playerId === id);
+    index = this.enemies.findIndex((player) => player.id === id);
     if (index !== -1) {
       this.enemies.splice(index, 1);
     }
 
-    index = this.timeline.findIndex((player) => player.playerId === id);
+    index = this.timeline.findIndex((player) => player.id === id);
     if (index !== -1) {
       this.timeline.splice(index, 1);
     }

@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { WorldNpc } from "../classes/world/WorldNpc";
 import { UnitData, unitsAvailable } from "../data/UnitData";
 import { Socket, io } from "socket.io-client";
-import { OnlinePlayer } from "../../server/scenes/ServerWorldScene";
+import { ServerWorldUnit } from "../../server/scenes/ServerWorldScene";
 import { WorldOnlinePlayer } from "../classes/world/WorldOnlinePlayer";
 import { BattleIcon } from "../classes/world/BattleIcon";
 import { ServerUnit } from "../../server/scenes/ServerUnit";
@@ -52,7 +52,7 @@ export class WorldScene extends Phaser.Scene {
     // if there is a enemy id it means we just got back from battle
     if (this.enemyId !== undefined) {
       this.socket.emit("endBattle", {
-        playerId: this.player.playerId,
+        id: this.player.id,
         indX: this.player.indX,
         indY: this.player.indY,
         direction: this.player.direction,
@@ -66,27 +66,27 @@ export class WorldScene extends Phaser.Scene {
   setupWeb() {
     this.socket = io();
 
-    this.socket.on("newPlayer", (playerInfo: OnlinePlayer) => {
+    this.socket.on("newPlayer", (playerInfo: ServerWorldUnit) => {
       this.addOtherPlayers(playerInfo);
     });
 
     this.socket.on("playerDisconnect", (playerId: string) => {
       this.otherPlayers.forEach((otherPlayer: WorldOnlinePlayer) => {
-        if (playerId === otherPlayer.playerId) {
+        if (playerId === otherPlayer.id) {
           otherPlayer.destroy();
         }
       });
       const index = this.otherPlayers.findIndex(
-        (player) => player.playerId === playerId
+        (player) => player.id === playerId
       );
       if (index !== -1) {
         this.otherPlayers.splice(index, 1);
       }
     });
 
-    this.socket.on("currentPlayers", (players: OnlinePlayer[]) => {
+    this.socket.on("currentPlayers", (players: ServerWorldUnit[]) => {
       players.forEach((player) => {
-        if (player.playerId === this.socket.id) {
+        if (player.id === this.socket.id) {
           this.addPlayer(player);
           this.setupCamera();
           this.enableMovingOnClick(this.background, this.obstacles);
@@ -100,14 +100,14 @@ export class WorldScene extends Phaser.Scene {
       "playerVisibilityChanged",
       (id: string, isVisible: boolean) => {
         this.otherPlayers.forEach((player) => {
-          if (player.playerId === id) {
+          if (player.id === id) {
             player.setVisible(isVisible);
           }
         });
       }
     );
 
-    this.socket.on("currentNpcs", (npcs: OnlinePlayer[]) => {
+    this.socket.on("currentNpcs", (npcs: ServerWorldUnit[]) => {
       this.setupCamera();
       this.addEnemies(npcs);
     });
@@ -118,22 +118,22 @@ export class WorldScene extends Phaser.Scene {
       });
     });
 
-    this.socket.on("playerMoved", (playerInfo: OnlinePlayer) => {
-      if (playerInfo.playerId === this.player.playerId) {
+    this.socket.on("playerMoved", (playerInfo: ServerWorldUnit) => {
+      if (playerInfo.id === this.player.id) {
         this.player.moveToPosition(playerInfo.indX, playerInfo.indY);
       } else {
         this.otherPlayers.forEach((otherPlayer) => {
-          if (playerInfo.playerId === otherPlayer.playerId) {
+          if (playerInfo.id === otherPlayer.id) {
             otherPlayer.moveToPosition(playerInfo.indX, playerInfo.indY);
           }
         });
       }
     });
 
-    this.socket.on("npcMoved", (npcInfo: OnlinePlayer) => {
+    this.socket.on("npcMoved", (npcInfo: ServerWorldUnit) => {
       this.spawns.getChildren().forEach((npc) => {
         let myNpc = npc as WorldNpc;
-        if (npcInfo.playerId === myNpc.id) {
+        if (npcInfo.id === myNpc.id) {
           myNpc.moveToPosition(npcInfo.indX, npcInfo.indY);
         }
       });
@@ -150,10 +150,10 @@ export class WorldScene extends Phaser.Scene {
     });
 
     // when a battle starts, show the shield to join battle
-    this.socket.on("addBattleIcon", (npc: OnlinePlayer) => {
+    this.socket.on("addBattleIcon", (npc: ServerWorldUnit) => {
       const battleIcon = new BattleIcon(
         this,
-        npc.playerId,
+        npc.id,
         this.map.tileToWorldX(npc.indX),
         this.map.tileToWorldY(npc.indY),
         "player",
@@ -164,7 +164,7 @@ export class WorldScene extends Phaser.Scene {
       battleIcon.setInteractive();
 
       battleIcon.on("pointerup", () => {
-        this.socket.emit("playerClickedBattleIcon", npc.playerId);
+        this.socket.emit("playerClickedBattleIcon", npc.id);
       });
     });
 
@@ -211,11 +211,11 @@ export class WorldScene extends Phaser.Scene {
     );
   }
 
-  addOtherPlayers(playerInfo: OnlinePlayer) {
+  addOtherPlayers(playerInfo: ServerWorldUnit) {
     const playerData = this.findUnitDataByName(playerInfo.type);
     const otherPlayer = new WorldOnlinePlayer(
       this,
-      playerInfo.playerId,
+      playerInfo.id,
       playerInfo.indX,
       playerInfo.indY,
       "player",
@@ -250,7 +250,7 @@ export class WorldScene extends Phaser.Scene {
     this.cameras.main.roundPixels = true;
   }
 
-  private addPlayer(playerInfo: OnlinePlayer) {
+  private addPlayer(playerInfo: ServerWorldUnit) {
     // get previous position if player is back from battle
     // else get info from web
     let playerPosX = this.player ? this.player.indX : playerInfo.indX;
@@ -259,7 +259,7 @@ export class WorldScene extends Phaser.Scene {
     const playerData = this.findUnitDataByName(playerInfo.type);
     this.player = new WorldOnlinePlayer(
       this,
-      playerInfo.playerId,
+      playerInfo.id,
       playerPosX,
       playerPosY,
       "player",
@@ -305,7 +305,7 @@ export class WorldScene extends Phaser.Scene {
       .setDepth(9999);
   }
 
-  private addEnemies(enemies: OnlinePlayer[]) {
+  private addEnemies(enemies: ServerWorldUnit[]) {
     this.spawns = this.physics.add.group({
       classType: Phaser.GameObjects.Sprite,
     });
@@ -320,7 +320,7 @@ export class WorldScene extends Phaser.Scene {
       const indX = myEnemyData.indX;
       const indY = myEnemyData.indY;
       const enemyType = myEnemyData.type;
-      const id = myEnemyData.playerId;
+      const id = myEnemyData.id;
 
       // find enemy data from its type
       const enemyData = this.findUnitDataByName(enemyType);

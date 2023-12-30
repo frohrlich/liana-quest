@@ -72,7 +72,7 @@ export class BattleScene extends Phaser.Scene {
     this.spellVisible = false;
 
     // get id of the enemy from the world scene
-    this.enemyId = data.enemiesInfo[0].playerId;
+    this.enemyId = data.enemiesInfo[0].id;
 
     this.createTilemap(data);
     this.addUnitsOnStart(data);
@@ -250,15 +250,15 @@ export class BattleScene extends Phaser.Scene {
   syncTimelineWithServer(timeline: ServerUnit[]) {
     this.timeline = [];
     timeline.forEach((unit) => {
-      const myUnit = this.findUnitById(unit.playerId);
+      const myUnit = this.findUnitById(unit.id);
       if (myUnit) {
         this.timeline.push(myUnit);
       }
     });
   }
 
-  findUnitById(playerId: string) {
-    return this.units.find((unit) => unit.id === playerId);
+  findUnitById(id: string) {
+    return this.units.find((unit) => unit.id === id);
   }
 
   private calculatePlayerStarterTiles() {
@@ -343,7 +343,7 @@ export class BattleScene extends Phaser.Scene {
     });
 
     this.socket.on("unitMoved", (unit: ServerUnit) => {
-      const myUnit = this.findUnitById(unit.playerId);
+      const myUnit = this.findUnitById(unit.id);
       if (myUnit) {
         const path = this.getPathToPosition(
           unit.indX,
@@ -413,10 +413,10 @@ export class BattleScene extends Phaser.Scene {
       (unitData) => unitData.name === info.type
     );
     if (playerData) {
-      const isPlayable = info.playerId === this.socket.id;
+      const isPlayable = info.id === this.socket.id;
       return this.addUnit(
         playerData,
-        info.playerId,
+        info.id,
         info.indX,
         info.indY,
         !isPlayable,

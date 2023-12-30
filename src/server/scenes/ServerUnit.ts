@@ -4,7 +4,7 @@ import { unitsAvailable } from "../../client/data/UnitData";
 
 export class ServerUnit {
   isReady: boolean;
-  playerId: string;
+  id: string;
   isPlayable: boolean;
   isAlly: boolean;
   indX: number;
@@ -20,7 +20,7 @@ export class ServerUnit {
 
   constructor(
     isReady: boolean,
-    playerId: string,
+    id: string,
     isPlayable: boolean,
     isAlly: boolean,
     indX: number,
@@ -28,7 +28,7 @@ export class ServerUnit {
     type: string
   ) {
     this.isReady = isReady;
-    this.playerId = playerId;
+    this.id = id;
     this.isPlayable = isPlayable;
     this.isAlly = isAlly;
     this.indX = indX;

@@ -5,6 +5,7 @@ import { WorldOnlinePlayer } from "./WorldOnlinePlayer";
 
 // unit in the world mode, as opposed to the Unit class for battle
 export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
+  id: string;
   myScene: WorldScene;
   // position on the grid
   indX: number;
@@ -22,6 +23,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
 
   constructor(
     scene: Phaser.Scene,
+    id: string,
     indX: number,
     indY: number,
     texture: string,
@@ -29,6 +31,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     name: string
   ) {
     super(scene, 0, 0, texture, frame);
+    this.id = id;
     this.frameNumber = frame;
     this.myScene = scene as WorldScene;
     this.indX = indX;
