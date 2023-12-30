@@ -3,6 +3,8 @@ import { ServerWorldUnit, Position } from "./ServerWorldScene";
 import { unitsAvailable } from "../../client/data/UnitData";
 import { ServerUnit } from "./ServerUnit";
 import findPath, { Vector2 } from "../utils/findPath";
+import { Spell } from "../../client/classes/battle/Spell";
+import isVisible from "../utils/lineOfSight";
 
 export class ServerBattleScene {
   io: Server;
@@ -63,8 +65,10 @@ export class ServerBattleScene {
               ((myUnit.isAlly && myUnit.indX <= this.map.width / 3) ||
                 (!myUnit.isAlly && myUnit.indX >= (this.map.width * 2) / 3))
             ) {
+              this.removeFromObstacleLayer(myUnit);
               myUnit.indX = position.indX;
               myUnit.indY = position.indY;
+              this.addToObstacleLayer({ x: position.indX, y: position.indY });
               // send info to all participants in battle that someone changed starter position
               this.io
                 .to(this.id)
@@ -126,14 +130,247 @@ export class ServerBattleScene {
         );
         // check if movement is actually possible
         if (path && path.length > 0 && path.length <= currentPlayer.pm) {
+          this.removeFromObstacleLayer(currentPlayer);
           currentPlayer.indX = movementData.x;
           currentPlayer.indY = movementData.y;
+          this.addToObstacleLayer(movementData);
           currentPlayer.pm -= path.length;
           // emit a message to all players about the unit that moved
           this.io.to(this.id).emit("unitMoved", currentPlayer);
         }
       }
     });
+
+    socket.on("playerCastSpell", (spell: Spell, targetVec: Vector2) => {
+      const currentPlayer = this.findUnitById(socket.id);
+
+      if (currentPlayer) {
+        const playerPos: Vector2 = {
+          x: currentPlayer.indX,
+          y: currentPlayer.indY,
+        };
+
+        const playerSpell = currentPlayer.spells.find(
+          (mySpell) => mySpell.name === spell.name
+        );
+
+        if (
+          currentPlayer.pa >= spell.cost &&
+          playerSpell.cooldown === 0 &&
+          playerSpell &&
+          this.isPosAccessibleToSpell(playerPos, targetVec, spell)
+        ) {
+          currentPlayer.pa -= spell.cost;
+          playerSpell.cooldown = spell.maxCooldown;
+
+          const affectedUnits = this.getUnitsInsideAoe(
+            currentPlayer,
+            targetVec.x,
+            targetVec.y,
+            spell
+          );
+
+          affectedUnits.forEach((unit) => {
+            unit.undergoSpell(spell);
+            if (spell.moveTargetBy) {
+              // check alignment for spells that push or pull
+              const isAlignedX = targetVec.y == currentPlayer.indY;
+              const isForward = isAlignedX
+                ? Math.sign(targetVec.x - currentPlayer.indX)
+                : Math.sign(targetVec.y - currentPlayer.indY);
+              this.moveUnitBy(unit, spell.moveTargetBy, isAlignedX, isForward);
+            }
+            this.checkDead(unit);
+          });
+
+          // if spell summons a unit AND targeted tile is free, summon the unit
+          let summonedUnit = null;
+          if (
+            spell.summons &&
+            !this.obstacles.tileAt(targetVec.x, targetVec.y)
+          ) {
+            summonedUnit = this.addSummonedUnit(
+              currentPlayer,
+              spell,
+              targetVec
+            );
+          }
+
+          this.io
+            .to(this.id)
+            .emit(
+              "unitHasCastSpell",
+              currentPlayer,
+              this.timeline,
+              playerSpell,
+              targetVec,
+              affectedUnits,
+              summonedUnit
+            );
+        }
+      }
+    });
+  }
+
+  private isPosAccessibleToSpell(
+    playerPos: Vector2,
+    targetVec: Vector2,
+    spell: Spell
+  ) {
+    const distance =
+      Math.abs(playerPos.x - targetVec.x) + Math.abs(playerPos.y - targetVec.y);
+    return (
+      distance >= spell.minRange &&
+      distance <= spell.maxRange &&
+      (!spell.lineOfSight ||
+        isVisible(playerPos, targetVec, this.obstacles, this))
+    );
+  }
+
+  // move function for push/pull spells
+  moveUnitBy(
+    unit: ServerUnit,
+    value: number,
+    isAlignedX: boolean,
+    isForward: number
+  ) {
+    this.removeFromObstacleLayer(unit);
+    if (isAlignedX) {
+      let deltaX = value * isForward;
+      let direction = Math.sign(deltaX);
+      // stop when there is an obstacle or edge of map
+      for (let i = 0; Math.abs(i) < Math.abs(deltaX); i += direction) {
+        let nextTileX = unit.indX + i + direction;
+        if (
+          this.obstacles.tileAt(nextTileX, unit.indY) ||
+          !this.background.tileAt(nextTileX, unit.indY) ||
+          nextTileX >= this.map.width ||
+          nextTileX < 0
+        ) {
+          deltaX = i;
+          break;
+        }
+      }
+      unit.indX += deltaX;
+    } else {
+      let deltaY = value * isForward;
+      let direction = Math.sign(deltaY);
+      // stop when there is an obstacle or edge of map
+      for (let i = 0; Math.abs(i) < Math.abs(deltaY); i += direction) {
+        let nextTileY = unit.indY + i + direction;
+        if (
+          this.obstacles.tileAt(unit.indX, nextTileY) ||
+          !this.background.tileAt(unit.indX, nextTileY) ||
+          nextTileY < 0
+        ) {
+          deltaY = i;
+          break;
+        }
+      }
+      unit.indY += deltaY;
+    }
+    this.addToObstacleLayer({ x: unit.indX, y: unit.indY });
+  }
+
+  checkDead(unit: ServerUnit) {
+    if (unit.hp <= 0) {
+      this.removeUnitFromBattle(unit.id);
+    }
+  }
+
+  private addSummonedUnit(
+    caster: ServerUnit,
+    spell: Spell,
+    targetVec: Vector2
+  ) {
+    const summonedUnit = new ServerUnit(
+      this,
+      true,
+      caster.id + "_" + caster.summonedUnits.length,
+      true,
+      caster.isAlly,
+      targetVec.x,
+      targetVec.y,
+      spell.summons.name
+    );
+    this.addToObstacleLayer({ x: summonedUnit.indX, y: summonedUnit.indY });
+    this.units.push(summonedUnit);
+    caster.isAlly
+      ? this.allies.push(summonedUnit)
+      : this.enemies.push(summonedUnit);
+    this.addSummonedUnitToTimeline(caster, summonedUnit);
+    caster.summonedUnits.push(summonedUnit);
+    return summonedUnit;
+  }
+
+  // add summoned unit after the summoner in the timeline
+  addSummonedUnitToTimeline(caster: ServerUnit, summonedUnit: ServerUnit) {
+    const index = this.timeline.findIndex(
+      (timelineUnit) => timelineUnit === caster
+    );
+    if (index !== -1) {
+      this.timeline.splice(index + 1, 0, summonedUnit);
+    }
+  }
+
+  getUnitsInsideAoe(
+    caster: ServerUnit,
+    indX: number,
+    indY: number,
+    spell: Spell
+  ) {
+    const unitsInAoe: ServerUnit[] = [];
+    switch (spell.aoe) {
+      case "monoTarget":
+        if (this.isUnitThere(indX, indY)) {
+          unitsInAoe.push(this.getUnitAtPos(indX, indY));
+        }
+        break;
+      case "star":
+        for (let i = indX - spell.aoeSize; i <= indX + spell.aoeSize; i++) {
+          for (let j = indY - spell.aoeSize; j <= indY + spell.aoeSize; j++) {
+            let distance = Math.abs(indX - i) + Math.abs(indY - j);
+            if (distance <= spell.aoeSize) {
+              if (this.isUnitThere(i, j)) {
+                unitsInAoe.push(this.getUnitAtPos(i, j));
+              }
+            }
+          }
+        }
+        break;
+      case "line":
+        // this aoe should only be used with spells cast in a straight line
+        let target = { x: indX, y: indY };
+        // true if target is aligned horizontally with caster (else we assume it's aligned vertically)
+        let isAlignedX = target.y == caster.indY;
+        const baseIndex = isAlignedX ? target.x : target.y;
+        const isForward = isAlignedX
+          ? Math.sign(target.x - caster.indX)
+          : Math.sign(target.y - caster.indY);
+        for (let i = 0; i < spell.aoeSize; i++) {
+          let pos = isAlignedX
+            ? {
+                x: baseIndex + i * isForward,
+                y: target.y,
+              }
+            : {
+                x: target.x,
+                y: baseIndex + i * isForward,
+              };
+          if (this.isUnitThere(pos.x, pos.y)) {
+            unitsInAoe.push(this.getUnitAtPos(pos.x, pos.y));
+          }
+        }
+        break;
+
+      default:
+        break;
+    }
+    return unitsInAoe;
+  }
+
+  getUnitAtPos(indX: number, indY: number) {
+    return this.units.find((unit) => unit.indX === indX && unit.indY === indY);
   }
 
   everyoneIsReady() {
@@ -160,6 +397,7 @@ export class ServerBattleScene {
         indY = starterTiles[randTile].indY;
       } while (this.isUnitThere(indX, indY));
       const myUnit = new ServerUnit(
+        this,
         !isPlayable, // npcs are ready by default so the battle can start
         unit.id,
         isPlayable,
@@ -168,6 +406,7 @@ export class ServerBattleScene {
         indY,
         unit.type
       );
+      this.addToObstacleLayer({ x: myUnit.indX, y: myUnit.indY });
       this.units.push(myUnit);
       isAlly ? this.allies.push(myUnit) : this.enemies.push(myUnit);
       return myUnit;
@@ -231,7 +470,7 @@ export class ServerBattleScene {
   }
 
   // return true if there is a unit at the specified position
-  private isUnitThere(x: number, y: number): boolean {
+  isUnitThere(x: number, y: number): boolean {
     return this.units.some((unit) => unit.indX == x && unit.indY == y);
   }
 
@@ -251,6 +490,7 @@ export class ServerBattleScene {
   removeUnitFromBattle(id: any) {
     let index = this.units.findIndex((player) => player.id === id);
     if (index !== -1) {
+      this.removeFromObstacleLayer(this.units[index]);
       this.units.splice(index, 1);
       this.io.to(this.id).emit("playerDisconnect", id);
     }
@@ -269,5 +509,14 @@ export class ServerBattleScene {
     if (index !== -1) {
       this.timeline.splice(index, 1);
     }
+  }
+
+  addToObstacleLayer(target: Vector2) {
+    let targetTile = this.background.tileAt(target.x, target.y);
+    this.obstacles.setTileAt(target.x, target.y, targetTile);
+  }
+
+  removeFromObstacleLayer(unit: ServerUnit) {
+    this.obstacles.setTileAt(unit.indX, unit.indY, null);
   }
 }

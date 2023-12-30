@@ -11,7 +11,7 @@ export interface UnitData {
 
 export const amazon: UnitData = {
   HP: 120,
-  PM: 3,
+  PM: 30,
   PA: 6,
   spells: "deadly javelin, herbal medicine, sting",
   frame: 6,

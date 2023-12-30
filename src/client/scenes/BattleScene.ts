@@ -358,6 +358,26 @@ export class BattleScene extends Phaser.Scene {
         }
       }
     });
+
+    this.socket.on(
+      "unitHasCastSpell",
+      (
+        unit: ServerUnit,
+        timeline: ServerUnit[],
+        spell: Spell,
+        targetVec: Phaser.Math.Vector2,
+        affectedUnits: ServerUnit[],
+        summonedUnit: ServerUnit
+      ) => {
+        const myUnit = this.findUnitById(unit.id);
+        if (myUnit) {
+          myUnit.synchronizeWithServerUnit(unit);
+          myUnit.castSpell(spell, targetVec, affectedUnits, summonedUnit);
+        }
+        this.syncTimelineWithServer(timeline);
+        this.uiScene.updateTimeline(this.timeline);
+      }
+    );
   }
 
   // end turn after clicking end turn button (for player) or finishing actions (for npcs)
@@ -874,9 +894,9 @@ export class BattleScene extends Phaser.Scene {
 
         // on clicking on a tile, launch spell
         overlay.on("pointerup", () => {
-          this.currentPlayer.castSpell(this.currentSpell, pos);
+          this.socket.emit("playerCastSpell", this.currentSpell, pos);
         });
-        //on hovering over a tile, display aoe zone
+        // on hovering over a tile, display aoe zone
         overlay.on("pointerover", () => {
           this.updateAoeZone(spell, tile.pixelX, tile.pixelY);
         });
@@ -888,7 +908,7 @@ export class BattleScene extends Phaser.Scene {
         const playerOnThisTile = this.getUnitAtPos(tile.x, tile.y);
         if (playerOnThisTile) {
           playerOnThisTile.on("pointerup", () => {
-            this.currentPlayer.castSpell(this.currentSpell, pos);
+            this.socket.emit("playerCastSpell", this.currentSpell, pos);
           });
           playerOnThisTile.on("pointerover", () => {
             this.updateAoeZone(spell, tile.pixelX, tile.pixelY);
@@ -1038,11 +1058,11 @@ export class BattleScene extends Phaser.Scene {
   }
 
   getUnitsInsideAoe(caster: Unit, indX: number, indY: number, spell: Spell) {
-    let units = [];
+    const unitsInAoe: Unit[] = [];
     switch (spell.aoe) {
       case "monoTarget":
         if (this.isUnitThere(indX, indY)) {
-          units.push(this.getUnitAtPos(indX, indY));
+          unitsInAoe.push(this.getUnitAtPos(indX, indY));
         }
         break;
       case "star":
@@ -1051,7 +1071,7 @@ export class BattleScene extends Phaser.Scene {
             let distance = Math.abs(indX - i) + Math.abs(indY - j);
             if (distance <= spell.aoeSize) {
               if (this.isUnitThere(i, j)) {
-                units.push(this.getUnitAtPos(i, j));
+                unitsInAoe.push(this.getUnitAtPos(i, j));
               }
             }
           }
@@ -1077,7 +1097,7 @@ export class BattleScene extends Phaser.Scene {
                 y: baseIndex + i * isForward,
               };
           if (this.isUnitThere(pos.x, pos.y)) {
-            units.push(this.getUnitAtPos(pos.x, pos.y));
+            unitsInAoe.push(this.getUnitAtPos(pos.x, pos.y));
           }
         }
         break;
@@ -1085,7 +1105,7 @@ export class BattleScene extends Phaser.Scene {
       default:
         break;
     }
-    return units;
+    return unitsInAoe;
   }
 
   // calculate spell range
@@ -1136,8 +1156,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   // return unit at the specified position
-  getUnitAtPos(x: number, y: number) {
-    return this.units.find((unit) => unit.indX == x && unit.indY == y);
+  getUnitAtPos(indX: number, indY: number) {
+    return this.units.find((unit) => unit.indX === indX && unit.indY === indY);
   }
 
   removeUnitFromTimeline(unit: Unit) {
@@ -1214,7 +1234,7 @@ export class BattleScene extends Phaser.Scene {
     return this.allies.length === 0;
   }
 
-  battleIsFinished() {
+  battleIsWon() {
     return this.enemies.length === 0;
   }
 }

@@ -1,6 +1,8 @@
+import { EffectOverTime } from "../../client/classes/battle/EffectOverTime";
 import { Spell } from "../../client/classes/battle/Spell";
 import { javelin, punch, sting, heal } from "../../client/data/SpellData";
 import { unitsAvailable } from "../../client/data/UnitData";
+import { ServerBattleScene } from "./ServerBattleScene";
 
 export class ServerUnit {
   isReady: boolean;
@@ -17,8 +19,11 @@ export class ServerUnit {
   pa: number;
   hp: number;
   spells: Spell[] = [];
+  effectOverTime: EffectOverTime;
+  summonedUnits: ServerUnit[] = [];
 
   constructor(
+    battleScene: ServerBattleScene,
     isReady: boolean,
     id: string,
     isPlayable: boolean,
@@ -97,5 +102,25 @@ export class ServerUnit {
   endTurn() {
     this.refillPoints();
     this.decrementSpellCooldowns();
+  }
+
+  undergoSpell(spell: Spell) {
+    this.hp -= spell.damage;
+    this.hp = Math.min(this.hp + spell.heal, this.maxHp);
+    this.pm -= spell.malusPM;
+    this.pm += spell.bonusPM;
+    this.pa -= spell.malusPA;
+    this.pa += spell.bonusPA;
+
+    this.pm = Math.max(this.pm, 0);
+    this.pa = Math.max(this.pa, 0);
+
+    if (spell.effectOverTime) {
+      this.addEffectOverTime(spell.effectOverTime);
+    }
+  }
+
+  addEffectOverTime(effectOverTime: EffectOverTime) {
+    this.effectOverTime = { ...effectOverTime };
   }
 }

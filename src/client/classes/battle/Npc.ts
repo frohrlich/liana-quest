@@ -30,11 +30,11 @@ export class Npc extends Unit {
         let target = this.locateTarget(spell);
         if (target) {
           let targetVec = new Phaser.Math.Vector2(target.x, target.y);
-          this.castSpell(spell, targetVec);
+          // this.castSpell(spell, targetVec);
           // wait till attack animation is finished
           // also verify npc didn't kill itself during spell cast
           // and that battle is not finished
-          if (!this.myScene.battleIsFinished() && !this.myScene.gameIsOver()) {
+          if (!this.myScene.battleIsWon() && !this.myScene.gameIsOver()) {
             if (!this.isDead()) {
               this.scene.time.addEvent({
                 delay: 400,
@@ -55,7 +55,7 @@ export class Npc extends Unit {
       } else {
         this.tryToMove();
       }
-    } else if (!this.myScene.battleIsFinished() && !this.myScene.gameIsOver()) {
+    } else if (!this.myScene.battleIsWon() && !this.myScene.gameIsOver()) {
       this.scene.time.addEvent({
         delay: 400,
         callback: this.myScene.endTurn,

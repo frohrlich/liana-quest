@@ -4,6 +4,8 @@ import { Spell } from "./Spell";
 import { UITimelineSlot } from "../UI/UITimelineSlot";
 import { EffectOverTime } from "./EffectOverTime";
 import { ServerUnit } from "../../../server/scenes/ServerUnit";
+import { Position } from "../../../server/scenes/ServerWorldScene";
+import { unitsAvailable } from "../../data/UnitData";
 
 export class Unit extends Phaser.GameObjects.Sprite {
   // use these to manipulate sprite positions around units
@@ -273,6 +275,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
   nextAction() {}
 
   synchronizeWithServerUnit(serverUnit: ServerUnit) {
+    if (this.indX !== serverUnit.indX || this.indY !== serverUnit.indY) {
+      this.moveDirectlyToNewPosition(serverUnit.indX, serverUnit.indY);
+    }
     this.maxHp = serverUnit.maxHp;
     this.hp = serverUnit.hp;
     this.maxPa = serverUnit.maxPa;
@@ -280,6 +285,10 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.maxPm = serverUnit.maxPm;
     this.pm = serverUnit.pm;
     this.id = serverUnit.id;
+    this.spells = serverUnit.spells;
+    this.myScene.uiScene.refreshSpells();
+
+    this.addEffectOverTime(serverUnit.effectOverTime);
   }
 
   endTurn() {
@@ -291,62 +300,49 @@ export class Unit extends Phaser.GameObjects.Sprite {
   }
 
   // cast a spell at specified position
-  castSpell(spell: Spell, targetVec: Phaser.Math.Vector2) {
-    this.pa -= spell.cost;
-    spell.cooldown = spell.maxCooldown;
+  castSpell(
+    spell: Spell,
+    targetVec: Phaser.Math.Vector2,
+    affectedUnits: ServerUnit[],
+    serverSummonedUnit: ServerUnit
+  ) {
     this.lookAtTile(targetVec);
     this.startAttackAnim(this.direction);
-    const affectedUnits = this.myScene.getUnitsInsideAoe(
-      this,
-      targetVec.x,
-      targetVec.y,
-      spell
-    );
-    affectedUnits.forEach((unit) => {
-      unit.undergoSpell(spell);
-      if (spell.moveTargetBy) {
-        // check alignment for spells that push or pull
-        const isAlignedX = targetVec.y == this.indY;
-        const isForward = isAlignedX
-          ? Math.sign(targetVec.x - this.indX)
-          : Math.sign(targetVec.y - this.indY);
-        unit.moveBy(spell.moveTargetBy, isAlignedX, isForward);
 
-        this.myScene.refreshAccessibleTiles();
-        if (this.myScene.spellVisible) {
-          this.myScene.displaySpellRange(this.myScene.currentSpell);
+    affectedUnits.forEach((serverUnit) => {
+      const myAffectedUnit = this.myScene.findUnitById(serverUnit.id);
+      if (myAffectedUnit) {
+        myAffectedUnit.synchronizeWithServerUnit(serverUnit);
+        myAffectedUnit.undergoSpell(spell);
+        if (spell.moveTargetBy) {
+          this.myScene.refreshAccessibleTiles();
+          if (this.myScene.spellVisible) {
+            this.myScene.displaySpellRange(this.myScene.currentSpell);
+          }
         }
       }
     });
     // if spell summons a unit AND targeted tile is free, summon the unit
-    if (
-      spell.summons &&
-      !this.myScene.obstacles.getTileAt(targetVec.x, targetVec.y)
-    ) {
-      const summonedUnit = this.myScene.addUnit(
-        spell.summons,
-        this.id + this.summonedUnits.length,
-        targetVec.x,
-        targetVec.y,
-        false,
-        this.isAlly
+    if (serverSummonedUnit) {
+      const summonedUnitData = unitsAvailable.find(
+        (data) => data.name === serverSummonedUnit.type
       );
-      this.myScene.addSummonedUnitToTimeline(this, summonedUnit);
-      this.summonedUnits.push(summonedUnit);
+      if (summonedUnitData) {
+        const summonedUnit = this.myScene.addUnit(
+          summonedUnitData,
+          serverSummonedUnit.id,
+          targetVec.x,
+          targetVec.y,
+          serverSummonedUnit.isPlayable,
+          this.isAlly
+        );
+        this.summonedUnits.push(summonedUnit);
+      }
     }
     this.refreshUI();
   }
 
   undergoSpell(spell: Spell) {
-    this.hp -= spell.damage;
-    this.hp = Math.min(this.hp + spell.heal, this.maxHp);
-    this.pm -= spell.malusPM;
-    this.pm += spell.bonusPM;
-    this.pa -= spell.malusPA;
-    this.pa += spell.bonusPA;
-    if (spell.effectOverTime) {
-      this.addEffectOverTime(spell.effectOverTime);
-    }
     this.updateHealthBar();
     this.displaySpellEffect(
       spell.damage,
@@ -361,72 +357,26 @@ export class Unit extends Phaser.GameObjects.Sprite {
   }
 
   // move function without animations used for push/pull spells
-  moveBy(value: number, isAlignedX: boolean, isForward: number) {
+  moveDirectlyToNewPosition(indX: number, indY: number) {
+    const startVec = new Phaser.Math.Vector2(this.indX, this.indY);
+    const targetVec = new Phaser.Math.Vector2(indX, indY);
     this.myScene.removeFromObstacleLayer(this);
-    if (isAlignedX) {
-      let deltaX = value * isForward;
-      let direction = Math.sign(deltaX);
-      // stop when there is an obstacle or edge of map
-      for (let i = 0; Math.abs(i) < Math.abs(deltaX); i += direction) {
-        let nextTileX = this.indX + i + direction;
-        if (
-          this.myScene.obstacles.getTileAt(nextTileX, this.indY) ||
-          !this.myScene.background.getTileAt(nextTileX, this.indY) ||
-          nextTileX < 0
-        ) {
-          deltaX = i;
-          break;
-        }
-      }
-      if (deltaX) {
-        this.myScene.tweens.add({
-          targets: this,
-          x: this.tilePosToPixelsX(deltaX),
-          ease: "Linear",
-          onUpdate: () => {
-            this.moveUnitAttributes();
-          },
-          duration: 66 * Math.abs(deltaX),
-          repeat: 0,
-          yoyo: false,
-        });
-        this.indX += deltaX;
-      }
-    } else {
-      let deltaY = value * isForward;
-      let direction = Math.sign(deltaY);
-      // stop when there is an obstacle or edge of map
-      for (let i = 0; Math.abs(i) < Math.abs(deltaY); i += direction) {
-        let nextTileY = this.indY + i + direction;
-        if (
-          this.myScene.obstacles.getTileAt(this.indX, nextTileY) ||
-          !this.myScene.background.getTileAt(this.indX, nextTileY) ||
-          nextTileY < 0
-        ) {
-          deltaY = i;
-          break;
-        }
-      }
-      if (deltaY) {
-        this.myScene.tweens.add({
-          targets: this,
-          y: this.tilePosToPixelsY(deltaY),
-          ease: "Linear",
-          onUpdate: () => {
-            this.moveUnitAttributes();
-            this.depth = this.y;
-          },
-          duration: 66 * Math.abs(deltaY),
-          repeat: 0,
-          yoyo: false,
-        });
-        this.indY += deltaY;
-      }
-    }
+    this.myScene.tweens.add({
+      targets: this,
+      x: this.tilePosToPixelsX(targetVec.x - startVec.x),
+      y: this.tilePosToPixelsY(targetVec.y - startVec.y),
+      ease: "Linear",
+      onUpdate: () => {
+        this.moveUnitAttributes();
+      },
+      duration: 66 * startVec.distance(targetVec),
+      repeat: 0,
+      yoyo: false,
+    });
+    this.indX = indX;
+    this.indY = indY;
     this.moveUnitAttributes();
-    this.myScene.addToObstacleLayer(
-      new Phaser.Math.Vector2(this.indX, this.indY)
-    );
+    this.myScene.addToObstacleLayer(new Phaser.Math.Vector2(indX, indY));
   }
 
   undergoEffectOverTime() {
@@ -585,7 +535,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
       () => {
         if (this.myScene.gameIsOver()) {
           this.myScene.gameOver();
-        } else if (this.myScene.battleIsFinished()) {
+        } else if (this.myScene.battleIsWon()) {
           this.myScene.endBattle();
         }
         this.destroyUnit();
@@ -744,9 +694,11 @@ export class Unit extends Phaser.GameObjects.Sprite {
   }
 
   addEffectOverTime(effectOverTime: EffectOverTime) {
-    this.effectOverTime = { ...effectOverTime };
-    if (this.effectIcon) this.effectIcon.destroy();
-    this.effectIcon = this.makeEffectIcon(effectOverTime);
+    if (effectOverTime) {
+      this.effectOverTime = { ...effectOverTime };
+      if (this.effectIcon) this.effectIcon.destroy();
+      this.effectIcon = this.makeEffectIcon(effectOverTime);
+    }
   }
 
   makeEffectIcon(effectOverTime: EffectOverTime) {
