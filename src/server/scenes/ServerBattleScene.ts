@@ -1,5 +1,9 @@
 import { Server, Socket } from "socket.io";
-import { ServerWorldUnit, Position } from "./ServerWorldScene";
+import {
+  ServerWorldUnit,
+  Position,
+  ServerWorldScene,
+} from "./ServerWorldScene";
 import { unitsAvailable } from "../../client/data/UnitData";
 import { ServerUnit } from "./ServerUnit";
 import findPath, { Vector2 } from "../utils/findPath";
@@ -12,8 +16,9 @@ export interface ServerTilePath {
 }
 
 export class ServerBattleScene {
+  worldScene: ServerWorldScene;
   io: Server;
-  socket: Socket; // ! that's the socket of the creator of the battle
+  sockets: Socket[] = [];
   id: string;
   allies: ServerUnit[] = [];
   enemies: ServerUnit[] = [];
@@ -31,18 +36,23 @@ export class ServerBattleScene {
   isInPreparationMode: boolean;
   turnIndex: number = 0;
 
+  worldUnits: ServerWorldUnit[] = [];
+
   constructor(
+    worldScene: ServerWorldScene,
     io: Server,
     socket: Socket,
-    player: ServerWorldUnit,
+    worldUnit: ServerWorldUnit,
     enemy: ServerWorldUnit,
     id: string
   ) {
+    this.worldScene = worldScene;
     this.io = io;
-    this.socket = socket;
+    this.worldUnits.push(worldUnit);
+    this.sockets.push(socket);
     this.id = id;
 
-    this.createTilemapAndStartUpBattle(player, enemy);
+    this.createTilemapAndStartUpBattle(worldUnit, enemy);
   }
 
   tellPlayerBattleHasStarted(socket: Socket) {
@@ -268,6 +278,10 @@ export class ServerBattleScene {
 
   checkDead(unit: ServerUnit) {
     if (unit.isDead()) {
+      if (unit.isUnitTurn) {
+        this.io.to(this.id).emit("endPlayerTurn", unit);
+        this.nextTurn();
+      }
       this.removeUnitFromBattle(unit.id);
     }
   }
@@ -280,7 +294,8 @@ export class ServerBattleScene {
       caster.isAlly,
       targetVec.x,
       targetVec.y,
-      spell.summons.name
+      spell.summons.name,
+      0xffffff
     );
     this.addToObstacleLayer({ x: summonedUnit.indX, y: summonedUnit.indY });
     this.units.push(summonedUnit);
@@ -367,12 +382,19 @@ export class ServerBattleScene {
   }
 
   addUnitsOnStart(newPlayer: ServerWorldUnit, enemy: ServerWorldUnit) {
-    this.addUnitOnStart(newPlayer, true, true);
-    this.addUnitOnStart(enemy, false, false);
+    this.addUnitOnStart(newPlayer, newPlayer.id, true, true);
+    // add 2 enemies of the kind
+    this.addUnitOnStart(enemy, enemy.id, false, false);
+    this.addUnitOnStart(enemy, enemy.id + "_2", false, false);
     this.createTimeline();
   }
 
-  addUnitOnStart(unit: ServerWorldUnit, isAlly: boolean, isPlayable: boolean) {
+  addUnitOnStart(
+    unit: ServerWorldUnit,
+    id: string,
+    isAlly: boolean,
+    isPlayable: boolean
+  ) {
     const playerData = unitsAvailable.find(
       (unitData) => unitData.name === unit.type
     );
@@ -387,12 +409,13 @@ export class ServerBattleScene {
       } while (this.isUnitThere(indX, indY));
       const myUnit = new ServerUnit(
         !isPlayable, // npcs are ready by default so the battle can start
-        unit.id,
+        id,
         isPlayable,
         isAlly,
         indX,
         indY,
-        unit.type
+        unit.type,
+        unit.tint
       );
       this.addToObstacleLayer({ x: myUnit.indX, y: myUnit.indY });
       this.units.push(myUnit);
@@ -408,7 +431,8 @@ export class ServerBattleScene {
     player: ServerWorldUnit,
     isAlly: boolean
   ) {
-    const newPlayer = this.addUnitOnStart(player, isAlly, true);
+    this.sockets.push(socket);
+    const newPlayer = this.addUnitOnStart(player, player.id, isAlly, true);
     this.timeline.push(newPlayer);
     this.tellPlayerBattleHasStarted(socket);
     // update all other players of the new player
@@ -433,7 +457,7 @@ export class ServerBattleScene {
 
       this.calculateStarterTiles();
       this.addUnitsOnStart(player, enemy);
-      this.tellPlayerBattleHasStarted(this.socket);
+      this.tellPlayerBattleHasStarted(this.sockets[0]);
     });
   }
 
@@ -480,14 +504,16 @@ export class ServerBattleScene {
     if (index !== -1) {
       this.removeFromObstacleLayer(this.units[index]);
       this.units.splice(index, 1);
-      this.io.to(this.id).emit("playerDisconnect", id);
+      this.io.to(this.id).emit("playerLeft", id);
     }
 
     index = this.allies.findIndex((player) => player.id === id);
     if (index !== -1) {
       this.allies.splice(index, 1);
       if (this.allies.length === 0) {
-        this.io.to(this.id).emit("battleIsLost");
+        setTimeout(() => {
+          this.loseBattle();
+        }, 100);
       }
     }
 
@@ -495,7 +521,9 @@ export class ServerBattleScene {
     if (index !== -1) {
       this.enemies.splice(index, 1);
       if (this.enemies.length === 0 && this.allies.length > 0) {
-        this.io.to(this.id).emit("battleIsWon");
+        setTimeout(() => {
+          this.winBattle();
+        }, 100);
       }
     }
 
@@ -503,6 +531,30 @@ export class ServerBattleScene {
     if (index !== -1) {
       this.timeline.splice(index, 1);
     }
+  }
+
+  private loseBattle() {
+    this.io.to(this.id).emit("battleIsLost");
+    this.endBattle();
+  }
+
+  private winBattle() {
+    this.io.to(this.id).emit("battleIsWon");
+    this.endBattle();
+    this.sockets.forEach((socket) => {
+      this.worldScene.movePlayerBackToWorld(socket);
+    });
+  }
+
+  private endBattle() {
+    this.makeSocketsLeaveBattleRoom();
+    this.worldScene.removeBattle(this.id);
+  }
+
+  private makeSocketsLeaveBattleRoom() {
+    this.sockets.forEach((socket) => {
+      socket.leave(this.id);
+    });
   }
 
   addToObstacleLayer(target: Vector2) {

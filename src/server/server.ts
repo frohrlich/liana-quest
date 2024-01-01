@@ -15,7 +15,7 @@ interface ServerToClientEvents {
   currentPlayers: (onlinePlayer: ServerWorldUnit[]) => void;
   currentNpcs: (npcs: ServerWorldUnit[]) => void;
   newPlayer: (onlinePlayer: ServerWorldUnit) => void;
-  playerDisconnect: (id: string) => void;
+  playerLeft: (id: string) => void;
   playerMoved: (onlinePlayer: ServerWorldUnit) => void;
   npcMoved: (onlinePlayer: ServerWorldUnit) => void;
   npcHidden: (id: string) => void;

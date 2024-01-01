@@ -15,8 +15,6 @@ interface UnitPosition {
 }
 
 export class WorldScene extends Phaser.Scene {
-  playerType: UnitData;
-
   player!: WorldOnlinePlayer;
   spawns!: Phaser.Physics.Arcade.Group;
   battleIcons: BattleIcon[] = [];
@@ -31,10 +29,10 @@ export class WorldScene extends Phaser.Scene {
   obstacles: Phaser.Tilemaps.TilemapLayer;
   tileset: Phaser.Tilemaps.Tileset;
   enemyPositions: UnitPosition[] = [];
-  enemyId: number;
   battleHasStarted: boolean;
   socket: Socket;
   otherPlayers: WorldOnlinePlayer[] = [];
+  devantJoueur: Phaser.Tilemaps.TilemapLayer;
 
   constructor() {
     super({
@@ -42,35 +40,31 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  create(data: any): void {
+  create(): void {
     this.battleHasStarted = false;
-    // enemy id sent back from the victorious battle
-    this.enemyId = data.enemyId;
-
     this.createTilemap();
-
-    // if there is a enemy id it means we just got back from battle
-    if (this.enemyId !== undefined) {
-      this.socket.emit("endBattle", {
-        id: this.player.id,
-        indX: this.player.indX,
-        indY: this.player.indY,
-        direction: this.player.direction,
-        type: this.player.type,
-      });
-    } else {
+    // tells server scene is ready to receive info
+    this.events.once("preupdate", () => {
+      this.initSocket();
       this.setupWeb();
-    }
+      this.socket.emit("worldSceneIsReady");
+    });
+  }
+
+  showTileMapLayers() {
+    this.background.setVisible(true);
+    this.obstacles.setVisible(true);
+    this.devantJoueur.setVisible(true);
   }
 
   setupWeb() {
-    this.socket = io();
+    this.socket.off();
 
     this.socket.on("newPlayer", (playerInfo: ServerWorldUnit) => {
       this.addOtherPlayers(playerInfo);
     });
 
-    this.socket.on("playerDisconnect", (playerId: string) => {
+    this.socket.on("playerLeft", (playerId: string) => {
       this.otherPlayers.forEach((otherPlayer: WorldOnlinePlayer) => {
         if (playerId === otherPlayer.id) {
           otherPlayer.destroy();
@@ -89,6 +83,7 @@ export class WorldScene extends Phaser.Scene {
         if (player.id === this.socket.id) {
           this.addPlayer(player);
           this.setupCamera();
+          this.showTileMapLayers();
           this.enableMovingOnClick(this.background, this.obstacles);
         } else {
           this.addOtherPlayers(player);
@@ -108,7 +103,6 @@ export class WorldScene extends Phaser.Scene {
     );
 
     this.socket.on("currentNpcs", (npcs: ServerWorldUnit[]) => {
-      this.setupCamera();
       this.addEnemies(npcs);
     });
 
@@ -211,6 +205,12 @@ export class WorldScene extends Phaser.Scene {
     );
   }
 
+  initSocket() {
+    if (!this.socket) {
+      this.socket = io();
+    }
+  }
+
   addOtherPlayers(playerInfo: ServerWorldUnit) {
     const playerData = this.findUnitDataByName(playerInfo.type);
     const otherPlayer = new WorldOnlinePlayer(
@@ -222,6 +222,7 @@ export class WorldScene extends Phaser.Scene {
       playerData.frame,
       playerInfo.type
     );
+    otherPlayer.tint = playerInfo.tint;
     otherPlayer.scale = this.unitScale;
     otherPlayer.changeDirection(playerInfo.direction);
     this.add.existing(otherPlayer);
@@ -251,10 +252,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private addPlayer(playerInfo: ServerWorldUnit) {
-    // get previous position if player is back from battle
-    // else get info from web
-    let playerPosX = this.player ? this.player.indX : playerInfo.indX;
-    let playerPosY = this.player ? this.player.indY : playerInfo.indY;
+    let playerPosX = playerInfo.indX;
+    let playerPosY = playerInfo.indY;
     // find unit data from its name given by server
     const playerData = this.findUnitDataByName(playerInfo.type);
     this.player = new WorldOnlinePlayer(
@@ -266,6 +265,7 @@ export class WorldScene extends Phaser.Scene {
       playerData.frame,
       playerData.name
     );
+    this.player.tint = playerInfo.tint;
     this.physics.add.existing(this.player);
     this.add.existing(this.player);
     this.player.scale = this.unitScale;
@@ -287,33 +287,23 @@ export class WorldScene extends Phaser.Scene {
     this.tileWidth = this.map.tileWidth;
     this.tileHeight = this.map.tileHeight;
     this.tileset = this.map.addTilesetImage("forest_tilemap", "tiles");
-    this.background = this.map.createLayer(
-      "calque_background",
-      this.tileset!,
-      0,
-      0
-    );
-    this.obstacles = this.map.createLayer(
-      "calque_obstacles",
-      this.tileset!,
-      0,
-      0
-    );
+    this.background = this.map
+      .createLayer("calque_background", this.tileset!, 0, 0)
+      .setVisible(false);
+    this.obstacles = this.map
+      .createLayer("calque_obstacles", this.tileset!, 0, 0)
+      .setVisible(false);
     // layer for tall items appearing on top of the player like trees
-    this.map
+    this.devantJoueur = this.map
       .createLayer("calque_devant_joueur", this.tileset!, 0, 0)
-      .setDepth(9999);
+      .setDepth(9999)
+      .setVisible(false);
   }
 
   private addEnemies(enemies: ServerWorldUnit[]) {
     this.spawns = this.physics.add.group({
       classType: Phaser.GameObjects.Sprite,
     });
-
-    // if we just defeated an enemy in battle, delete it from the world map
-    if (this.enemyId !== undefined) {
-      this.socket.emit("enemyKill", this.enemyId);
-    }
 
     for (let i = 0; i < enemies.length; i++) {
       const myEnemyData = enemies[i];
@@ -345,6 +335,7 @@ export class WorldScene extends Phaser.Scene {
       this.spawns.add(myEnemy, true);
       myEnemy.setHitboxScale(1.5);
       myEnemy.scale = this.unitScale;
+      myEnemy.tint = myEnemyData.tint;
 
       // hide npc if it's currently in a fight
       if (!myEnemyData.isVisible) {

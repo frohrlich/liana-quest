@@ -4,7 +4,6 @@ import { Spell } from "./Spell";
 import { UITimelineSlot } from "../UI/UITimelineSlot";
 import { EffectOverTime } from "./EffectOverTime";
 import { ServerUnit } from "../../../server/scenes/ServerUnit";
-import { Position } from "../../../server/scenes/ServerWorldScene";
 import { unitsAvailable } from "../../data/UnitData";
 
 export class Unit extends Phaser.GameObjects.Sprite {
@@ -33,6 +32,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   // name representing the apparence of the unit
   textureStr: string;
+  baseTint: number;
   direction: string;
   isMoving: boolean;
   // chain of tweens containing the successive moving tweens in path from tile A to tile B
@@ -54,6 +54,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     x: number,
     y: number,
     texture: string,
+    baseTint: number,
     frame: number,
     indX: number,
     indY: number,
@@ -63,6 +64,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     isAlly: boolean
   ) {
     super(scene, x, y, texture, frame);
+    this.baseTint = baseTint;
     this.myScene = this.scene as BattleScene;
     this.indX = indX;
     this.indY = indY;
@@ -111,8 +113,8 @@ export class Unit extends Phaser.GameObjects.Sprite {
   }
 
   unselectUnit() {
-    this.tint = 0xffffff;
-    this.timelineSlot.tint = 0xffffff;
+    this.tint = this.baseTint;
+    this.timelineSlot.tint = this.baseTint;
     this.healthBar.setVisible(false);
     if (this.effectIcon) this.effectIcon.setVisible(false);
     this.myScene.uiScene.changeStatsUnit(this.myScene.currentPlayer);
@@ -270,18 +272,18 @@ export class Unit extends Phaser.GameObjects.Sprite {
   nextAction() {}
 
   synchronizeWithServerUnit(serverUnit: ServerUnit) {
+    this.hp = serverUnit.hp;
     this.indX = serverUnit.indX;
     this.indY = serverUnit.indY;
     this.maxHp = serverUnit.maxHp;
-    this.hp = serverUnit.hp;
     this.maxPa = serverUnit.maxPa;
     this.pa = serverUnit.pa;
     this.maxPm = serverUnit.maxPm;
     this.pm = serverUnit.pm;
     this.id = serverUnit.id;
     this.spells = serverUnit.spells;
-    this.addEffectOverTime(serverUnit.effectOverTime);
 
+    this.addEffectOverTime(serverUnit.effectOverTime);
     this.updateHealthBar();
     this.myScene.uiScene.refreshSpells();
   }
@@ -300,6 +302,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     serverSummonedUnit: ServerUnit
   ) {
     this.lookAtTile(targetVec);
+
     this.startAttackAnim(this.direction);
 
     affectedUnits.forEach((serverUnit) => {
@@ -335,6 +338,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
           serverSummonedUnit.id,
           targetVec.x,
           targetVec.y,
+          serverSummonedUnit.tint,
           !serverSummonedUnit.isPlayable,
           this.isAlly
         );
@@ -502,7 +506,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
       300,
       () => {
         effect.destroy();
-        if (blink) this.tint = 0xffffff;
+        if (blink) this.tint = this.baseTint;
       },
       undefined,
       effect

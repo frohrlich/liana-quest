@@ -1,5 +1,5 @@
 import findPath, { Vector2 } from "../utils/findPath";
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import { ServerBattleScene } from "./ServerBattleScene";
 
 export interface ServerWorldUnit {
@@ -9,6 +9,7 @@ export interface ServerWorldUnit {
   direction: string;
   type: string;
   isVisible: boolean;
+  tint: integer;
 }
 
 export interface Position {
@@ -18,6 +19,7 @@ export interface Position {
 
 export class ServerWorldScene {
   players: ServerWorldUnit[] = [];
+  playersCurrentlyInBattle: ServerWorldUnit[] = [];
   npcs: ServerWorldUnit[] = [];
   ongoingBattles: ServerBattleScene[] = [];
   enemyCount = 30;
@@ -33,6 +35,8 @@ export class ServerWorldScene {
     this.createMap();
 
     io.on("connection", (socket) => {
+      let randomColor = Math.floor(Math.random() * 16777215);
+
       const newPlayer = {
         indX: Math.floor(Math.random() * 5) + 1,
         indY: Math.floor(Math.random() * 5) + 1,
@@ -40,9 +44,8 @@ export class ServerWorldScene {
         type: "Amazon",
         direction: "down",
         isVisible: true,
+        tint: randomColor,
       };
-
-      socket.join("world");
 
       // create a new player and add it to our players object
       this.addNewPlayer(newPlayer, socket);
@@ -52,11 +55,11 @@ export class ServerWorldScene {
         const myNpc = this.findNpcById(enemyId);
         if (myNpc && myPlayer) {
           socket.leave("world");
-          this.removePlayer(socket);
+          this.movePlayerToBattle(socket);
           const battleId = "battle" + enemyId;
           socket.join(battleId);
           this.ongoingBattles.push(
-            new ServerBattleScene(io, socket, myPlayer, myNpc, battleId)
+            new ServerBattleScene(this, io, socket, myPlayer, myNpc, battleId)
           );
           this.hideEnemyAndShowBattleIcon(enemyId);
         }
@@ -64,7 +67,7 @@ export class ServerWorldScene {
 
       socket.on("playerClickedBattleIcon", (npcId: string) => {
         const myPlayer = this.findCurrentPlayer(socket);
-        this.removePlayer(socket);
+        this.movePlayerToBattle(socket);
         socket.leave("world");
         const battleId = "battle" + npcId;
         socket.join(battleId);
@@ -76,15 +79,18 @@ export class ServerWorldScene {
         }
       });
 
-      // plays when player returns from battle to world scene
-      socket.on("endBattle", (player: ServerWorldUnit) => {
-        this.addNewPlayer(player, socket);
-        socket.join("world");
-      });
-
       socket.on("disconnect", () => {
         this.removePlayer(socket);
         this.removePlayerFromBattles(socket);
+      });
+
+      socket.on("worldSceneIsReady", () => {
+        // send the players object to the new player
+        socket.emit("currentPlayers", this.players);
+        // send the npcs object to the new player
+        socket.emit("currentNpcs", this.npcs);
+        // make it listen to world events
+        socket.join("world");
       });
 
       socket.on("enemyKill", (enemyId: string) => {
@@ -175,6 +181,9 @@ export class ServerWorldScene {
           this.minPosition;
       } while (this.obstacles.tileAt(indX, indY)); // but not on obstacles
 
+      // let randomColor = Math.floor(Math.random() * 16777215);
+      let randomColor = 0xffffff;
+
       // toss a coin between snowman and dude...
       const enemyType = Math.floor(Math.random() * 2) ? "Snowman" : "Dude";
       const npc: ServerWorldUnit = {
@@ -184,6 +193,7 @@ export class ServerWorldScene {
         id: id,
         direction: "down",
         isVisible: true,
+        tint: randomColor,
       };
       this.npcs.push(npc);
 
@@ -255,29 +265,59 @@ export class ServerWorldScene {
     }, movingOffset);
   }
 
-  addNewPlayer(newPlayer: ServerWorldUnit, socket) {
+  addNewPlayer(newPlayer: ServerWorldUnit, socket: Socket) {
     this.players.push(newPlayer);
-    // send the players object to the new player
-    socket.emit("currentPlayers", this.players);
-    // send the npcs object to the new player
-    socket.emit("currentNpcs", this.npcs);
     // update all other players of the new player
     socket.broadcast.to("world").emit("newPlayer", newPlayer);
   }
 
-  removePlayer(socket) {
+  removePlayer(socket: Socket) {
     const index = this.players.findIndex((player) => player.id === socket.id);
     if (index !== -1) {
       this.players.splice(index, 1);
     }
     // emit a message to all players to remove this player
-    this.io.to("world").emit("playerDisconnect", socket.id);
+    this.io.to("world").emit("playerLeft", socket.id);
   }
 
-  removePlayerFromBattles(socket) {
+  movePlayerToBattle(socket: Socket) {
+    const index = this.players.findIndex((player) => player.id === socket.id);
+    if (index !== -1) {
+      this.playersCurrentlyInBattle.push(this.players[index]);
+      this.players.splice(index, 1);
+    }
+    // emit a message to all players to remove this player
+    this.io.to("world").emit("playerLeft", socket.id);
+  }
+
+  movePlayerBackToWorld(socket: Socket) {
+    let newPlayer;
+    const index = this.playersCurrentlyInBattle.findIndex(
+      (player) => player.id === socket.id
+    );
+    if (index !== -1) {
+      newPlayer = this.playersCurrentlyInBattle[index];
+      this.players.push(newPlayer);
+      this.playersCurrentlyInBattle.splice(index, 1);
+    }
+
+    // update all other players of the new player
+    socket.broadcast.to("world").emit("newPlayer", newPlayer);
+  }
+
+  removePlayerFromBattles(socket: Socket) {
     this.ongoingBattles.forEach((battle) => {
       battle.removeUnitFromBattle(socket.id);
     });
+  }
+
+  removeBattle(battleId: string) {
+    const index = this.ongoingBattles.findIndex(
+      (battle) => battle.id === battleId
+    );
+    if (index !== -1) {
+      this.ongoingBattles.splice(index, 1);
+    }
   }
 
   hideEnemyAndShowBattleIcon(enemyId: string) {

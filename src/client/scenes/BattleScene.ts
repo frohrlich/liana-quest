@@ -23,6 +23,8 @@ export interface TilePath {
 export class BattleScene extends Phaser.Scene {
   fontSize: 8;
   animFramerate: number = 5;
+  endBattleDelay: number = 400;
+
   currentPlayer!: Player;
   allies: Unit[] = [];
   enemies: Unit[] = [];
@@ -37,7 +39,7 @@ export class BattleScene extends Phaser.Scene {
   background!: Phaser.Tilemaps.TilemapLayer | null;
   turnIndex: number;
   timeline: Unit[] = [];
-  isPlayerTurn: boolean = false;
+  isPlayerTurn: boolean;
   accessibleTiles: TilePath[] = [];
   spellVisible: boolean;
   spellRange: Phaser.Tilemaps.Tile[] = [];
@@ -61,11 +63,11 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  preload(): void {}
-
   create(data: any): void {
+    this.isPlayerTurn = false;
     this.worldScene = this.scene.get("WorldScene") as WorldScene;
     this.socket = this.worldScene.socket;
+    this.socket.off();
     this.playerId = this.socket.id;
 
     // refresh scene to its original state
@@ -106,7 +108,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   addDisconnectListener() {
-    this.socket.on("playerDisconnect", (playerId: string) => {
+    this.socket.on("playerLeft", (playerId: string) => {
       this.units.forEach((otherPlayer: Unit) => {
         if (playerId === otherPlayer.id) {
           otherPlayer.die();
@@ -411,11 +413,15 @@ export class BattleScene extends Phaser.Scene {
     });
 
     this.socket.on("battleIsWon", () => {
-      this.endBattle();
+      setTimeout(() => {
+        this.endBattle();
+      }, this.endBattleDelay);
     });
 
     this.socket.on("battleIsLost", () => {
-      this.gameOver();
+      setTimeout(() => {
+        this.gameOver();
+      }, this.endBattleDelay);
     });
   }
 
@@ -462,6 +468,7 @@ export class BattleScene extends Phaser.Scene {
         info.id,
         info.indX,
         info.indY,
+        info.tint,
         !isPlayable,
         isAlly
       );
@@ -471,9 +478,10 @@ export class BattleScene extends Phaser.Scene {
   }
 
   clearAllUnits() {
-    this.timeline.forEach((unit) => {
+    this.units.forEach((unit) => {
       unit.destroyUnit();
     });
+    this.units = [];
     this.timeline = [];
     this.allies = [];
     this.enemies = [];
@@ -665,6 +673,7 @@ export class BattleScene extends Phaser.Scene {
     unitServerId: string,
     startX: number,
     startY: number,
+    tint: number,
     npc: boolean,
     allied: boolean
   ) {
@@ -676,6 +685,7 @@ export class BattleScene extends Phaser.Scene {
         0,
         0,
         key,
+        tint,
         unitData.frame,
         startX,
         startY,
@@ -690,6 +700,7 @@ export class BattleScene extends Phaser.Scene {
         0,
         0,
         key,
+        tint,
         unitData.frame,
         startX,
         startY,
@@ -701,6 +712,7 @@ export class BattleScene extends Phaser.Scene {
     }
     unit.type = unitData.name;
     unit.id = unitServerId;
+    unit.tint = tint;
     this.add.existing(unit);
 
     // create unit animations with base sprite and framerate
@@ -1243,7 +1255,7 @@ export class BattleScene extends Phaser.Scene {
 
   endBattle() {
     this.resetScene();
-    this.scene.start("WorldScene", { enemyId: this.enemyId });
+    this.scene.start("WorldScene");
   }
 
   resetScene() {

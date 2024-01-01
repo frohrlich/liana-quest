@@ -14,6 +14,7 @@ export class ServerUnit {
   indX: number;
   indY: number;
   type: string;
+  tint: number;
   maxPm: number;
   maxPa: number;
   maxHp: number;
@@ -32,10 +33,12 @@ export class ServerUnit {
     isAlly: boolean,
     indX: number,
     indY: number,
-    type: string
+    type: string,
+    tint: number
   ) {
     this.isReady = isReady;
     this.id = id;
+    this.tint = tint;
     this.isPlayable = isPlayable;
     this.isAlly = isAlly;
     this.indX = indX;
@@ -115,6 +118,7 @@ export class ServerUnit {
     this.pa -= spell.malusPA;
     this.pa += spell.bonusPA;
 
+    this.hp = Math.max(this.hp, 0);
     this.pm = Math.max(this.pm, 0);
     this.pa = Math.max(this.pa, 0);
 

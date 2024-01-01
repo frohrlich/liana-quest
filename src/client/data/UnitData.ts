@@ -22,7 +22,7 @@ export const snowman: UnitData = {
   HP: 100,
   PM: 6,
   PA: 6,
-  spells: "sting, deadly javelin",
+  spells: "deadly javelin",
   frame: 30,
   name: "Snowman",
 };

@@ -8,6 +8,7 @@ export class Npc extends Unit {
     x: number,
     y: number,
     texture: string,
+    baseTint: number,
     frame: number,
     indX: number,
     indY: number,
@@ -16,6 +17,19 @@ export class Npc extends Unit {
     maxHp: number,
     isAlly: boolean
   ) {
-    super(scene, x, y, texture, frame, indX, indY, maxPm, maxPa, maxHp, isAlly);
+    super(
+      scene,
+      x,
+      y,
+      texture,
+      baseTint,
+      frame,
+      indX,
+      indY,
+      maxPm,
+      maxPa,
+      maxHp,
+      isAlly
+    );
   }
 }

@@ -10,6 +10,7 @@ export class Player extends Unit {
     x: number,
     y: number,
     texture: string,
+    baseTint: number,
     frame: number,
     indX: number,
     indY: number,
@@ -18,7 +19,20 @@ export class Player extends Unit {
     maxHp: number,
     isAlly: boolean
   ) {
-    super(scene, x, y, texture, frame, indX, indY, maxPm, maxPa, maxHp, isAlly);
+    super(
+      scene,
+      x,
+      y,
+      texture,
+      baseTint,
+      frame,
+      indX,
+      indY,
+      maxPm,
+      maxPa,
+      maxHp,
+      isAlly
+    );
   }
 
   // plays at the end of deplacement

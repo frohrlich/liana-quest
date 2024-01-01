@@ -163,6 +163,7 @@ export class UIScene extends Phaser.Scene {
         unit,
         this.uiScale
       );
+      slot.tint = unit.baseTint;
       // on hover, highlight the timeline slot and its corresponding unit
       slot.setInteractive();
       slot.on("pointerover", () => {

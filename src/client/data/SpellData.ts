@@ -40,7 +40,7 @@ export const sting = new Spell(
   "Sting",
   false,
   false,
-  15,
+  115,
   1,
   1,
   1,
