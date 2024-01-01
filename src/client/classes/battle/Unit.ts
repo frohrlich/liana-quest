@@ -267,17 +267,11 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.play(direction + "Attack" + this.type, true);
   };
 
-  // these three methods are redefined by subclasses
-  playTurn() {
-    this.undergoEffectOverTime();
-  }
-
   nextAction() {}
 
   synchronizeWithServerUnit(serverUnit: ServerUnit) {
-    if (this.indX !== serverUnit.indX || this.indY !== serverUnit.indY) {
-      this.moveDirectlyToNewPosition(serverUnit.indX, serverUnit.indY);
-    }
+    this.indX = serverUnit.indX;
+    this.indY = serverUnit.indY;
     this.maxHp = serverUnit.maxHp;
     this.hp = serverUnit.hp;
     this.maxPa = serverUnit.maxPa;
@@ -286,14 +280,13 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.pm = serverUnit.pm;
     this.id = serverUnit.id;
     this.spells = serverUnit.spells;
-    this.myScene.uiScene.refreshSpells();
-
     this.addEffectOverTime(serverUnit.effectOverTime);
+
+    this.updateHealthBar();
+    this.myScene.uiScene.refreshSpells();
   }
 
-  endTurn() {
-    this.myScene.endTurn();
-  }
+  endTurn() {}
 
   isDead(): boolean {
     return this.hp <= 0;
@@ -312,6 +305,15 @@ export class Unit extends Phaser.GameObjects.Sprite {
     affectedUnits.forEach((serverUnit) => {
       const myAffectedUnit = this.myScene.findUnitById(serverUnit.id);
       if (myAffectedUnit) {
+        if (
+          myAffectedUnit.indX !== serverUnit.indX ||
+          myAffectedUnit.indY !== serverUnit.indY
+        ) {
+          myAffectedUnit.moveDirectlyToNewPosition(
+            serverUnit.indX,
+            serverUnit.indY
+          );
+        }
         myAffectedUnit.synchronizeWithServerUnit(serverUnit);
         myAffectedUnit.undergoSpell(spell);
         if (spell.moveTargetBy) {
@@ -333,7 +335,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
           serverSummonedUnit.id,
           targetVec.x,
           targetVec.y,
-          serverSummonedUnit.isPlayable,
+          !serverSummonedUnit.isPlayable,
           this.isAlly
         );
         this.summonedUnits.push(summonedUnit);
@@ -379,17 +381,8 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.myScene.addToObstacleLayer(new Phaser.Math.Vector2(indX, indY));
   }
 
-  undergoEffectOverTime() {
-    const eot = this.effectOverTime;
+  undergoEffectOverTime(eot: EffectOverTime) {
     if (eot && eot.duration > 0) {
-      this.hp -= eot.damage;
-      // no healing over max hp
-      this.hp = Math.min(this.hp + eot.heal, this.maxHp);
-      this.pa -= eot.malusPA;
-      this.pa += eot.bonusPA;
-      this.pm -= eot.malusPM;
-      this.pm += eot.bonusPM;
-      this.updateHealthBar();
       eot.duration--;
       this.displaySpellEffect(
         eot.damage,
@@ -493,7 +486,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
         break;
     }
     let isOnTop = this.indY < 2;
-    let malus = scene.add
+    let effect = scene.add
       .bitmapText(
         this.x - 2,
         isOnTop ? this.y + 22 : this.y - this.displayHeight + 3,
@@ -502,17 +495,17 @@ export class Unit extends Phaser.GameObjects.Sprite {
         fontSize
       )
       .setTint(color);
-    malus.setDepth(10001);
-    malus.setOrigin(0.5, 0.5);
+    effect.setDepth(10001);
+    effect.setOrigin(0.5, 0.5);
     // disappears after short time
     scene.time.delayedCall(
       300,
       () => {
-        malus.destroy();
+        effect.destroy();
         if (blink) this.tint = 0xffffff;
       },
       undefined,
-      malus
+      effect
     );
   }
 
@@ -533,11 +526,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.scene.time.delayedCall(
       400,
       () => {
-        if (this.myScene.gameIsOver()) {
-          this.myScene.gameOver();
-        } else if (this.myScene.battleIsWon()) {
-          this.myScene.endBattle();
-        }
         this.destroyUnit();
       },
       undefined,
@@ -632,50 +620,36 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.identifier.setScale(scale);
   }
 
-  // create health bar
-  makeBar(unit: Unit, color: number) {
-    const barAlpha = 1;
-    //draw the bar
-    const bar = this.scene.add.graphics();
-    //color the bar
-    bar.fillStyle(color, barAlpha);
-    //fill the bar with a rectangle
-    const barWidth = unit.displayWidth * 1.2 * this.healthBarScale;
-    bar.fillRect(0, 0, barWidth, 8 * this.healthBarScale);
-    //position the bar
-    bar.x = unit.x - barWidth / 2;
-    bar.y = this.isOnTop()
-      ? this.y + this.healthBarUnderUnitOffset
-      : this.y - this.displayHeight - this.healthBarOverUnitOffset;
-    //return the bar
-    bar.setDepth(10000);
-    return bar;
-  }
-
   setBarValue(bar: Phaser.GameObjects.Graphics, percentage: number) {
     //scale the bar
     bar.scaleX = percentage / 100;
   }
 
   updateHealthBar() {
-    if (!this.healthBar) {
-      this.healthBar = this.makeBar(this, 0x2ecc71);
-      this.setBarValue(this.healthBar, 100);
-      this.healthBar.setVisible(false);
+    if (this.healthBar) this.healthBar.destroy();
+
+    // draw the bar
+    this.healthBar = this.scene.add.graphics();
+    const hpPercentage = Math.max(this.hp / this.maxHp, 0) * 100;
+    this.setBarValue(this.healthBar, hpPercentage + 2);
+    const barWidth = this.displayWidth * 1.2;
+    const barAlpha = 0.8;
+    if (hpPercentage <= 25) {
+      this.healthBar.fillStyle(0xff0000, barAlpha);
+    } else if (hpPercentage <= 50) {
+      this.healthBar.fillStyle(0xffc802, barAlpha);
     } else {
-      const hpPercentage = Math.max(this.hp / this.maxHp, 0) * 100;
-      this.setBarValue(this.healthBar, hpPercentage + 2);
-      const barWidth = this.displayWidth * 1.2;
-      const barAlpha = 0.8;
-      if (hpPercentage <= 25) {
-        this.healthBar.fillStyle(0xff0000, barAlpha);
-      } else if (hpPercentage <= 50) {
-        this.healthBar.fillStyle(0xffc802, barAlpha);
-      } else {
-        this.healthBar.fillStyle(0x2ecc71, barAlpha);
-      }
-      this.healthBar.fillRect(0, 0, barWidth, 8);
+      this.healthBar.fillStyle(0x2ecc71, barAlpha);
     }
+    this.healthBar.fillRect(0, 0, barWidth, 8);
+
+    // position the bar
+    this.healthBar.x = this.x - barWidth / 2;
+    this.healthBar.y = this.isOnTop()
+      ? this.y + this.healthBarUnderUnitOffset
+      : this.y - this.displayHeight - this.healthBarOverUnitOffset;
+    this.healthBar.setDepth(10000);
+    this.healthBar.setVisible(false);
   }
 
   // add spells to a unit

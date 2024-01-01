@@ -6,6 +6,11 @@ import findPath, { Vector2 } from "../utils/findPath";
 import { Spell } from "../../client/classes/battle/Spell";
 import isVisible from "../utils/lineOfSight";
 
+export interface ServerTilePath {
+  pos: Vector2;
+  path: Vector2[];
+}
+
 export class ServerBattleScene {
   io: Server;
   socket: Socket; // ! that's the socket of the creator of the battle
@@ -24,6 +29,7 @@ export class ServerBattleScene {
   mapName: string;
 
   isInPreparationMode: boolean;
+  turnIndex: number = 0;
 
   constructor(
     io: Server,
@@ -81,150 +87,138 @@ export class ServerBattleScene {
 
     // on clicking start battle button
     socket.on("playerIsReady", (playerId: string) => {
-      const myPlayer = this.findUnitById(playerId);
-      if (myPlayer) {
-        myPlayer.isReady = true;
-        socket.emit("readyIsConfirmed");
-      }
-      if (this.everyoneIsReady()) {
-        this.startBattleMainPhase(socket);
+      if (this.isInPreparationMode) {
+        const myPlayer = this.findUnitById(playerId);
+        if (myPlayer) {
+          myPlayer.isReady = true;
+          socket.emit("readyIsConfirmed");
+        }
+        if (this.everyoneIsReady()) {
+          this.startBattleMainPhase(socket);
+        }
       }
     });
+
+    this.addMainBattlePhaseListeners(socket);
   }
 
-  private startBattleMainPhase(socket) {
-    this.isInPreparationMode = false;
-    // tell all battle participants that the battle begins
-    this.io.to(this.id).emit("startMainBattlePhase");
-
-    // then notify first player to begin turn (if it's not an npc)
-    const currentPlayer = this.timeline[0];
-    if (currentPlayer.isPlayable) {
-      this.io.to(currentPlayer.id).emit("yourTurnBegins", currentPlayer.id);
-    }
-
-    // tell world map you can't join battle anymore
-    this.io.to("world").emit("removeBattleIcon", this.enemies[0].id);
-
-    socket.on("playerClickedEndTurn", (playerId) => {
-      const myUnit = this.findUnitById(playerId);
-      myUnit.endTurn();
-      this.io.to(this.id).emit("endPlayerTurn", myUnit);
+  addMainBattlePhaseListeners(socket: Socket) {
+    socket.on("playerClickedEndTurn", () => {
+      if (!this.isInPreparationMode) {
+        const myUnit = this.findUnitById(socket.id);
+        if (myUnit && myUnit.isUnitTurn) {
+          myUnit.endTurn();
+          this.io.to(this.id).emit("endPlayerTurn", myUnit);
+          this.nextTurn();
+        }
+      }
     });
 
     socket.on("playerMove", (movementData: Vector2) => {
-      const currentPlayer = this.findUnitById(socket.id);
+      if (!this.isInPreparationMode) {
+        const myUnit = this.findUnitById(socket.id);
 
-      if (currentPlayer) {
-        const startVec: Vector2 = {
-          x: currentPlayer.indX,
-          y: currentPlayer.indY,
-        };
-        const targetVec = movementData;
+        if (myUnit && myUnit.isUnitTurn) {
+          const startVec: Vector2 = {
+            x: myUnit.indX,
+            y: myUnit.indY,
+          };
+          const targetVec = movementData;
 
-        const path = findPath(
-          startVec,
-          targetVec,
-          this.background,
-          this.obstacles
-        );
-        // check if movement is actually possible
-        if (path && path.length > 0 && path.length <= currentPlayer.pm) {
-          this.removeFromObstacleLayer(currentPlayer);
-          currentPlayer.indX = movementData.x;
-          currentPlayer.indY = movementData.y;
-          this.addToObstacleLayer(movementData);
-          currentPlayer.pm -= path.length;
-          // emit a message to all players about the unit that moved
-          this.io.to(this.id).emit("unitMoved", currentPlayer);
+          const path = findPath(
+            startVec,
+            targetVec,
+            this.background,
+            this.obstacles
+          );
+          // check if movement is actually possible
+          if (path && path.length > 0 && path.length <= myUnit.pm) {
+            this.removeFromObstacleLayer(myUnit);
+            myUnit.indX = movementData.x;
+            myUnit.indY = movementData.y;
+            this.addToObstacleLayer(movementData);
+            myUnit.pm -= path.length;
+            // emit a message to all players about the unit that moved
+            this.io.to(this.id).emit("unitMoved", myUnit);
+          }
         }
       }
     });
 
     socket.on("playerCastSpell", (spell: Spell, targetVec: Vector2) => {
-      const currentPlayer = this.findUnitById(socket.id);
+      if (!this.isInPreparationMode) {
+        const myUnit = this.findUnitById(socket.id);
 
-      if (currentPlayer) {
-        const playerPos: Vector2 = {
-          x: currentPlayer.indX,
-          y: currentPlayer.indY,
-        };
-
-        const playerSpell = currentPlayer.spells.find(
-          (mySpell) => mySpell.name === spell.name
-        );
-
-        if (
-          currentPlayer.pa >= spell.cost &&
-          playerSpell.cooldown === 0 &&
-          playerSpell &&
-          this.isPosAccessibleToSpell(playerPos, targetVec, spell)
-        ) {
-          currentPlayer.pa -= spell.cost;
-          playerSpell.cooldown = spell.maxCooldown;
-
-          const affectedUnits = this.getUnitsInsideAoe(
-            currentPlayer,
-            targetVec.x,
-            targetVec.y,
-            spell
-          );
-
-          affectedUnits.forEach((unit) => {
-            unit.undergoSpell(spell);
-            if (spell.moveTargetBy) {
-              // check alignment for spells that push or pull
-              const isAlignedX = targetVec.y == currentPlayer.indY;
-              const isForward = isAlignedX
-                ? Math.sign(targetVec.x - currentPlayer.indX)
-                : Math.sign(targetVec.y - currentPlayer.indY);
-              this.moveUnitBy(unit, spell.moveTargetBy, isAlignedX, isForward);
-            }
-            this.checkDead(unit);
-          });
-
-          // if spell summons a unit AND targeted tile is free, summon the unit
-          let summonedUnit = null;
-          if (
-            spell.summons &&
-            !this.obstacles.tileAt(targetVec.x, targetVec.y)
-          ) {
-            summonedUnit = this.addSummonedUnit(
-              currentPlayer,
-              spell,
-              targetVec
-            );
-          }
-
-          this.io
-            .to(this.id)
-            .emit(
-              "unitHasCastSpell",
-              currentPlayer,
-              this.timeline,
-              playerSpell,
-              targetVec,
-              affectedUnits,
-              summonedUnit
-            );
+        if (myUnit && myUnit.isUnitTurn) {
+          myUnit.castSpell(this, spell, targetVec);
         }
       }
     });
   }
 
-  private isPosAccessibleToSpell(
-    playerPos: Vector2,
-    targetVec: Vector2,
-    spell: Spell
-  ) {
+  private startBattleMainPhase(socket: Socket) {
+    this.isInPreparationMode = false;
+    // tell all battle participants that the battle begins
+    this.io.to(this.id).emit("startMainBattlePhase");
+
+    // then start first player turn
+    this.nextTurn();
+
+    // tell world map you can't join battle anymore
+    this.io.to("world").emit("removeBattleIcon", this.enemies[0].id);
+  }
+
+  nextTurn() {
+    if (this.turnIndex >= this.timeline.length) {
+      this.turnIndex = 0;
+    }
+
+    const currentUnit = this.timeline[this.turnIndex];
+    const effectOverTime = { ...currentUnit.effectOverTime };
+    currentUnit.undergoEffectOverTime();
+    this.checkDead(currentUnit);
+    if (!currentUnit.isDead()) {
+      this.io
+        .to(this.id)
+        .emit("unitTurnBegins", currentUnit, effectOverTime, this.turnIndex);
+      if (currentUnit.isPlayable) {
+        // this boolean tells the server whether to accept incoming events from this playable unit
+        currentUnit.isUnitTurn = true;
+      } else {
+        currentUnit.playTurn(this);
+      }
+      this.turnIndex++;
+    } else {
+      this.nextTurn();
+    }
+  }
+
+  isPosAccessibleToSpell(playerPos: Vector2, targetVec: Vector2, spell: Spell) {
     const distance =
       Math.abs(playerPos.x - targetVec.x) + Math.abs(playerPos.y - targetVec.y);
-    return (
+    if (
       distance >= spell.minRange &&
       distance <= spell.maxRange &&
-      (!spell.lineOfSight ||
-        isVisible(playerPos, targetVec, this.obstacles, this))
-    );
+      (!this.obstacles.tileAt(targetVec.x, targetVec.y) ||
+        this.isUnitThere(targetVec.x, targetVec.y))
+    ) {
+      // if spell doesn't need line of sight we just need to ensure tile isn't an obstacle
+      if (!spell.lineOfSight) return true;
+      // else we use the line of sight algorithm
+      else {
+        // case of spells being cast in straight line only
+        let isInStraightLine = true;
+        if (spell.straightLine) {
+          isInStraightLine =
+            playerPos.x === targetVec.x || playerPos.y === targetVec.y;
+        }
+        return (
+          isInStraightLine &&
+          isVisible(playerPos, targetVec, this.obstacles, this)
+        );
+      }
+    }
+    return false;
   }
 
   // move function for push/pull spells
@@ -273,21 +267,16 @@ export class ServerBattleScene {
   }
 
   checkDead(unit: ServerUnit) {
-    if (unit.hp <= 0) {
+    if (unit.isDead()) {
       this.removeUnitFromBattle(unit.id);
     }
   }
 
-  private addSummonedUnit(
-    caster: ServerUnit,
-    spell: Spell,
-    targetVec: Vector2
-  ) {
+  addSummonedUnit(caster: ServerUnit, spell: Spell, targetVec: Vector2) {
     const summonedUnit = new ServerUnit(
-      this,
       true,
       caster.id + "_" + caster.summonedUnits.length,
-      true,
+      false,
       caster.isAlly,
       targetVec.x,
       targetVec.y,
@@ -397,7 +386,6 @@ export class ServerBattleScene {
         indY = starterTiles[randTile].indY;
       } while (this.isUnitThere(indX, indY));
       const myUnit = new ServerUnit(
-        this,
         !isPlayable, // npcs are ready by default so the battle can start
         unit.id,
         isPlayable,
@@ -498,11 +486,17 @@ export class ServerBattleScene {
     index = this.allies.findIndex((player) => player.id === id);
     if (index !== -1) {
       this.allies.splice(index, 1);
+      if (this.allies.length === 0) {
+        this.io.to(this.id).emit("battleIsLost");
+      }
     }
 
     index = this.enemies.findIndex((player) => player.id === id);
     if (index !== -1) {
       this.enemies.splice(index, 1);
+      if (this.enemies.length === 0 && this.allies.length > 0) {
+        this.io.to(this.id).emit("battleIsWon");
+      }
     }
 
     index = this.timeline.findIndex((player) => player.id === id);
@@ -518,5 +512,34 @@ export class ServerBattleScene {
 
   removeFromObstacleLayer(unit: ServerUnit) {
     this.obstacles.setTileAt(unit.indX, unit.indY, null);
+  }
+
+  calculateAccessibleTiles(pos: Vector2, pm: number) {
+    const { x, y } = pos;
+    let tablePos: ServerTilePath[] = [];
+
+    for (let i = 0; i < this.background.tiles.length; i++) {
+      let tileX = i % this.map.width;
+      let tileY = Math.floor(i / this.map.width);
+      const isPlayerTile = tileX == x && tileY == y;
+      const distance = Math.abs(tileX - pos.x) + Math.abs(tileY - pos.y);
+      let path;
+      if (
+        !isPlayerTile &&
+        pm >= distance &&
+        this.obstacles.tileAt(tileX, tileY) === undefined
+      ) {
+        const target = { x: tileX, y: tileY };
+        path = findPath(pos, target, this.background, this.obstacles);
+      }
+      if (path) {
+        let myPos: ServerTilePath = {
+          path: path,
+          pos: { x: tileX, y: tileY },
+        };
+        tablePos.push(myPos);
+      }
+    }
+    return tablePos;
   }
 }

@@ -19,12 +19,6 @@ export class Player extends Unit {
     isAlly: boolean
   ) {
     super(scene, x, y, texture, frame, indX, indY, maxPm, maxPa, maxHp, isAlly);
-
-    this.myScene.socket.on("endPlayerTurn", (playerInfo: ServerUnit) => {
-      if (playerInfo.id === this.id) {
-        this.endTurnAfterServerConfirmation(playerInfo);
-      }
-    });
   }
 
   // plays at the end of deplacement
@@ -35,10 +29,10 @@ export class Player extends Unit {
   }
 
   override endTurn(): void {
-    this.myScene.socket.emit("playerClickedEndTurn", this.id);
+    this.myScene.socket.emit("playerClickedEndTurn");
   }
 
-  private endTurnAfterServerConfirmation(playerInfo: ServerUnit) {
+  endTurnAfterServerConfirmation(playerInfo: ServerUnit) {
     this.synchronizeWithServerUnit(playerInfo);
     const scene = this.myScene;
     scene.clearAccessibleTiles();
@@ -46,7 +40,6 @@ export class Player extends Unit {
     scene.clearAoeZone();
     scene.clearPointerEvents();
     scene.spellVisible = false;
-    super.endTurn();
   }
 
   override castSpell(

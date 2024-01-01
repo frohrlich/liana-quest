@@ -12,9 +12,10 @@ import { WorldScene } from "./WorldScene";
 import { ServerUnit } from "../../server/scenes/ServerUnit";
 import { Socket } from "socket.io-client";
 import { Position } from "../../server/scenes/ServerWorldScene";
+import { EffectOverTime } from "../classes/battle/EffectOverTime";
 
 // Store a tile and the path to it
-interface TilePath {
+export interface TilePath {
   pos: Phaser.Math.Vector2;
   path: Phaser.Math.Vector2[];
 }
@@ -335,25 +336,38 @@ export class BattleScene extends Phaser.Scene {
   }
 
   listenToMainBattleEvents() {
-    this.socket.on("yourTurnBegins", (playerId: string) => {
-      const myPlayer = this.findUnitById(playerId);
-      if (myPlayer && myPlayer instanceof Player) {
-        this.startPlayerTurn(myPlayer);
+    this.socket.on(
+      "unitTurnBegins",
+      (
+        serverUnit: ServerUnit,
+        effectOverTime: EffectOverTime,
+        turnIndex: number
+      ) => {
+        const myPlayer = this.findUnitById(serverUnit.id);
+        if (myPlayer) {
+          this.changeTimelineIndex(turnIndex);
+          myPlayer.synchronizeWithServerUnit(serverUnit);
+          myPlayer.undergoEffectOverTime(effectOverTime);
+          if (myPlayer instanceof Player && !myPlayer.isDead()) {
+            this.startPlayerTurn(myPlayer);
+          }
+        }
       }
-    });
+    );
 
-    this.socket.on("unitMoved", (unit: ServerUnit) => {
-      const myUnit = this.findUnitById(unit.id);
+    this.socket.on("unitMoved", (serverUnit: ServerUnit) => {
+      const myUnit = this.findUnitById(serverUnit.id);
       if (myUnit) {
         const path = this.getPathToPosition(
-          unit.indX,
-          unit.indY,
+          serverUnit.indX,
+          serverUnit.indY,
           myUnit.indX,
           myUnit.indY,
           myUnit.pm
         );
         if (path && path.length > 0) {
           myUnit.moveAlong(path);
+          myUnit.synchronizeWithServerUnit(serverUnit);
           this.uiScene.refreshUI();
         }
       }
@@ -362,27 +376,50 @@ export class BattleScene extends Phaser.Scene {
     this.socket.on(
       "unitHasCastSpell",
       (
-        unit: ServerUnit,
+        serverUnit: ServerUnit,
         timeline: ServerUnit[],
         spell: Spell,
         targetVec: Phaser.Math.Vector2,
         affectedUnits: ServerUnit[],
         summonedUnit: ServerUnit
       ) => {
-        const myUnit = this.findUnitById(unit.id);
+        const myUnit = this.findUnitById(serverUnit.id);
         if (myUnit) {
-          myUnit.synchronizeWithServerUnit(unit);
+          if (
+            myUnit.indX !== serverUnit.indX ||
+            myUnit.indY !== serverUnit.indY
+          ) {
+            myUnit.moveDirectlyToNewPosition(serverUnit.indX, serverUnit.indY);
+          }
+          myUnit.synchronizeWithServerUnit(serverUnit);
           myUnit.castSpell(spell, targetVec, affectedUnits, summonedUnit);
         }
         this.syncTimelineWithServer(timeline);
         this.uiScene.updateTimeline(this.timeline);
       }
     );
+
+    this.socket.on("endPlayerTurn", (serverUnit: ServerUnit) => {
+      const myUnit = this.findUnitById(serverUnit.id);
+      if (myUnit) {
+        myUnit.synchronizeWithServerUnit(serverUnit);
+        if (myUnit instanceof Player) {
+          myUnit.endTurnAfterServerConfirmation(serverUnit);
+          this.isPlayerTurn = false;
+        }
+      }
+    });
+
+    this.socket.on("battleIsWon", () => {
+      this.endBattle();
+    });
+
+    this.socket.on("battleIsLost", () => {
+      this.gameOver();
+    });
   }
 
-  // end turn after clicking end turn button (for player) or finishing actions (for npcs)
-  endTurn = () => {
-    this.uiScene.endTurn();
+  changeTimelineIndex = (turnIndex: number) => {
     // clear previous player highlight on the timeline
     let prevPlayer = this.timeline[this.turnIndex];
     if (prevPlayer) {
@@ -390,22 +427,8 @@ export class BattleScene extends Phaser.Scene {
         prevPlayer.isAlly ? 0x0000ff : 0xff0000;
     }
 
-    if (this.isPlayerTurn) {
-      this.isPlayerTurn = false;
-    }
-
-    this.turnIndex++;
-    if (this.turnIndex >= this.timeline.length) {
-      this.turnIndex = 0;
-    }
-
-    const currentUnit = this.timeline[this.turnIndex];
+    this.turnIndex = turnIndex;
     this.highlightCurrentUnitInTimeline();
-    currentUnit.playTurn();
-
-    if (currentUnit instanceof Player) {
-      this.startPlayerTurn(currentUnit);
-    }
   };
 
   private addUnitsOnStart(data: any) {
@@ -414,7 +437,7 @@ export class BattleScene extends Phaser.Scene {
 
     // allies
     this.addTeamOnStart(data, true);
-    this.currentPlayer = this.allies[0] as Player;
+    this.currentPlayer = this.findUnitById(this.socket.id) as Player;
     // enemies
     this.addTeamOnStart(data, false);
   }
@@ -1111,7 +1134,8 @@ export class BattleScene extends Phaser.Scene {
   // calculate spell range
   calculateSpellRange(unit: Unit, spell: Spell) {
     return this.background?.filterTiles(
-      (tile: Phaser.Tilemaps.Tile) => this.isVisible(unit, spell, tile),
+      (tile: Phaser.Tilemaps.Tile) =>
+        this.isPosAccessibleToSpell(unit, spell, tile),
       this,
       unit.indX - spell.maxRange,
       unit.indY - spell.maxRange,
@@ -1121,7 +1145,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   // return true if tile is visible for a given unit and spell
-  isVisible(unit: Unit, spell: Spell, tile: Phaser.Tilemaps.Tile) {
+  isPosAccessibleToSpell(unit: Unit, spell: Spell, tile: Phaser.Tilemaps.Tile) {
     let startVec = new Phaser.Math.Vector2(unit.indX, unit.indY);
     let targetVec = new Phaser.Math.Vector2(tile.x, tile.y);
     let distance =
