@@ -40,23 +40,19 @@ window.onload = () => {
   const gameDiv = document.getElementById("game");
   const fullscreenButton = document.getElementById("fullscreen-button");
   const fullscreenButtonDiv = document.getElementById("fullscreenButton-div");
-  // fullscreenButton.addEventListener("click", () => {
-  // gameDiv.hidden = false;
-  // fullscreenButton.hidden = true;
-  // fullscreenButtonDiv.style.display = "none";
-  //   if (isNotDesktop) {
-  //     if (screenfull.isEnabled) {
-  //       screenfull.request(gameDiv);
-  //       window.screen.orientation["lock"]("landscape");
-  //     } else {
-  //       alert("Error ! Please refresh your navigator.");
-  //     }
-  //   }
-  // });
-
-  gameDiv.hidden = false;
-  fullscreenButton.hidden = true;
-  fullscreenButtonDiv.style.display = "none";
+  fullscreenButton.addEventListener("click", () => {
+    gameDiv.hidden = false;
+    fullscreenButton.hidden = true;
+    fullscreenButtonDiv.style.display = "none";
+    if (isNotDesktop) {
+      if (screenfull.isEnabled) {
+        screenfull.request(gameDiv);
+        window.screen.orientation["lock"]("landscape");
+      } else {
+        alert("Error ! Please refresh your navigator.");
+      }
+    }
+  });
 
   var game = new RpgGame(config);
 };
