@@ -216,14 +216,16 @@ export class ServerUnit {
   }
 
   playTurn(battleScene: ServerBattleScene) {
-    const delayAfterSpell = 400;
-    const movementDuration = 300;
-    if (this.tryToCastSpell(battleScene)) {
-      setTimeout(() => {
+    if (!battleScene.battleIsFinished) {
+      const delayAfterSpell = 400;
+      const movementDuration = 300;
+      if (this.tryToCastSpell(battleScene)) {
+        setTimeout(() => {
+          this.nextTurnAfterTryingToMove(battleScene, movementDuration);
+        }, delayAfterSpell);
+      } else {
         this.nextTurnAfterTryingToMove(battleScene, movementDuration);
-      }, delayAfterSpell);
-    } else {
-      this.nextTurnAfterTryingToMove(battleScene, movementDuration);
+      }
     }
   }
 

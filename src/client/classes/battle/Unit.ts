@@ -122,7 +122,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   // move along a path
   moveAlong(path: Phaser.Math.Vector2[]) {
-    if (!path || path.length <= 0 || path.length > this.pm) {
+    if (!path || path.length <= 0) {
       if (this.isMoving) {
         // when end of path is reached, start the chain of movement tweens
         this.scene.tweens.chain(this.moveChain);
@@ -309,8 +309,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
       const myAffectedUnit = this.myScene.findUnitById(serverUnit.id);
       if (myAffectedUnit) {
         if (
-          myAffectedUnit.indX !== serverUnit.indX ||
-          myAffectedUnit.indY !== serverUnit.indY
+          serverUnit.hp > 0 &&
+          (myAffectedUnit.indX !== serverUnit.indX ||
+            myAffectedUnit.indY !== serverUnit.indY)
         ) {
           myAffectedUnit.moveDirectlyToNewPosition(
             serverUnit.indX,
@@ -319,12 +320,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
         }
         myAffectedUnit.synchronizeWithServerUnit(serverUnit);
         myAffectedUnit.undergoSpell(spell);
-        if (spell.moveTargetBy) {
-          this.myScene.refreshAccessibleTiles();
-          if (this.myScene.spellVisible) {
-            this.myScene.displaySpellRange(this.myScene.currentSpell);
-          }
-        }
       }
     });
     // if spell summons a unit AND targeted tile is free, summon the unit
@@ -345,6 +340,12 @@ export class Unit extends Phaser.GameObjects.Sprite {
         this.summonedUnits.push(summonedUnit);
       }
     }
+
+    this.myScene.refreshAccessibleTiles();
+    if (this.myScene.spellVisible) {
+      this.myScene.displaySpellRange(this.myScene.currentSpell);
+    }
+
     this.refreshUI();
   }
 

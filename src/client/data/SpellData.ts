@@ -40,16 +40,16 @@ export const sting = new Spell(
   "Sting",
   false,
   false,
-  115,
+  90,
   1,
   1,
-  1,
+  0,
   1,
   0,
   "monoTarget",
   0,
   0,
-  null
+  poison
 );
 
 export const heal = new Spell(

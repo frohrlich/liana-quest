@@ -10,9 +10,9 @@ export interface UnitData {
 }
 
 export const amazon: UnitData = {
-  HP: 120,
-  PM: 6,
-  PA: 6,
+  HP: 100,
+  PM: 12,
+  PA: 20,
   spells: "deadly javelin, herbal medicine, sting",
   frame: 6,
   name: "Amazon",
@@ -28,7 +28,7 @@ export const snowman: UnitData = {
 };
 
 export const dude: UnitData = {
-  HP: 80,
+  HP: 100,
   PM: 6,
   PA: 6,
   spells: "deadly javelin, sting, punch",

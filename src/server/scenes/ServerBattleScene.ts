@@ -24,6 +24,7 @@ export class ServerBattleScene {
   enemies: ServerUnit[] = [];
   units: ServerUnit[] = [];
   timeline: ServerUnit[] = [];
+  battleIsFinished: boolean = false;
 
   currentPlayer: ServerUnit;
   map: any;
@@ -115,7 +116,7 @@ export class ServerBattleScene {
 
   addMainBattlePhaseListeners(socket: Socket) {
     socket.on("playerClickedEndTurn", () => {
-      if (!this.isInPreparationMode) {
+      if (!this.isInPreparationMode && !this.battleIsFinished) {
         const myUnit = this.findUnitById(socket.id);
         if (myUnit && myUnit.isUnitTurn) {
           myUnit.endTurn();
@@ -126,7 +127,7 @@ export class ServerBattleScene {
     });
 
     socket.on("playerMove", (movementData: Vector2) => {
-      if (!this.isInPreparationMode) {
+      if (!this.isInPreparationMode && !this.battleIsFinished) {
         const myUnit = this.findUnitById(socket.id);
 
         if (myUnit && myUnit.isUnitTurn) {
@@ -157,7 +158,7 @@ export class ServerBattleScene {
     });
 
     socket.on("playerCastSpell", (spell: Spell, targetVec: Vector2) => {
-      if (!this.isInPreparationMode) {
+      if (!this.isInPreparationMode && !this.battleIsFinished) {
         const myUnit = this.findUnitById(socket.id);
 
         if (myUnit && myUnit.isUnitTurn) {
@@ -185,22 +186,25 @@ export class ServerBattleScene {
     }
 
     const currentUnit = this.timeline[this.turnIndex];
+
     const effectOverTime = { ...currentUnit.effectOverTime };
     currentUnit.undergoEffectOverTime();
     this.checkDead(currentUnit);
-    if (!currentUnit.isDead()) {
-      this.io
-        .to(this.id)
-        .emit("unitTurnBegins", currentUnit, effectOverTime, this.turnIndex);
-      if (currentUnit.isPlayable) {
-        // this boolean tells the server whether to accept incoming events from this playable unit
-        currentUnit.isUnitTurn = true;
+    this.io
+      .to(this.id)
+      .emit("unitTurnBegins", currentUnit, effectOverTime, this.turnIndex);
+    if (!this.battleIsFinished) {
+      if (!currentUnit.isDead()) {
+        if (currentUnit.isPlayable) {
+          // this boolean tells the server whether to accept incoming events from this playable unit
+          currentUnit.isUnitTurn = true;
+        } else {
+          currentUnit.playTurn(this);
+        }
+        this.turnIndex++;
       } else {
-        currentUnit.playTurn(this);
+        this.nextTurn();
       }
-      this.turnIndex++;
-    } else {
-      this.nextTurn();
     }
   }
 
@@ -279,11 +283,12 @@ export class ServerBattleScene {
 
   checkDead(unit: ServerUnit) {
     if (unit.isDead()) {
+      this.removeUnitFromBattle(unit.id);
       if (unit.isUnitTurn) {
         this.io.to(this.id).emit("endPlayerTurn", unit);
+        this.turnIndex--;
         this.nextTurn();
       }
-      this.removeUnitFromBattle(unit.id);
     }
   }
 
@@ -512,6 +517,7 @@ export class ServerBattleScene {
     if (index !== -1) {
       this.allies.splice(index, 1);
       if (this.allies.length === 0) {
+        this.battleIsFinished = true;
         setTimeout(() => {
           this.loseBattle();
         }, 100);
@@ -522,6 +528,7 @@ export class ServerBattleScene {
     if (index !== -1) {
       this.enemies.splice(index, 1);
       if (this.enemies.length === 0 && this.allies.length > 0) {
+        this.battleIsFinished = true;
         setTimeout(() => {
           this.winBattle();
         }, 100);
@@ -564,7 +571,7 @@ export class ServerBattleScene {
   }
 
   removeFromObstacleLayer(unit: ServerUnit) {
-    this.obstacles.setTileAt(unit.indX, unit.indY, null);
+    this.obstacles.setTileAt(unit.indX, unit.indY, undefined);
   }
 
   calculateAccessibleTiles(pos: Vector2, pm: number) {

@@ -25,26 +25,26 @@ export class BattleScene extends Phaser.Scene {
   animFramerate: number = 5;
   endBattleDelay: number = 400;
 
-  currentPlayer!: Player;
+  currentPlayer: Player;
   allies: Unit[] = [];
   enemies: Unit[] = [];
   units: Unit[] = [];
-  clickedTile!: Phaser.Tilemaps.Tile | null;
-  tileWidth!: number;
-  tileHeight!: number;
-  map!: Phaser.Tilemaps.Tilemap;
-  direction!: string;
-  tileset!: Phaser.Tilemaps.Tileset | null;
-  obstacles!: Phaser.Tilemaps.TilemapLayer | null;
-  background!: Phaser.Tilemaps.TilemapLayer | null;
+  clickedTile: Phaser.Tilemaps.Tile | null;
+  tileWidth: number;
+  tileHeight: number;
+  map: Phaser.Tilemaps.Tilemap;
+  direction: string;
+  tileset: Phaser.Tilemaps.Tileset | null;
+  obstacles: Phaser.Tilemaps.TilemapLayer | null;
+  background: Phaser.Tilemaps.TilemapLayer | null;
   turnIndex: number;
   timeline: Unit[] = [];
   isPlayerTurn: boolean;
   accessibleTiles: TilePath[] = [];
   spellVisible: boolean;
   spellRange: Phaser.Tilemaps.Tile[] = [];
-  currentSpell!: Spell;
-  uiScene!: UIScene;
+  currentSpell: Spell;
+  uiScene: UIScene;
   overlays: Phaser.GameObjects.Rectangle[] = [];
   spellAoeOverlay: Phaser.GameObjects.Rectangle[] = [];
   pathOverlay: Phaser.GameObjects.Rectangle[] = [];
@@ -348,13 +348,16 @@ export class BattleScene extends Phaser.Scene {
         effectOverTime: EffectOverTime,
         turnIndex: number
       ) => {
-        const myPlayer = this.findUnitById(serverUnit.id);
-        if (myPlayer) {
-          this.changeTimelineIndex(turnIndex);
-          myPlayer.synchronizeWithServerUnit(serverUnit);
-          myPlayer.undergoEffectOverTime(effectOverTime);
-          if (myPlayer instanceof Player && !myPlayer.isDead()) {
-            this.startPlayerTurn(myPlayer);
+        const myUnit = this.findUnitById(serverUnit.id);
+        if (myUnit) {
+          myUnit.synchronizeWithServerUnit(serverUnit);
+          myUnit.undergoEffectOverTime(effectOverTime);
+
+          if (!myUnit.isDead()) {
+            this.changeTimelineIndex(turnIndex);
+            if (myUnit instanceof Player) {
+              this.startPlayerTurn(myUnit);
+            }
           }
         }
       }
@@ -1269,7 +1272,7 @@ export class BattleScene extends Phaser.Scene {
     this.scene.stop("UIScene");
   }
 
-  gameIsOver() {
+  battleIsLost() {
     return this.allies.length === 0;
   }
 
