@@ -3,7 +3,7 @@ import { BattleScene } from "../../scenes/BattleScene";
 import { Spell } from "./Spell";
 import { UITimelineSlot } from "../UI/UITimelineSlot";
 import { EffectOverTime } from "./EffectOverTime";
-import { ServerUnit } from "../../../server/scenes/ServerUnit";
+import { ServerUnit } from "../../../server/classes/ServerUnit";
 import { unitsAvailable } from "../../data/UnitData";
 
 export class Unit extends Phaser.GameObjects.Sprite {

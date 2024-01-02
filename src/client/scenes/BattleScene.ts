@@ -9,7 +9,7 @@ import isVisible from "../utils/lineOfSight";
 import { UnitData, unitsAvailable } from "../data/UnitData";
 import { heal, javelin, punch, sting } from "../data/SpellData";
 import { WorldScene } from "./WorldScene";
-import { ServerUnit } from "../../server/scenes/ServerUnit";
+import { ServerUnit } from "../../server/classes/ServerUnit";
 import { Socket } from "socket.io-client";
 import { Position } from "../../server/scenes/ServerWorldScene";
 import { EffectOverTime } from "../classes/battle/EffectOverTime";
@@ -68,6 +68,9 @@ export class BattleScene extends Phaser.Scene {
     this.worldScene = this.scene.get("WorldScene") as WorldScene;
     this.socket = this.worldScene.socket;
     this.socket.off();
+    this.socket.on("disconnect", () => {
+      location.reload();
+    });
     this.playerId = this.socket.id;
 
     // refresh scene to its original state

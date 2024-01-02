@@ -5,7 +5,7 @@ import { Socket, io } from "socket.io-client";
 import { ServerWorldUnit } from "../../server/scenes/ServerWorldScene";
 import { WorldOnlinePlayer } from "../classes/world/WorldOnlinePlayer";
 import { BattleIcon } from "../classes/world/BattleIcon";
-import { ServerUnit } from "../../server/scenes/ServerUnit";
+import { ServerUnit } from "../../server/classes/ServerUnit";
 
 interface UnitPosition {
   indX: number;
@@ -59,6 +59,10 @@ export class WorldScene extends Phaser.Scene {
 
   setupWeb() {
     this.socket.off();
+
+    this.socket.on("disconnect", () => {
+      location.reload();
+    });
 
     this.socket.on("newPlayer", (playerInfo: ServerWorldUnit) => {
       this.addOtherPlayers(playerInfo);
@@ -352,7 +356,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   onMeetEnemy(player: any, enemy: any) {
-    if (!this.battleHasStarted) {
+    if (!this.battleHasStarted && player.isMoving) {
       this.battleHasStarted = true;
       this.socket.emit("startBattle", enemy.id);
     }

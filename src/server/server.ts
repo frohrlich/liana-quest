@@ -6,7 +6,7 @@ import {
   Position,
   ServerWorldScene,
 } from "./scenes/ServerWorldScene";
-import { ServerUnit } from "./scenes/ServerUnit";
+import { ServerUnit } from "./classes/ServerUnit";
 
 const port = 8081;
 

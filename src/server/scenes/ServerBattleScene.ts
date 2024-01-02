@@ -5,7 +5,7 @@ import {
   ServerWorldScene,
 } from "./ServerWorldScene";
 import { unitsAvailable } from "../../client/data/UnitData";
-import { ServerUnit } from "./ServerUnit";
+import { ServerUnit } from "../classes/ServerUnit";
 import findPath, { Vector2 } from "../utils/findPath";
 import { Spell } from "../../client/classes/battle/Spell";
 import isVisible from "../utils/lineOfSight";
@@ -63,10 +63,11 @@ export class ServerBattleScene {
       this.timeline,
       this.mapName
     );
+
     this.isInPreparationMode = true;
     this.listenToPreparationModeEvents(socket);
   }
-
+  //
   listenToPreparationModeEvents(socket: Socket) {
     socket.on(
       "playerChangedStartPosition",

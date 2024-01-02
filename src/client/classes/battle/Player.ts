@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { Unit } from "./Unit";
 import { Spell } from "./Spell";
-import { ServerUnit } from "../../../server/scenes/ServerUnit";
+import { ServerUnit } from "../../../server/classes/ServerUnit";
 
 // playable character in battle
 export class Player extends Unit {

@@ -22,8 +22,9 @@ export class ServerWorldScene {
   playersCurrentlyInBattle: ServerWorldUnit[] = [];
   npcs: ServerWorldUnit[] = [];
   ongoingBattles: ServerBattleScene[] = [];
-  enemyCount = 30;
+  enemyCount = 5;
   minPosition = 0;
+  maxPosition = 5;
   io: Server;
   background: any;
   obstacles: any;
@@ -174,10 +175,10 @@ export class ServerWorldScene {
       let indX: number, indY: number;
       do {
         indX =
-          Math.floor(Math.random() * (this.map.width - this.minPosition)) +
+          Math.floor(Math.random() * (this.maxPosition - this.minPosition)) +
           this.minPosition;
         indY =
-          Math.floor(Math.random() * (this.map.height - this.minPosition - 1)) +
+          Math.floor(Math.random() * (this.maxPosition - this.minPosition)) +
           this.minPosition;
       } while (this.obstacles.tileAt(indX, indY)); // but not on obstacles
 
