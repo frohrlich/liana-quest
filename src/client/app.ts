@@ -38,8 +38,8 @@ window.onload = () => {
     parser.getDevice().type === "tablet";
 
   const gameDiv = document.getElementById("game");
-  const fullscreenButton = document.getElementById("fullscreen-button");
-  const fullscreenButtonDiv = document.getElementById("fullscreenButton-div");
+  // const fullscreenButton = document.getElementById("fullscreen-button");
+  // const fullscreenButtonDiv = document.getElementById("fullscreenButton-div");
   // fullscreenButton.addEventListener("click", () => {
   // gameDiv.hidden = false;
   // fullscreenButton.hidden = true;
@@ -54,9 +54,9 @@ window.onload = () => {
   //   }
   // });
 
-  gameDiv.hidden = false;
-  fullscreenButton.hidden = true;
-  fullscreenButtonDiv.style.display = "none";
+  // gameDiv.hidden = false;
+  // fullscreenButton.hidden = true;
+  // fullscreenButtonDiv.style.display = "none";
 
   var game = new RpgGame(config);
 };

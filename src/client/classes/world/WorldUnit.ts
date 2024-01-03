@@ -15,11 +15,11 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   moveChain: any = {};
   frameNumber: number;
 
-  direction: string = "";
+  direction: string = "down";
   isMoving: boolean = false;
 
   // time for moving by 1 tile (in ms)
-  moveDuration = 180;
+  moveDuration = 150;
 
   constructor(
     scene: Phaser.Scene,
@@ -36,17 +36,14 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     this.myScene = scene as WorldScene;
     this.indX = indX;
     this.indY = indY;
-    this.x = this.tilePosToPixelsX();
-    this.y = this.tilePosToPixelsY();
+    this.x = this.tilePosToPixelsX(indX);
+    this.y = this.tilePosToPixelsY(indY);
     this.depth = this.y;
     this.type = name;
 
     // chain of tweens containing the successive moving tweens in path from tile A to tile B
     this.moveChain.targets = this;
     this.moveChain.onStart = () => {
-      // depth is same as y
-      // so units lower on the screen appear on top
-      this.depth = this.y;
       this.isMoving = true;
     };
     this.moveChain.onComplete = () => {
@@ -78,68 +75,49 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     this.moveTo(this.movePath.shift()!);
   }
 
-  // check next direction to take, update tile position,
+  // check next direction to take
   // and call move function that adds the actual movement to the tween chain
   moveTo(target: Phaser.Math.Vector2) {
-    const { x, y } = target;
+    this.isMoving = true;
 
-    // left
-    if (this.indX - x == 1) {
+    let targetIndX = target.x;
+    let targetIndY = target.y;
+
+    if (this.indX - targetIndX > 0) {
       this.direction = "left";
-      this.move(this.direction);
-      this.indX--;
-    }
-    // right
-    else if (this.indX - x == -1) {
+    } else if (this.indX - targetIndX < 0) {
       this.direction = "right";
-      this.move(this.direction);
-      this.indX++;
-      // down
-    } else if (this.indY - y == -1) {
+    } else if (this.indY - targetIndY < 0) {
       this.direction = "down";
-      this.move(this.direction);
-      this.indY++;
-      // up
-    } else if (this.indY - y == 1) {
+    } else if (this.indY - targetIndY > 0) {
       this.direction = "up";
-      this.move(this.direction);
-      this.indY--;
     }
+
+    this.move(targetIndX, targetIndY, this.direction);
+
+    this.indX = targetIndX;
+    this.indY = targetIndY;
+
     this.moveAlong(this.movePath);
   }
 
   // actual moving of the player
   // via tweens
-  move(direction: string) {
-    this.isMoving = true;
-    const duration = this.moveDuration;
-    if (direction == "left" || direction == "right") {
-      let deltaX = direction == "left" ? -1 : 1;
-      this.moveChain.tweens.push({
-        x: this.tilePosToPixelsX(deltaX),
-        ease: "Linear",
-        onStart: () => {
-          this.startMovingAnim(direction);
-          this.depth = this.y;
-        },
-        duration: duration,
-        repeat: 0,
-        yoyo: false,
-      });
-    } else {
-      let deltaY = direction == "up" ? -1 : 1;
-      this.moveChain.tweens.push({
-        y: this.tilePosToPixelsY(deltaY),
-        ease: "Linear",
-        onStart: () => {
-          this.startMovingAnim(direction);
-          this.depth = this.y;
-        },
-        duration: duration,
-        repeat: 0,
-        yoyo: false,
-      });
-    }
+  move(targetIndX: number, targetIndY: number, direction: string) {
+    this.moveChain.tweens.push({
+      x: this.tilePosToPixelsX(targetIndX),
+      y: this.tilePosToPixelsY(targetIndY),
+      ease: "Linear",
+      onStart: () => {
+        this.startMovingAnim(direction);
+      },
+      onUpdate: () => {
+        this.depth = this.y;
+      },
+      duration: this.moveDuration,
+      repeat: 0,
+      yoyo: false,
+    });
   }
 
   // stop player movement
@@ -147,10 +125,8 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   stopMovement = () => {
     // clutch for when player is destroyed and keeps moving...
     if (this.anims) {
-      this.depth = this.y;
       this.anims.stop();
       this.changeDirection(this.direction);
-      this.direction = "";
       this.moveChain.tweens = [];
       this.isMoving = false;
     }
@@ -191,14 +167,13 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     this.direction = direction;
   }
 
-  // convert the tile position (index) of the character to actual pixel position
-  // with optional delta
-  tilePosToPixelsX(delta: number = 0) {
-    return this.myScene.tileWidth * (this.indX + delta) + this.width / 2;
+  // convert a tile position (index) to actual unit pixel position
+  tilePosToPixelsX(indX: number) {
+    return this.myScene.tileWidth * indX + this.width / 2;
   }
 
-  tilePosToPixelsY(delta: number = 0) {
-    return this.myScene.tileHeight * (this.indY + delta) + this.height / 6;
+  tilePosToPixelsY(indY: number) {
+    return this.myScene.tileHeight * indY + this.height / 6;
   }
 
   // called when user clicks a tile while current movement is not finished
@@ -207,9 +182,48 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     this.stopMovement();
     this.indX = this.myScene.map.worldToTileX(this.x);
     this.indY = this.myScene.map.worldToTileX(this.y);
-    // replace unit to center of tile it's currently in
-    this.x = this.tilePosToPixelsX();
-    this.y = this.tilePosToPixelsY();
+    this.moveToNearestTileInFrontOfUnit();
+  }
+
+  moveToNearestTileInFrontOfUnit() {
+    let tileDeltaX = 0,
+      tileDeltaY = 0;
+
+    switch (this.direction) {
+      case "left":
+        tileDeltaX = -1;
+        break;
+      case "right":
+        tileDeltaX = 1;
+        break;
+      case "up":
+        tileDeltaY = -1;
+        break;
+      case "down":
+        tileDeltaY = 1;
+        break;
+      default:
+        break;
+    }
+
+    const nearestX = this.tilePosToPixelsX(this.indX + tileDeltaX);
+    const nearestY = this.tilePosToPixelsY(this.indY + tileDeltaY);
+
+    this.myScene.tweens.add({
+      targets: this,
+      x: nearestX,
+      y: nearestY,
+      ease: "Linear",
+      onStart: () => {
+        this.startMovingAnim(this.direction);
+      },
+      onUpdate: () => {
+        this.depth = this.y;
+      },
+      duration: this.moveDuration,
+      repeat: 0,
+      yoyo: false,
+    });
   }
 
   moveToPosition(indX: number, indY: number) {

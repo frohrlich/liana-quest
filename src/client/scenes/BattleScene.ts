@@ -69,7 +69,9 @@ export class BattleScene extends Phaser.Scene {
     this.socket = this.worldScene.socket;
     this.socket.off();
     this.socket.on("disconnect", () => {
-      location.reload();
+      setTimeout(() => {
+        location.reload();
+      }, 200);
     });
     this.playerId = this.socket.id;
 
@@ -302,7 +304,7 @@ export class BattleScene extends Phaser.Scene {
         this.fontSize * 8
       )
       .setOrigin(0.5)
-      .setScale(2)
+      .setScale(3)
       .setDepth(99999);
     const battleStartOverlay = this.add
       .rectangle(
@@ -363,23 +365,17 @@ export class BattleScene extends Phaser.Scene {
       }
     );
 
-    this.socket.on("unitMoved", (serverUnit: ServerUnit) => {
-      const myUnit = this.findUnitById(serverUnit.id);
-      if (myUnit) {
-        const path = this.getPathToPosition(
-          serverUnit.indX,
-          serverUnit.indY,
-          myUnit.indX,
-          myUnit.indY,
-          myUnit.pm
-        );
-        if (path && path.length > 0) {
+    this.socket.on(
+      "unitMoved",
+      (serverUnit: ServerUnit, path: Phaser.Math.Vector2[]) => {
+        const myUnit = this.findUnitById(serverUnit.id);
+        if (myUnit) {
           myUnit.moveAlong(path);
           myUnit.synchronizeWithServerUnit(serverUnit);
           this.uiScene.refreshUI();
         }
       }
-    });
+    );
 
     this.socket.on(
       "unitHasCastSpell",
@@ -411,6 +407,8 @@ export class BattleScene extends Phaser.Scene {
       const myUnit = this.findUnitById(serverUnit.id);
       if (myUnit) {
         myUnit.synchronizeWithServerUnit(serverUnit);
+        // in case something went wrong...
+        myUnit.teleportToTile(serverUnit.indX, serverUnit.indY);
         if (myUnit instanceof Player) {
           myUnit.endTurnAfterServerConfirmation(serverUnit);
           this.isPlayerTurn = false;
@@ -727,8 +725,8 @@ export class BattleScene extends Phaser.Scene {
     }
 
     // set player start position
-    let initialPlayerX = unit.tilePosToPixelsX();
-    let initialPlayerY = unit.tilePosToPixelsY();
+    let initialPlayerX = unit.tilePosToPixelsX(startX);
+    let initialPlayerY = unit.tilePosToPixelsY(startY);
     unit.setPosition(initialPlayerX, initialPlayerY);
     const unitScale = 1.5;
     unit.setScale(unitScale);
@@ -867,19 +865,13 @@ export class BattleScene extends Phaser.Scene {
     });
   };
 
-  // update position of Unit as an obstacle for the others
-  updateObstacleLayer(unit: Unit, target: Phaser.Math.Vector2) {
-    this.removeFromObstacleLayer(unit);
-    this.addToObstacleLayer(target);
-  }
-
   // remove a unit from the obstacle layer
-  removeFromObstacleLayer(unit: Unit) {
-    this.obstacles?.removeTileAt(unit.indX, unit.indY);
+  removeFromObstacleLayer(indX: number, indY: number) {
+    this.obstacles.removeTileAt(indX, indY);
   }
 
   removeUnitFromBattle(unit: Unit) {
-    this.removeFromObstacleLayer(unit);
+    this.removeFromObstacleLayer(unit.indX, unit.indY);
     this.removeUnitFromTimeline(unit);
     this.removeUnitFromTeam(unit);
     this.refreshAccessibleTiles();

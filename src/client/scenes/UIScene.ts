@@ -70,7 +70,11 @@ export class UIScene extends Phaser.Scene {
     this.button = this.add
       .rectangle(xPos, yPos, this.uiTabWidth * 0.85, this.uiTabHeight * 0.65)
       .setStrokeStyle(2, 0xcccccc)
-      .setFillStyle(0x293154);
+      .setFillStyle(0x293154)
+      .setInteractive()
+      .on("pointerup", () => {
+        this.battleScene.playerIsReady();
+      });
 
     let fontSize = this.battleScene.tileWidth * this.uiScale;
     this.buttonText = this.add
@@ -82,11 +86,7 @@ export class UIScene extends Phaser.Scene {
         fontSize
       )
       .setTint(this.uiFontColor)
-      .setOrigin(0.5, 0.5)
-      .setInteractive()
-      .on("pointerup", () => {
-        this.battleScene.playerIsReady();
-      });
+      .setOrigin(0.5, 0.5);
   }
 
   setButtonToReady() {
@@ -106,8 +106,8 @@ export class UIScene extends Phaser.Scene {
     this.button.setFillStyle(0x293154);
     this.buttonText.setTint(this.uiFontColor);
     this.buttonText.text = "End turn";
-    this.buttonText.off("pointerup");
-    this.buttonText.on("pointerup", () => {
+    this.button.off("pointerup");
+    this.button.on("pointerup", () => {
       if (
         this.battleScene.isPlayerTurn &&
         !this.battleScene.currentPlayer.isMoving
@@ -163,16 +163,14 @@ export class UIScene extends Phaser.Scene {
         unit,
         this.uiScale
       );
-      slot.tint = unit.baseTint;
+      slot.tint = unit.isSelected ? unit.selectedTint : unit.baseTint;
       // on hover, highlight the timeline slot and its corresponding unit
       slot.setInteractive();
       slot.on("pointerover", () => {
         slot.unit.selectUnit();
-        slot.unit.healthBar.setVisible(true);
       });
       slot.on("pointerout", () => {
         slot.unit.unselectUnit();
-        slot.unit.healthBar.setVisible(false);
       });
       // add background color to identify team
       let background = this.add.rectangle(

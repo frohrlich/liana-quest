@@ -7,6 +7,7 @@ import {
   ServerWorldScene,
 } from "./scenes/ServerWorldScene";
 import { ServerUnit } from "./classes/ServerUnit";
+import { Vector2 } from "./utils/findPath";
 
 const port = 8081;
 
@@ -16,8 +17,8 @@ interface ServerToClientEvents {
   currentNpcs: (npcs: ServerWorldUnit[]) => void;
   newPlayer: (onlinePlayer: ServerWorldUnit) => void;
   playerLeft: (id: string) => void;
-  playerMoved: (onlinePlayer: ServerWorldUnit) => void;
-  npcMoved: (onlinePlayer: ServerWorldUnit) => void;
+  playerMoved: (onlinePlayer: ServerWorldUnit, path: Vector2[]) => void;
+  npcMoved: (onlinePlayer: ServerWorldUnit, path: Vector2[]) => void;
   npcHidden: (id: string) => void;
   addBattleIcon: (id: ServerWorldUnit) => void;
   removeBattleIcon: (id: string) => void;

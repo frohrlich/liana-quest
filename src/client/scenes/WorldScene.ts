@@ -61,7 +61,9 @@ export class WorldScene extends Phaser.Scene {
     this.socket.off();
 
     this.socket.on("disconnect", () => {
-      location.reload();
+      setTimeout(() => {
+        location.reload();
+      }, 200);
     });
 
     this.socket.on("newPlayer", (playerInfo: ServerWorldUnit) => {

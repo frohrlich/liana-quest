@@ -268,6 +268,9 @@ export class ServerUnit {
       const randMove = Math.floor(Math.random() * (accessibleTiles.length - 1));
       const pos = accessibleTiles[randMove].pos;
       let path = accessibleTiles[randMove].path;
+      console.log(this.id);
+      console.log(path);
+
       if (path) {
         battleScene.removeFromObstacleLayer(this);
         this.indX = pos.x;
@@ -275,7 +278,7 @@ export class ServerUnit {
         battleScene.addToObstacleLayer(pos);
         this.pm -= path.length;
         // emit a message to all players about the unit that moved
-        battleScene.io.to(battleScene.id).emit("unitMoved", this);
+        battleScene.io.to(battleScene.id).emit("unitMoved", this, path);
 
         return path.length;
       }

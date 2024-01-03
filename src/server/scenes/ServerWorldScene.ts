@@ -1,6 +1,7 @@
 import findPath, { Vector2 } from "../utils/findPath";
 import { Server, Socket } from "socket.io";
 import { ServerBattleScene } from "./ServerBattleScene";
+import { v4 as uuidv4 } from "uuid";
 
 export interface ServerWorldUnit {
   id: string;
@@ -22,7 +23,7 @@ export class ServerWorldScene {
   playersCurrentlyInBattle: ServerWorldUnit[] = [];
   npcs: ServerWorldUnit[] = [];
   ongoingBattles: ServerBattleScene[] = [];
-  enemyCount = 5;
+  enemyCount = 15;
   minPosition = 0;
   maxPosition = 5;
   io: Server;
@@ -57,7 +58,7 @@ export class ServerWorldScene {
         if (myNpc && myPlayer) {
           socket.leave("world");
           this.movePlayerToBattle(socket);
-          const battleId = "battle" + enemyId;
+          const battleId = "battle_" + enemyId;
           socket.join(battleId);
           this.ongoingBattles.push(
             new ServerBattleScene(this, io, socket, myPlayer, myNpc, battleId)
@@ -70,7 +71,7 @@ export class ServerWorldScene {
         const myPlayer = this.findCurrentPlayer(socket);
         this.movePlayerToBattle(socket);
         socket.leave("world");
-        const battleId = "battle" + npcId;
+        const battleId = "battle_" + npcId;
         socket.join(battleId);
         const myBattle = this.ongoingBattles.find(
           (battle) => battle.id === battleId
@@ -127,11 +128,17 @@ export class ServerWorldScene {
           };
 
           // check if movement is actually possible
-          if (findPath(startVec, targetVec, this.background, this.obstacles)) {
+          const path = findPath(
+            startVec,
+            targetVec,
+            this.background,
+            this.obstacles
+          );
+          if (path && path.length > 0) {
             currentPlayer.indX = movementData.indX;
             currentPlayer.indY = movementData.indY;
             // emit a message to all players about the player that moved
-            io.to("world").emit("playerMoved", currentPlayer);
+            io.to("world").emit("playerMoved", currentPlayer, path);
           }
         }
       });
@@ -171,7 +178,7 @@ export class ServerWorldScene {
 
   private createRandomNpcs() {
     for (let i = 0; i < this.enemyCount; i++) {
-      const id = i.toString();
+      const id = uuidv4();
       let indX: number, indY: number;
       do {
         indX =
@@ -255,11 +262,12 @@ export class ServerWorldScene {
             y: nearbyTiles[randMove].indY,
           };
 
+          const path = findPath(startVec, targetVec, background, obstacles);
           // only move if there is actually a path to the destination
-          if (findPath(startVec, targetVec, background, obstacles)) {
+          if (path && path.length > 0) {
             npc.indX = nearbyTiles[randMove].indX;
             npc.indY = nearbyTiles[randMove].indY;
-            this.io.to("world").emit("npcMoved", npc);
+            this.io.to("world").emit("npcMoved", npc, path);
           }
         }
       }, delay);

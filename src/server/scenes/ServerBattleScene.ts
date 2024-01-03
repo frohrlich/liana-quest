@@ -9,6 +9,7 @@ import { ServerUnit } from "../classes/ServerUnit";
 import findPath, { Vector2 } from "../utils/findPath";
 import { Spell } from "../../client/classes/battle/Spell";
 import isVisible from "../utils/lineOfSight";
+import { v4 as uuidv4 } from "uuid";
 
 export interface ServerTilePath {
   pos: Vector2;
@@ -151,7 +152,7 @@ export class ServerBattleScene {
             this.addToObstacleLayer(movementData);
             myUnit.pm -= path.length;
             // emit a message to all players about the unit that moved
-            this.io.to(this.id).emit("unitMoved", myUnit);
+            this.io.to(this.id).emit("unitMoved", myUnit, path);
           }
         }
       }
@@ -391,7 +392,7 @@ export class ServerBattleScene {
     this.addUnitOnStart(newPlayer, newPlayer.id, true, true);
     // add 2 enemies of the kind
     this.addUnitOnStart(enemy, enemy.id, false, false);
-    this.addUnitOnStart(enemy, enemy.id + "_2", false, false);
+    this.addUnitOnStart(enemy, uuidv4(), false, false);
     this.createTimeline();
   }
 

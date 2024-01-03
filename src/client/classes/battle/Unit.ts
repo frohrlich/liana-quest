@@ -13,6 +13,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   effectIconOverUnitOffset = 19;
   effectIconUnderUnitOffset = 53;
   healthBarScale = 1.2;
+  selectedTint = 0x777777;
 
   myScene: BattleScene;
   // position on the grid
@@ -48,6 +49,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   effectIcon: Phaser.GameObjects.Image;
   summonedUnits: Unit[] = [];
   id: string;
+  isSelected: boolean;
 
   constructor(
     scene: Phaser.Scene,
@@ -83,9 +85,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
     // tween move chain setup
     this.moveChain.targets = this;
     this.moveChain.onStart = () => {
-      // depth is same as y
-      // so units lower on the screen appear on top
-      this.depth = this.y;
       this.isMoving = true;
     };
     this.moveChain.onComplete = this.stopMovement;
@@ -105,14 +104,16 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   // on select, highlight unit, show healthbar and effect icon, and show unit stats in UI
   selectUnit() {
-    this.tint = 0x777777;
-    this.timelineSlot.tint = 0x777777;
+    this.isSelected = true;
+    this.tint = this.selectedTint;
+    this.timelineSlot.tint = this.selectedTint;
     this.healthBar.setVisible(true);
     if (this.effectIcon) this.effectIcon.setVisible(true);
     this.myScene.uiScene.changeStatsUnit(this);
   }
 
   unselectUnit() {
+    this.isSelected = false;
     this.tint = this.baseTint;
     this.timelineSlot.tint = this.baseTint;
     this.healthBar.setVisible(false);
@@ -122,6 +123,8 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   // move along a path
   moveAlong(path: Phaser.Math.Vector2[]) {
+    this.myScene.removeFromObstacleLayer(this.indX, this.indY);
+
     if (!path || path.length <= 0) {
       if (this.isMoving) {
         // when end of path is reached, start the chain of movement tweens
@@ -131,83 +134,57 @@ export class Unit extends Phaser.GameObjects.Sprite {
     }
 
     this.movePath = path;
-    this.moveTo(this.movePath.shift()!);
+    this.moveTo(this.movePath.shift());
   }
 
-  // check next direction to take, update tile position and pm,
+  // check next direction to take
   // and call move function that adds the actual movement to the tween chain
   moveTo(target: Phaser.Math.Vector2) {
-    this.myScene.removeFromObstacleLayer(this);
-    let { x, y } = target;
-    // left
-    if (this.indX - x == 1) {
-      this.direction = "left";
-      this.move(this.direction);
-      this.indX--;
-      this.pm--;
+    this.isMoving = true;
+
+    let targetIndX = target.x;
+    let targetIndY = target.y;
+
+    let direction = "";
+
+    if (this.indX - targetIndX > 0) {
+      direction = "left";
+    } else if (this.indX - targetIndX < 0) {
+      direction = "right";
+    } else if (this.indY - targetIndY < 0) {
+      direction = "down";
+    } else if (this.indY - targetIndY > 0) {
+      direction = "up";
+    } else {
+      direction = "down"; // just in case, to avoid missing animations warning
     }
-    // right
-    else if (this.indX - x == -1) {
-      this.direction = "right";
-      this.move(this.direction);
-      this.indX++;
-      this.pm--;
-      // down
-    } else if (this.indY - y == -1) {
-      this.direction = "down";
-      this.move(this.direction);
-      this.indY++;
-      this.pm--;
-      // up
-    } else if (this.indY - y == 1) {
-      this.direction = "up";
-      this.move(this.direction);
-      this.indY--;
-      this.pm--;
-    }
-    this.myScene.addToObstacleLayer(
-      new Phaser.Math.Vector2(this.indX, this.indY)
-    );
+
+    this.direction = direction;
+
+    this.move(targetIndX, targetIndY, direction);
+
+    this.indX = targetIndX;
+    this.indY = targetIndY;
+
     this.moveAlong(this.movePath);
   }
 
-  // actual moving of the player
-  // via tweens
-  move(direction: string) {
-    this.isMoving = true;
-    if (direction === "left" || direction === "right") {
-      const deltaX = direction === "left" ? -1 : 1;
-      this.moveChain.tweens.push({
-        x: this.tilePosToPixelsX(deltaX),
-        ease: "Linear",
-        onStart: () => {
-          this.startMovingAnim(direction);
-          this.depth = this.y;
-        },
-        onUpdate: () => {
-          this.moveUnitAttributes();
-        },
-        duration: 300,
-        repeat: 0,
-        yoyo: false,
-      });
-    } else {
-      const deltaY = direction === "up" ? -1 : 1;
-      this.moveChain.tweens.push({
-        y: this.tilePosToPixelsY(deltaY),
-        ease: "Linear",
-        onStart: () => {
-          this.startMovingAnim(direction);
-          this.depth = this.y;
-        },
-        onUpdate: () => {
-          this.moveUnitAttributes();
-        },
-        duration: 300,
-        repeat: 0,
-        yoyo: false,
-      });
-    }
+  private move(targetIndX: number, targetIndY: number, direction: string) {
+    this.moveChain.tweens.push({
+      x: this.tilePosToPixelsX(targetIndX),
+      y: this.tilePosToPixelsY(targetIndY),
+      ease: "Linear",
+      onStart: () => {
+        this.startMovingAnim(direction);
+      },
+      onUpdate: () => {
+        this.moveUnitAttributes();
+        this.depth = this.y;
+      },
+      duration: 300,
+      repeat: 0,
+      yoyo: false,
+    });
   }
 
   private moveUnitAttributes() {
@@ -237,7 +214,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
   // stop player movement
   // and their animations too
   stopMovement = () => {
-    this.depth = this.y;
+    this.myScene.addToObstacleLayer(
+      new Phaser.Math.Vector2(this.indX, this.indY)
+    );
     this.anims.stop();
     this.changeDirection(this.direction);
     this.direction = "";
@@ -247,14 +226,13 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.nextAction();
   };
 
-  // convert the tile position (index) of the unit to actual pixel position
-  // with optional delta
-  tilePosToPixelsX(delta: number = 0) {
-    return this.myScene.tileWidth * (this.indX + delta) + this.width / 2;
+  // convert a tile position (index) to actual unit pixel position
+  tilePosToPixelsX(indX: number) {
+    return this.myScene.tileWidth * indX + this.width / 2;
   }
 
-  tilePosToPixelsY(delta: number = 0) {
-    return this.myScene.tileHeight * (this.indY + delta) + this.height / 6;
+  tilePosToPixelsY(indY: number) {
+    return this.myScene.tileHeight * indY + this.height / 6;
   }
 
   startMovingAnim = (direction: string) => {
@@ -367,11 +345,11 @@ export class Unit extends Phaser.GameObjects.Sprite {
   moveDirectlyToNewPosition(indX: number, indY: number) {
     const startVec = new Phaser.Math.Vector2(this.indX, this.indY);
     const targetVec = new Phaser.Math.Vector2(indX, indY);
-    this.myScene.removeFromObstacleLayer(this);
+    this.myScene.removeFromObstacleLayer(this.indX, this.indY);
     this.myScene.tweens.add({
       targets: this,
-      x: this.tilePosToPixelsX(targetVec.x - startVec.x),
-      y: this.tilePosToPixelsY(targetVec.y - startVec.y),
+      x: this.tilePosToPixelsX(targetVec.x),
+      y: this.tilePosToPixelsY(targetVec.y),
       ease: "Linear",
       onUpdate: () => {
         this.moveUnitAttributes();
@@ -507,7 +485,8 @@ export class Unit extends Phaser.GameObjects.Sprite {
       300,
       () => {
         effect.destroy();
-        if (blink) this.tint = this.baseTint;
+        if (blink)
+          this.tint = this.isSelected ? this.selectedTint : this.baseTint;
       },
       undefined,
       effect
@@ -654,7 +633,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
       ? this.y + this.healthBarUnderUnitOffset
       : this.y - this.displayHeight - this.healthBarOverUnitOffset;
     this.healthBar.setDepth(10000);
-    this.healthBar.setVisible(false);
+    if (!this.isSelected) this.healthBar.setVisible(false);
   }
 
   // add spells to a unit
@@ -691,7 +670,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     );
     icon.scale = 1;
     icon.setDepth(9999);
-    icon.setVisible(false);
+    if (!this.isSelected) icon.setVisible(false);
     return icon;
   }
 
@@ -703,12 +682,12 @@ export class Unit extends Phaser.GameObjects.Sprite {
   }
 
   teleportToTile(indX: number, indY: number) {
-    this.myScene.removeFromObstacleLayer(this);
+    this.myScene.removeFromObstacleLayer(this.indX, this.indY);
     this.indX = indX;
     this.indY = indY;
     this.myScene.addToObstacleLayer(new Phaser.Math.Vector2(indX, indY));
-    this.x = this.tilePosToPixelsX();
-    this.y = this.tilePosToPixelsY();
+    this.x = this.tilePosToPixelsX(indX);
+    this.y = this.tilePosToPixelsY(indY);
     this.depth = this.y;
     this.moveUnitAttributes();
   }
