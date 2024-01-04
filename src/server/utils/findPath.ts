@@ -112,7 +112,9 @@ const findPath = (
   const path: Vector2[] = [];
 
   let currentKey = targetKey;
-  let currentPos = parentForKey[targetKey].position;
+  let parent = parentForKey[targetKey];
+  if (parent === undefined) return null;
+  let currentPos = parent.position;
 
   while (currentKey !== startKey) {
     const pos: Vector2 = { x: currentPos.x, y: currentPos.y };

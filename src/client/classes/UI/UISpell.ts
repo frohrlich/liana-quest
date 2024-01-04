@@ -87,12 +87,17 @@ export class UISpell extends UIElement {
       !this.battleScene.currentPlayer.isMoving
     ) {
       if (!this.isInaccessible()) {
-        this.myScene.clearSpellsHighlight();
-        this.isHighlighted = true;
-        this.refresh();
-        this.battleScene.displaySpellRange(this.spell);
+        this.activateSpell();
       }
     }
+  }
+
+  private activateSpell() {
+    this.myScene.clearSpellsHighlight();
+    this.isHighlighted = true;
+    this.refresh();
+    this.battleScene.clearSpellRange();
+    this.battleScene.displaySpellRange(this.spell);
   }
 
   addInfoText() {

@@ -257,6 +257,13 @@ export class UIScene extends Phaser.Scene {
     this.unitStats.refresh();
   }
 
+  refreshUIAfterSpell() {
+    this.uiSpells.forEach((uiSpell) => {
+      uiSpell.refresh();
+    });
+    this.unitStats.refresh();
+  }
+
   // display unit spells on the spell slot of the UI
   displaySpells(unit: Unit) {
     for (let i = 0; i < unit.spells.length; i++) {

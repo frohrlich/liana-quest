@@ -400,6 +400,10 @@ export class BattleScene extends Phaser.Scene {
         }
         this.syncTimelineWithServer(timeline);
         this.uiScene.updateTimeline(this.timeline);
+        if (summonedUnit) {
+          const mySummonedUnit = this.findUnitById(summonedUnit.id);
+          if (mySummonedUnit) mySummonedUnit.selectUnit();
+        }
       }
     );
 
@@ -557,7 +561,7 @@ export class BattleScene extends Phaser.Scene {
       this.background!,
       this.obstacles!
     );
-    if (path.length > 0 && path.length <= pm) {
+    if (path && path.length > 0 && path.length <= pm) {
       return path;
     } else {
       return false;
@@ -645,7 +649,7 @@ export class BattleScene extends Phaser.Scene {
         if (!isPlayerTile && pm >= distance) {
           path = this.getPathToPosition(tile.x, tile.y, x, y, pm);
         }
-        if (path) {
+        if (path && path.length > 0) {
           let myPos: TilePath = {
             path: path,
             pos: new Phaser.Math.Vector2(tile.x, tile.y),
@@ -876,6 +880,7 @@ export class BattleScene extends Phaser.Scene {
     this.removeUnitFromTeam(unit);
     this.refreshAccessibleTiles();
     if (this.spellVisible) {
+      this.clearSpellRange();
       this.displaySpellRange(this.currentSpell);
     }
   }
@@ -900,11 +905,6 @@ export class BattleScene extends Phaser.Scene {
   }
 
   displaySpellRange(spell: Spell) {
-    this.clearAccessibleTiles();
-    this.clearOverlay();
-    this.clearAoeZone();
-    this.clearPointerEvents();
-
     this.spellVisible = true;
     this.currentSpell = spell;
     this.spellRange = this.calculateSpellRange(this.currentPlayer, spell);
@@ -925,32 +925,33 @@ export class BattleScene extends Phaser.Scene {
         this.overlays.push(overlay);
         const pos = new Phaser.Math.Vector2(tile.x, tile.y);
 
-        // on clicking on a tile, launch spell
-        overlay.on("pointerup", () => {
-          this.socket.emit("playerCastSpell", this.currentSpell, pos);
-        });
-        // on hovering over a tile, display aoe zone
-        overlay.on("pointerover", () => {
-          this.updateAoeZone(spell, tile.pixelX, tile.pixelY);
-        });
-        overlay.on("pointerout", () => {
-          this.hideAoeZone();
-        });
+        this.activateSpellEvents(overlay, pos, spell, tile);
 
         // we want hover or click on a unit to have the same effect than hover or click on its tile
         const playerOnThisTile = this.getUnitAtPos(tile.x, tile.y);
         if (playerOnThisTile) {
-          playerOnThisTile.on("pointerup", () => {
-            this.socket.emit("playerCastSpell", this.currentSpell, pos);
-          });
-          playerOnThisTile.on("pointerover", () => {
-            this.updateAoeZone(spell, tile.pixelX, tile.pixelY);
-          });
-          playerOnThisTile.on("pointerout", () => {
-            this.hideAoeZone();
-          });
+          this.activateSpellEvents(playerOnThisTile, pos, spell, tile);
         }
       }
+    });
+  }
+
+  activateSpellEvents(
+    object: Phaser.GameObjects.GameObject,
+    pos: Phaser.Math.Vector2,
+    spell: Spell,
+    tile: Phaser.Tilemaps.Tile
+  ) {
+    // on clicking on a tile, cast spell
+    object.on("pointerup", () => {
+      this.socket.emit("playerCastSpell", this.currentSpell, pos);
+    });
+    // on hovering over a tile, display aoe zone
+    object.on("pointerover", () => {
+      this.updateAoeZone(spell, tile.pixelX, tile.pixelY);
+    });
+    object.on("pointerout", () => {
+      this.hideAoeZone();
     });
   }
 
@@ -1207,17 +1208,6 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  // add summoned unit after the summoner in the timeline
-  addSummonedUnitToTimeline(summoner: Unit, summoned: Unit) {
-    const index = this.timeline.findIndex(
-      (timelineUnit) => timelineUnit == summoner
-    );
-    if (index !== -1) {
-      this.timeline.splice(index + 1, 0, summoned);
-    }
-    this.uiScene.updateTimeline(this.timeline);
-  }
-
   clearSpellRange() {
     this.spellVisible = false;
     this.uiScene.clearSpellsHighlight();
@@ -1262,13 +1252,5 @@ export class BattleScene extends Phaser.Scene {
     this.map.destroy();
     this.grid.destroy();
     this.scene.stop("UIScene");
-  }
-
-  battleIsLost() {
-    return this.allies.length === 0;
-  }
-
-  battleIsWon() {
-    return this.enemies.length === 0;
   }
 }

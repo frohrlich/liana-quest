@@ -320,11 +320,8 @@ export class Unit extends Phaser.GameObjects.Sprite {
     }
 
     this.myScene.refreshAccessibleTiles();
-    if (this.myScene.spellVisible) {
-      this.myScene.displaySpellRange(this.myScene.currentSpell);
-    }
 
-    this.refreshUI();
+    this.myScene.uiScene.refreshUIAfterSpell();
   }
 
   undergoSpell(spell: Spell) {
@@ -337,7 +334,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
       spell.bonusPM,
       spell.bonusPA
     );
-    this.refreshUI();
     this.checkDead();
   }
 

@@ -264,18 +264,17 @@ export class ServerUnit {
         startVec,
         this.pm
       );
+      if (accessibleTiles.length === 0) return 0;
       // then chooses one randomly
       const randMove = Math.floor(Math.random() * (accessibleTiles.length - 1));
       const pos = accessibleTiles[randMove].pos;
       let path = accessibleTiles[randMove].path;
-      console.log(this.id);
-      console.log(path);
 
       if (path) {
-        battleScene.removeFromObstacleLayer(this);
+        battleScene.removeFromObstacleLayer(this.indX, this.indY);
         this.indX = pos.x;
         this.indY = pos.y;
-        battleScene.addToObstacleLayer(pos);
+        battleScene.addToObstacleLayer(pos.x, pos.y);
         this.pm -= path.length;
         // emit a message to all players about the unit that moved
         battleScene.io.to(battleScene.id).emit("unitMoved", this, path);

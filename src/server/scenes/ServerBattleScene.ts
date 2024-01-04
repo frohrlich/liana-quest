@@ -84,10 +84,10 @@ export class ServerBattleScene {
               ((myUnit.isAlly && myUnit.indX <= this.map.width / 3) ||
                 (!myUnit.isAlly && myUnit.indX >= (this.map.width * 2) / 3))
             ) {
-              this.removeFromObstacleLayer(myUnit);
+              this.removeFromObstacleLayer(myUnit.indX, myUnit.indY);
               myUnit.indX = position.indX;
               myUnit.indY = position.indY;
-              this.addToObstacleLayer({ x: position.indX, y: position.indY });
+              this.addToObstacleLayer(position.indX, position.indY);
               // send info to all participants in battle that someone changed starter position
               this.io
                 .to(this.id)
@@ -146,10 +146,10 @@ export class ServerBattleScene {
           );
           // check if movement is actually possible
           if (path && path.length > 0 && path.length <= myUnit.pm) {
-            this.removeFromObstacleLayer(myUnit);
+            this.removeFromObstacleLayer(myUnit.indX, myUnit.indY);
             myUnit.indX = movementData.x;
             myUnit.indY = movementData.y;
-            this.addToObstacleLayer(movementData);
+            this.addToObstacleLayer(movementData.x, movementData.y);
             myUnit.pm -= path.length;
             // emit a message to all players about the unit that moved
             this.io.to(this.id).emit("unitMoved", myUnit, path);
@@ -244,7 +244,7 @@ export class ServerBattleScene {
     isAlignedX: boolean,
     isForward: number
   ) {
-    this.removeFromObstacleLayer(unit);
+    this.removeFromObstacleLayer(unit.indX, unit.indY);
     if (isAlignedX) {
       let deltaX = value * isForward;
       let direction = Math.sign(deltaX);
@@ -279,7 +279,7 @@ export class ServerBattleScene {
       }
       unit.indY += deltaY;
     }
-    this.addToObstacleLayer({ x: unit.indX, y: unit.indY });
+    this.addToObstacleLayer(unit.indX, unit.indY);
   }
 
   checkDead(unit: ServerUnit) {
@@ -304,7 +304,7 @@ export class ServerBattleScene {
       spell.summons.name,
       0xffffff
     );
-    this.addToObstacleLayer({ x: summonedUnit.indX, y: summonedUnit.indY });
+    this.addToObstacleLayer(summonedUnit.indX, summonedUnit.indY);
     this.units.push(summonedUnit);
     caster.isAlly
       ? this.allies.push(summonedUnit)
@@ -424,7 +424,7 @@ export class ServerBattleScene {
         unit.type,
         unit.tint
       );
-      this.addToObstacleLayer({ x: myUnit.indX, y: myUnit.indY });
+      this.addToObstacleLayer(myUnit.indX, myUnit.indY);
       this.units.push(myUnit);
       isAlly ? this.allies.push(myUnit) : this.enemies.push(myUnit);
       return myUnit;
@@ -509,7 +509,11 @@ export class ServerBattleScene {
   removeUnitFromBattle(id: any) {
     let index = this.units.findIndex((player) => player.id === id);
     if (index !== -1) {
-      this.removeFromObstacleLayer(this.units[index]);
+      const myUnit = this.units[index];
+      myUnit.summonedUnits.forEach((summonedUnit) => {
+        this.removeUnitFromBattle(summonedUnit.id);
+      });
+      this.removeFromObstacleLayer(myUnit.indX, myUnit.indY);
       this.units.splice(index, 1);
       this.io.to(this.id).emit("playerLeft", id);
     }
@@ -566,13 +570,13 @@ export class ServerBattleScene {
     });
   }
 
-  addToObstacleLayer(target: Vector2) {
-    let targetTile = this.background.tileAt(target.x, target.y);
-    this.obstacles.setTileAt(target.x, target.y, targetTile);
+  addToObstacleLayer(indX: number, indY: number) {
+    let targetTile = this.background.tileAt(indX, indY);
+    this.obstacles.setTileAt(indX, indY, targetTile);
   }
 
-  removeFromObstacleLayer(unit: ServerUnit) {
-    this.obstacles.setTileAt(unit.indX, unit.indY, undefined);
+  removeFromObstacleLayer(indX: number, indY: number) {
+    this.obstacles.setTileAt(indX, indY, undefined);
   }
 
   calculateAccessibleTiles(pos: Vector2, pm: number) {
@@ -583,22 +587,22 @@ export class ServerBattleScene {
       let tileX = i % this.map.width;
       let tileY = Math.floor(i / this.map.width);
       const isPlayerTile = tileX == x && tileY == y;
-      const distance = Math.abs(tileX - pos.x) + Math.abs(tileY - pos.y);
+      const distance = Math.abs(tileX - x) + Math.abs(tileY - y);
       let path;
       if (
         !isPlayerTile &&
-        pm >= distance &&
+        distance <= pm &&
         this.obstacles.tileAt(tileX, tileY) === undefined
       ) {
         const target = { x: tileX, y: tileY };
         path = findPath(pos, target, this.background, this.obstacles);
-      }
-      if (path) {
-        let myPos: ServerTilePath = {
-          path: path,
-          pos: { x: tileX, y: tileY },
-        };
-        tablePos.push(myPos);
+        if (path && path.length > 0 && path.length <= pm) {
+          let myPos: ServerTilePath = {
+            path: path,
+            pos: { x: tileX, y: tileY },
+          };
+          tablePos.push(myPos);
+        }
       }
     }
     return tablePos;

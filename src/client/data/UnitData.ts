@@ -12,7 +12,7 @@ export interface UnitData {
 export const amazon: UnitData = {
   HP: 100,
   PM: 12,
-  PA: 20,
+  PA: 100,
   spells: "deadly javelin, herbal medicine, sting",
   frame: 6,
   name: "Amazon",

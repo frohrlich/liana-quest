@@ -149,12 +149,6 @@ export class ServerWorldScene {
           currentPlayer.direction = direction;
         }
       });
-
-      socket.on("updatePosition", (position: Position) => {
-        const currentPlayer = this.findCurrentPlayer(socket);
-        currentPlayer.indX = position.indX;
-        currentPlayer.indY = position.indY;
-      });
     });
   }
 
