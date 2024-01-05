@@ -280,7 +280,8 @@ export class Unit extends Phaser.GameObjects.Sprite {
     spell: Spell,
     targetVec: Phaser.Math.Vector2,
     affectedUnits: ServerUnit[],
-    serverSummonedUnit: ServerUnit
+    serverSummonedUnit: ServerUnit,
+    timeline: ServerUnit[]
   ) {
     this.lookAtTile(targetVec);
     this.startAttackAnim(this.direction);
@@ -291,6 +292,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
     }
     this.myScene.refreshAccessibleTiles();
     this.myScene.uiScene.refreshUIAfterSpell();
+
+    this.myScene.syncTimelineWithServer(timeline);
+    this.myScene.uiScene.updateTimeline(this.myScene.timeline);
   }
 
   private unitsUndergoSpell(affectedUnits: ServerUnit[], spell: Spell) {

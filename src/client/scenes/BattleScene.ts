@@ -422,13 +422,13 @@ export class BattleScene extends Phaser.Scene {
             myUnit.moveDirectlyToNewPosition(serverUnit.indX, serverUnit.indY);
           }
           myUnit.synchronizeWithServerUnit(serverUnit);
-          myUnit.castSpell(spell, targetVec, affectedUnits, summonedUnit);
-        }
-        this.syncTimelineWithServer(timeline);
-        this.uiScene.updateTimeline(this.timeline);
-        if (summonedUnit) {
-          const mySummonedUnit = this.findUnitById(summonedUnit.id);
-          if (mySummonedUnit) mySummonedUnit.selectUnit();
+          myUnit.castSpell(
+            spell,
+            targetVec,
+            affectedUnits,
+            summonedUnit,
+            timeline
+          );
         }
       }
     );
@@ -756,8 +756,8 @@ export class BattleScene extends Phaser.Scene {
       unit.depth = unit.y;
       // create blue or red circle under unit's feet to identify its team
       unit.createTeamIdentifier(unitScale);
-      // add ready icon if unit is ready to fight
-      if (serverUnit.isReady) unit.addReadyIcon();
+      // add ready icon if a player is ready to fight
+      if (serverUnit.isReady && serverUnit.isPlayable) unit.addReadyIcon();
       unit.setInteractive();
       return unit;
     } else {

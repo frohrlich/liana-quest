@@ -60,35 +60,42 @@ export class Player extends Unit {
     spell: Spell,
     targetVec: Phaser.Math.Vector2,
     affectedUnits: ServerUnit[],
-    serverSummonedUnit: ServerUnit
+    serverSummonedUnit: ServerUnit,
+    timeline: ServerUnit[]
   ): void {
-    super.castSpell(spell, targetVec, affectedUnits, serverSummonedUnit);
+    super.castSpell(
+      spell,
+      targetVec,
+      affectedUnits,
+      serverSummonedUnit,
+      timeline
+    );
     this.myScene.refreshAccessibleTiles();
+
+    if (serverSummonedUnit) {
+      const mySummonedUnit = this.summonedUnits[this.summonedUnits.length - 1];
+      mySummonedUnit.selectUnit();
+      this.myScene.activateSpellEvents(
+        mySummonedUnit,
+        new Phaser.Math.Vector2(mySummonedUnit.indX, mySummonedUnit.indY),
+        spell,
+        this.myScene.background.getTileAt(targetVec.x, targetVec.y)
+      );
+    }
 
     // if spell not available anymore : quit spell mode
     if (this.pa < spell.cost || spell.cooldown > 0) {
       this.myScene.clearSpellRange();
       this.myScene.highlightAccessibleTiles(this.myScene.accessibleTiles);
-    } else {
-      if (serverSummonedUnit) {
-        const mySummonedUnit =
-          this.summonedUnits[this.summonedUnits.length - 1];
-        this.myScene.activateSpellEvents(
-          mySummonedUnit,
-          new Phaser.Math.Vector2(mySummonedUnit.indX, mySummonedUnit.indY),
-          spell,
-          this.myScene.background.getTileAt(targetVec.x, targetVec.y)
-        );
-      }
-      if (this.myScene.spellVisible) {
-        this.myScene.clearSpellRange();
-        this.myScene.displaySpellRange(spell);
-        this.myScene.updateAoeZone(
-          spell,
-          this.myScene.map.tileToWorldX(targetVec.x),
-          this.myScene.map.tileToWorldY(targetVec.y)
-        );
-      }
+      // else display aoe again
+    } else if (this.myScene.spellVisible) {
+      this.myScene.clearSpellRange();
+      this.myScene.displaySpellRange(spell);
+      this.myScene.updateAoeZone(
+        spell,
+        this.myScene.map.tileToWorldX(targetVec.x),
+        this.myScene.map.tileToWorldY(targetVec.y)
+      );
     }
   }
 }
