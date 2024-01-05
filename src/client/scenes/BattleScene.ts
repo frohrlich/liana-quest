@@ -536,8 +536,7 @@ export class BattleScene extends Phaser.Scene {
 
   private startPlayerTurn(player: Player) {
     this.currentPlayer = player;
-    this.uiScene.refreshSpells();
-    this.uiScene.refreshUI();
+    this.uiScene.startPlayerTurn();
     this.isPlayerTurn = true;
     this.refreshAccessibleTiles();
     this.highlightAccessibleTiles(this.accessibleTiles);

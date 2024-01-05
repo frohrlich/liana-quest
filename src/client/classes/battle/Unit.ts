@@ -16,6 +16,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   selectedTint = 0x777777;
   readyIconFrame = 55;
+  deathDelay = 200;
 
   myScene: BattleScene;
   // position on the grid
@@ -266,7 +267,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
     this.addEffectOverTime(serverUnit.effectOverTime);
     this.updateHealthBar();
-    this.myScene.uiScene.refreshSpells();
   }
 
   endTurn() {}
@@ -502,7 +502,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     // turn black before dying...
     this.tint = 0x000000;
     this.scene.time.delayedCall(
-      400,
+      this.deathDelay,
       () => {
         this.destroyUnit();
       },

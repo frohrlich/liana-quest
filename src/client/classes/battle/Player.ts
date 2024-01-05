@@ -49,6 +49,7 @@ export class Player extends Unit {
   endTurnAfterServerConfirmation(playerInfo: ServerUnit) {
     this.synchronizeWithServerUnit(playerInfo);
     const scene = this.myScene;
+    scene.uiScene.endPlayerTurn();
     scene.clearAccessibleTiles();
     scene.clearOverlay();
     scene.clearAoeZone();

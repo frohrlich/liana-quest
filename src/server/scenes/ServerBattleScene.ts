@@ -69,7 +69,7 @@ export class ServerBattleScene {
     this.isInPreparationMode = true;
     this.listenToPreparationModeEvents(socket);
   }
-  //
+
   listenToPreparationModeEvents(socket: Socket) {
     socket.on(
       "playerChangedStartPosition",

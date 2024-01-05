@@ -102,14 +102,12 @@ export class UIScene extends Phaser.Scene {
   // play this after player chose starter position and pressed start button
   startBattle() {
     this.createEndTurnButton();
-    this.disableSpells(false);
-    this.refreshSpells();
   }
 
   // change start button to end turn button for the rest of the battle
   createEndTurnButton() {
-    this.button.setFillStyle(0x293154);
-    this.buttonText.setTint(this.uiFontColor);
+    this.button.setFillStyle(0x15192b);
+    this.buttonText.setTint(0x00a028);
     this.buttonText.text = "End turn";
     this.button.off("pointerup");
     this.button.on("pointerup", () => {
@@ -120,6 +118,16 @@ export class UIScene extends Phaser.Scene {
         this.battleScene.currentPlayer.endTurn();
       }
     });
+  }
+
+  deactivateEndTurnButtonVisually() {
+    this.button.setFillStyle(0x15192b);
+    this.buttonText.setTint(0x00a028);
+  }
+
+  activateEndTurnButtonVisually() {
+    this.button.setFillStyle(0x293154);
+    this.buttonText.setTint(this.uiFontColor);
   }
 
   updateTimeline(timeline: Unit[]) {
@@ -249,9 +257,16 @@ export class UIScene extends Phaser.Scene {
     this.uiTabHeight = height;
   }
 
-  endTurn() {
+  endPlayerTurn() {
+    this.disableSpells(true);
+    this.deactivateEndTurnButtonVisually();
+  }
+
+  startPlayerTurn() {
+    this.activateEndTurnButtonVisually();
+    this.disableSpells(false);
+    this.refreshSpells();
     this.refreshUI();
-    this.clearSpellsHighlight();
   }
 
   refreshUI() {
