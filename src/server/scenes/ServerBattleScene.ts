@@ -178,7 +178,8 @@ export class ServerBattleScene {
     this.nextTurn();
 
     // tell world map you can't join battle anymore
-    this.io.to("world").emit("removeBattleIcon", this.enemies[0].id);
+    this.io.to("world").emit("removeBattleIcon", this.id);
+    this.worldScene.removeBattleIcon(this.id);
   }
 
   nextTurn() {
@@ -562,6 +563,8 @@ export class ServerBattleScene {
   private endBattle() {
     this.makeSocketsLeaveBattleRoom();
     this.worldScene.removeBattle(this.id);
+    this.worldScene.removeBattleIcon(this.id);
+    this.io.to("world").emit("removeBattleIcon", this.id);
   }
 
   private makeSocketsLeaveBattleRoom() {

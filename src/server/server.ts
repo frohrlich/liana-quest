@@ -46,7 +46,7 @@ interface ClientToServerEvents {
   startBattle: (enemyId: string) => void;
   fightPreparationIsOver: (enemyId: string) => void;
   endBattle: (player: ServerWorldUnit) => void;
-  playerClickedBattleIcon: (npcId: string) => void;
+  playerClickedBattleIcon: (id: string) => void;
 
   // battle events
   playerChangedStartPosition: (playerId: string, position: Position) => void;

@@ -18,14 +18,21 @@ export interface Position {
   indY: number;
 }
 
+export interface ServerBattleIcon {
+  indX: number;
+  indY: number;
+  id: string;
+}
+
 export class ServerWorldScene {
   players: ServerWorldUnit[] = [];
   playersCurrentlyInBattle: ServerWorldUnit[] = [];
   npcs: ServerWorldUnit[] = [];
+  battleIcons: ServerBattleIcon[] = [];
   ongoingBattles: ServerBattleScene[] = [];
   enemyCount = 15;
-  minPosition = 0;
-  maxPosition = 5;
+  minPosition = 0; // min starter position for enemies (distance from upper left corner)
+  maxPosition = 5; // max starter position for enemies
   io: Server;
   background: any;
   obstacles: any;
@@ -67,15 +74,12 @@ export class ServerWorldScene {
         }
       });
 
-      socket.on("playerClickedBattleIcon", (npcId: string) => {
+      socket.on("playerClickedBattleIcon", (id: string) => {
         const myPlayer = this.findCurrentPlayer(socket);
         this.movePlayerToBattle(socket);
         socket.leave("world");
-        const battleId = "battle_" + npcId;
-        socket.join(battleId);
-        const myBattle = this.ongoingBattles.find(
-          (battle) => battle.id === battleId
-        );
+        socket.join(id);
+        const myBattle = this.ongoingBattles.find((battle) => battle.id === id);
         if (myBattle) {
           myBattle.addPlayerAfterBattleStart(socket, myPlayer, true);
         }
@@ -91,6 +95,8 @@ export class ServerWorldScene {
         socket.emit("currentPlayers", this.players);
         // send the npcs object to the new player
         socket.emit("currentNpcs", this.npcs);
+        // send the battleIcons object to the new player
+        socket.emit("currentBattleIcons", this.battleIcons);
         // make it listen to world events
         socket.join("world");
       });
@@ -174,14 +180,16 @@ export class ServerWorldScene {
     for (let i = 0; i < this.enemyCount; i++) {
       const id = uuidv4();
       let indX: number, indY: number;
+      const myMaxPositionX = Math.min(this.maxPosition, this.map.width);
+      const myMaxPositionY = Math.min(this.maxPosition, this.map.height);
       do {
         indX =
-          Math.floor(Math.random() * (this.maxPosition - this.minPosition)) +
+          Math.floor(Math.random() * (myMaxPositionX - this.minPosition)) +
           this.minPosition;
         indY =
-          Math.floor(Math.random() * (this.maxPosition - this.minPosition)) +
+          Math.floor(Math.random() * (myMaxPositionY - this.minPosition)) +
           this.minPosition;
-      } while (this.obstacles.tileAt(indX, indY)); // but not on obstacles
+      } while (this.obstacles.tileAt(indX, indY)); // not on obstacles
 
       // let randomColor = Math.floor(Math.random() * 16777215);
       let randomColor = 0xffffff;
@@ -227,9 +235,8 @@ export class ServerWorldScene {
   ) {
     // random offset before first movement so that all npcs don't move simultaneously
     const movingOffset = Math.floor(Math.random() * delay);
-    let myInterval: any;
     setTimeout(() => {
-      myInterval = setInterval(() => {
+      let myInterval = setInterval(() => {
         // hidden npcs (in a fight) don't move
         if (npc.isVisible) {
           let nearbyTiles: Position[] = [];
@@ -323,6 +330,15 @@ export class ServerWorldScene {
     }
   }
 
+  removeBattleIcon(id: string) {
+    const index = this.battleIcons.findIndex(
+      (battleIcon) => battleIcon.id === id
+    );
+    if (index !== -1) {
+      this.battleIcons.splice(index, 1);
+    }
+  }
+
   hideEnemyAndShowBattleIcon(enemyId: string) {
     const index = this.npcs.findIndex((npc) => npc.id === enemyId);
     let myNpc: ServerWorldUnit;
@@ -333,6 +349,12 @@ export class ServerWorldScene {
       this.io.to("world").emit("npcHidden", enemyId);
       // emit a message to all players to show battle icon in place of the npc that just got into a fight
       this.io.to("world").emit("addBattleIcon", myNpc);
+      const myBattleIcon: ServerBattleIcon = {
+        indX: myNpc.indX,
+        indY: myNpc.indY,
+        id: "battle_" + myNpc.id,
+      };
+      this.battleIcons.push(myBattleIcon);
     }
   }
 

@@ -2,7 +2,10 @@ import Phaser from "phaser";
 import { WorldNpc } from "../classes/world/WorldNpc";
 import { UnitData, unitsAvailable } from "../data/UnitData";
 import { Socket, io } from "socket.io-client";
-import { ServerWorldUnit } from "../../server/scenes/ServerWorldScene";
+import {
+  ServerBattleIcon,
+  ServerWorldUnit,
+} from "../../server/scenes/ServerWorldScene";
 import { WorldOnlinePlayer } from "../classes/world/WorldOnlinePlayer";
 import { BattleIcon } from "../classes/world/BattleIcon";
 import { ServerUnit } from "../../server/classes/ServerUnit";
@@ -112,6 +115,10 @@ export class WorldScene extends Phaser.Scene {
       this.addEnemies(npcs);
     });
 
+    this.socket.on("currentBattleIcons", (battleIcons: ServerBattleIcon[]) => {
+      this.addBattleIconsFromServerInfo(battleIcons);
+    });
+
     this.socket.on("enemyWasKilled", (id: string) => {
       this.spawns.getChildren().forEach((enemy) => {
         if ((enemy as WorldNpc).id === id) enemy.destroy();
@@ -151,26 +158,17 @@ export class WorldScene extends Phaser.Scene {
 
     // when a battle starts, show the shield to join battle
     this.socket.on("addBattleIcon", (npc: ServerWorldUnit) => {
-      const battleIcon = new BattleIcon(
-        this,
-        npc.id,
-        this.map.tileToWorldX(npc.indX),
-        this.map.tileToWorldY(npc.indY),
-        "player",
-        this.npcBattleShieldFrame
+      this.addBattleIconFromPositionAndId(
+        npc.indX,
+        npc.indY,
+        "battle_" + npc.id
       );
-      this.battleIcons.push(battleIcon);
-      this.add.existing(battleIcon).setScale(this.unitScale);
-      battleIcon.setInteractive();
-
-      battleIcon.on("pointerup", () => {
-        this.socket.emit("playerClickedBattleIcon", npc.id);
-      });
     });
 
     // when a battle preparation phase is over, remove the shield
-    this.socket.on("removeBattleIcon", (enemyId: string) => {
-      this.battleIcons.find((icon) => icon.id === enemyId).destroy();
+    this.socket.on("removeBattleIcon", (id: string) => {
+      const myBattleIcon = this.battleIcons.find((icon) => icon.id === id);
+      if (myBattleIcon) myBattleIcon.destroy();
     });
 
     this.socket.on("npcWonFight", (npcId: string) => {
@@ -209,6 +207,38 @@ export class WorldScene extends Phaser.Scene {
         });
       }
     );
+  }
+
+  private addBattleIconFromPositionAndId(
+    indX: number,
+    indY: number,
+    id: string
+  ) {
+    const battleIcon = new BattleIcon(
+      this,
+      id,
+      this.map.tileToWorldX(indX),
+      this.map.tileToWorldY(indY),
+      "player",
+      this.npcBattleShieldFrame
+    );
+    this.battleIcons.push(battleIcon);
+    this.add.existing(battleIcon).setScale(this.unitScale);
+    battleIcon.setInteractive();
+
+    battleIcon.on("pointerup", () => {
+      this.socket.emit("playerClickedBattleIcon", id);
+    });
+  }
+
+  addBattleIconsFromServerInfo(battleIcons: ServerBattleIcon[]) {
+    battleIcons.forEach((battleIcon) => {
+      this.addBattleIconFromPositionAndId(
+        battleIcon.indX,
+        battleIcon.indY,
+        battleIcon.id
+      );
+    });
   }
 
   initSocket() {
