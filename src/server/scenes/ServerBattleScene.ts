@@ -99,12 +99,19 @@ export class ServerBattleScene {
     );
 
     // on clicking start battle button
-    socket.on("playerIsReady", (playerId: string) => {
+    socket.on("playerClickedReadyButton", (playerId: string) => {
       if (this.isInPreparationMode) {
         const myPlayer = this.findUnitById(playerId);
         if (myPlayer) {
-          myPlayer.isReady = true;
-          socket.emit("readyIsConfirmed");
+          if (!myPlayer.isReady) {
+            myPlayer.isReady = true;
+            socket.emit("readyIsConfirmed");
+            this.io.to(this.id).emit("playerIsReady", myPlayer);
+          } else {
+            myPlayer.isReady = false;
+            socket.emit("notReadyIsConfirmed");
+            this.io.to(this.id).emit("playerIsNotReady", myPlayer);
+          }
         }
         if (this.everyoneIsReady()) {
           this.startBattleMainPhase(socket);

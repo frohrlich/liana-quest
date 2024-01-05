@@ -70,7 +70,8 @@ export class BattleScene extends Phaser.Scene {
     this.socket.off();
     this.socket.on("disconnect", () => {
       setTimeout(() => {
-        location.reload();
+        // @ts-ignore
+        location.reload(true);
       }, 200);
     });
     this.playerId = this.socket.id;
@@ -236,11 +237,25 @@ export class BattleScene extends Phaser.Scene {
     this.socket.on(
       "playerJoinedBattle",
       (newPlayer: ServerUnit, timeline: ServerUnit[]) => {
-        this.addUnitFromServerInfo(newPlayer, newPlayer.isAlly);
+        this.addUnit(newPlayer, newPlayer.isAlly);
         this.syncTimelineWithServer(timeline);
         this.uiScene.updateTimeline(this.timeline);
       }
     );
+
+    this.socket.on("playerIsReady", (player: ServerUnit) => {
+      const myUnit = this.findUnitById(player.id);
+      if (myUnit) {
+        myUnit.addReadyIcon();
+      }
+    });
+
+    this.socket.on("playerIsNotReady", (player: ServerUnit) => {
+      const myUnit = this.findUnitById(player.id);
+      if (myUnit) {
+        myUnit.removeReadyIcon();
+      }
+    });
 
     this.socket.on("startMainBattlePhase", () => {
       this.startBattle();
@@ -248,6 +263,10 @@ export class BattleScene extends Phaser.Scene {
 
     this.socket.on("readyIsConfirmed", () => {
       this.uiScene.setButtonToReady();
+    });
+
+    this.socket.on("notReadyIsConfirmed", () => {
+      this.uiScene.setButtonToNotReady();
     });
   }
 
@@ -329,17 +348,24 @@ export class BattleScene extends Phaser.Scene {
   }
 
   // play this after player chose starter position and pressed start button
-  playerIsReady() {
-    this.socket.emit("playerIsReady", this.socket.id);
+  playerClickedReadyButton() {
+    this.socket.emit("playerClickedReadyButton", this.socket.id);
   }
 
   startBattle() {
     this.clearOverlay();
+    this.removeReadyIcons();
     this.enemyStarterTiles = [];
     this.playerStarterTiles = [];
     this.uiScene.startBattle();
     this.listenToMainBattleEvents();
     this.displayBattleStartScreen();
+  }
+
+  removeReadyIcons() {
+    this.units.forEach((unit) => {
+      unit.removeReadyIcon();
+    });
   }
 
   listenToMainBattleEvents() {
@@ -458,31 +484,9 @@ export class BattleScene extends Phaser.Scene {
 
   private addTeamOnStart(data: any, isAlly: boolean) {
     const unitsInfo = isAlly ? data.alliesInfo : data.enemiesInfo;
-    unitsInfo.forEach((info: ServerUnit) => {
-      this.addUnitFromServerInfo(info, isAlly);
+    unitsInfo.forEach((serverUnit: ServerUnit) => {
+      this.addUnit(serverUnit, isAlly);
     });
-  }
-
-  private addUnitFromServerInfo(info: ServerUnit, isAlly: boolean) {
-    // see if we find a unit with the name given by the world scene in the array
-    // of all available units
-    const playerData = unitsAvailable.find(
-      (unitData) => unitData.name === info.type
-    );
-    if (playerData) {
-      const isPlayable = info.id === this.socket.id;
-      return this.addUnit(
-        playerData,
-        info.id,
-        info.indX,
-        info.indY,
-        info.tint,
-        !isPlayable,
-        isAlly
-      );
-    } else {
-      throw new Error("Error : unit not found");
-    }
   }
 
   clearAllUnits() {
@@ -676,81 +680,89 @@ export class BattleScene extends Phaser.Scene {
   };
 
   // add a unit to the scene
-  addUnit(
-    unitData: UnitData,
-    unitServerId: string,
-    startX: number,
-    startY: number,
-    tint: number,
-    npc: boolean,
-    allied: boolean
-  ) {
-    const key = "player";
-    let unit: Unit;
-    if (npc) {
-      unit = new Npc(
-        this,
-        0,
-        0,
-        key,
-        tint,
-        unitData.frame,
-        startX,
-        startY,
-        unitData.PM,
-        unitData.PA,
-        unitData.HP,
-        allied
-      );
-    } else {
-      unit = new Player(
-        this,
-        0,
-        0,
-        key,
-        tint,
-        unitData.frame,
-        startX,
-        startY,
-        unitData.PM,
-        unitData.PA,
-        unitData.HP,
-        allied
-      );
-    }
-    unit.type = unitData.name;
-    unit.id = unitServerId;
-    unit.tint = tint;
-    this.add.existing(unit);
+  addUnit(serverUnit: ServerUnit, allied: boolean) {
+    // see if we find a unit with the name given by the world scene in the array
+    // of all available units
+    const unitData = unitsAvailable.find(
+      (unitData) => unitData.name === serverUnit.type
+    );
+    if (unitData) {
+      const isPlayable = serverUnit.id === this.socket.id;
+      const key = "player";
+      let unit: Unit;
+      if (!isPlayable) {
+        unit = new Npc(
+          this,
+          0,
+          0,
+          key,
+          serverUnit.tint,
+          unitData.frame,
+          serverUnit.indX,
+          serverUnit.indY,
+          serverUnit.pm,
+          serverUnit.pa,
+          serverUnit.hp,
+          allied
+        );
+      } else {
+        unit = new Player(
+          this,
+          0,
+          0,
+          key,
+          serverUnit.tint,
+          unitData.frame,
+          serverUnit.indX,
+          serverUnit.indY,
+          serverUnit.pm,
+          serverUnit.pa,
+          serverUnit.hp,
+          allied
+        );
+      }
+      unit.type = unitData.name;
+      unit.id = serverUnit.id;
+      unit.tint = serverUnit.tint;
+      this.add.existing(unit);
 
-    // create unit animations with base sprite and framerate
-    if (!this.anims.exists("left" + unitData.name)) {
-      this.createAnimations(unitData.frame, this.animFramerate, unitData.name);
-    }
+      // create unit animations with base sprite and framerate
+      if (!this.anims.exists("left" + unitData.name)) {
+        this.createAnimations(
+          unitData.frame,
+          this.animFramerate,
+          unitData.name
+        );
+      }
 
-    // set player start position
-    let initialPlayerX = unit.tilePosToPixelsX(startX);
-    let initialPlayerY = unit.tilePosToPixelsY(startY);
-    unit.setPosition(initialPlayerX, initialPlayerY);
-    const unitScale = 1.5;
-    unit.setScale(unitScale);
-    if (allied) {
-      this.allies.push(unit);
+      // set unit start position
+      let initialUnitX = unit.tilePosToPixelsX(serverUnit.indX);
+      let initialUnitY = unit.tilePosToPixelsY(serverUnit.indY);
+      unit.setPosition(initialUnitX, initialUnitY);
+      const unitScale = 1.5;
+      unit.setScale(unitScale);
+      if (allied) {
+        this.allies.push(unit);
+      } else {
+        this.enemies.push(unit);
+      }
+      this.units.push(unit);
+      // add spells
+      unit.addSpells.apply(unit, this.decodeSpellString(unitData.spells));
+      // unit is now considered as an obstacle for other units
+      this.addToObstacleLayer(new Phaser.Math.Vector2(unit.indX, unit.indY));
+      // initialize health bar
+      unit.updateHealthBar();
+      unit.depth = unit.y;
+      // create blue or red circle under unit's feet to identify its team
+      unit.createTeamIdentifier(unitScale);
+      // add ready icon if unit is ready to fight
+      if (serverUnit.isReady) unit.addReadyIcon();
+      unit.setInteractive();
+      return unit;
     } else {
-      this.enemies.push(unit);
+      throw new Error("Error : unit not found");
     }
-    this.units.push(unit);
-    // add spells
-    unit.addSpells.apply(unit, this.decodeSpellString(unitData.spells));
-    // unit is now considered as an obstacle for other units
-    this.addToObstacleLayer(new Phaser.Math.Vector2(unit.indX, unit.indY));
-    // initialize health bar
-    unit.updateHealthBar();
-    unit.depth = unit.y;
-    // create blue or red circle under unit's feet to identify its team
-    unit.createTeamIdentifier(unitScale);
-    unit.setInteractive();
-    return unit;
   }
 
   // transform a list of spell names in a string into an array of Spell objects

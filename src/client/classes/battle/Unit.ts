@@ -13,7 +13,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
   effectIconOverUnitOffset = 19;
   effectIconUnderUnitOffset = 53;
   healthBarScale = 1.2;
+
   selectedTint = 0x777777;
+  readyIconFrame = 55;
 
   myScene: BattleScene;
   // position on the grid
@@ -50,6 +52,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   summonedUnits: Unit[] = [];
   id: string;
   isSelected: boolean;
+  readyIcon: Phaser.GameObjects.Image;
 
   constructor(
     scene: Phaser.Scene,
@@ -194,7 +197,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   }
 
   moveHealthBar() {
-    const barWidth = this.displayWidth * 1.2 * this.healthBarScale;
+    const barWidth = this.displayWidth * 1.2;
     this.healthBar.x = this.x - barWidth / 2;
     // if unit is on top of screen health bar must be below it
     this.healthBar.y = this.isOnTop()
@@ -280,9 +283,17 @@ export class Unit extends Phaser.GameObjects.Sprite {
     serverSummonedUnit: ServerUnit
   ) {
     this.lookAtTile(targetVec);
-
     this.startAttackAnim(this.direction);
+    this.unitsUndergoSpell(affectedUnits, spell);
+    // if spell summons a unit AND targeted tile is free, summon the unit
+    if (serverSummonedUnit) {
+      this.addSummonedUnit(serverSummonedUnit);
+    }
+    this.myScene.refreshAccessibleTiles();
+    this.myScene.uiScene.refreshUIAfterSpell();
+  }
 
+  private unitsUndergoSpell(affectedUnits: ServerUnit[], spell: Spell) {
     affectedUnits.forEach((serverUnit) => {
       const myAffectedUnit = this.myScene.findUnitById(serverUnit.id);
       if (myAffectedUnit) {
@@ -300,28 +311,11 @@ export class Unit extends Phaser.GameObjects.Sprite {
         myAffectedUnit.undergoSpell(spell);
       }
     });
-    // if spell summons a unit AND targeted tile is free, summon the unit
-    if (serverSummonedUnit) {
-      const summonedUnitData = unitsAvailable.find(
-        (data) => data.name === serverSummonedUnit.type
-      );
-      if (summonedUnitData) {
-        const summonedUnit = this.myScene.addUnit(
-          summonedUnitData,
-          serverSummonedUnit.id,
-          targetVec.x,
-          targetVec.y,
-          serverSummonedUnit.tint,
-          !serverSummonedUnit.isPlayable,
-          this.isAlly
-        );
-        this.summonedUnits.push(summonedUnit);
-      }
-    }
+  }
 
-    this.myScene.refreshAccessibleTiles();
-
-    this.myScene.uiScene.refreshUIAfterSpell();
+  private addSummonedUnit(serverSummonedUnit: ServerUnit) {
+    const summonedUnit = this.myScene.addUnit(serverSummonedUnit, this.isAlly);
+    this.summonedUnits.push(summonedUnit);
   }
 
   undergoSpell(spell: Spell) {
@@ -518,6 +512,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.identifier.destroy();
     this.timelineSlot.destroy();
     if (this.effectIcon) this.effectIcon.destroy();
+    this.removeReadyIcon();
     this.destroy();
   }
 
@@ -686,5 +681,22 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.y = this.tilePosToPixelsY(indY);
     this.depth = this.y;
     this.moveUnitAttributes();
+  }
+
+  addReadyIcon() {
+    this.readyIcon = this.scene.add.image(
+      this.x,
+      this.isOnTop()
+        ? this.y + this.displayHeight
+        : this.y - this.displayHeight,
+      "player",
+      this.readyIconFrame
+    );
+    this.readyIcon.scale = 1;
+    this.readyIcon.setDepth(9999);
+  }
+
+  removeReadyIcon() {
+    if (this.readyIcon) this.readyIcon.destroy();
   }
 }

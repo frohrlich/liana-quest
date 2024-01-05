@@ -73,7 +73,7 @@ export class UIScene extends Phaser.Scene {
       .setFillStyle(0x293154)
       .setInteractive()
       .on("pointerup", () => {
-        this.battleScene.playerIsReady();
+        this.battleScene.playerClickedReadyButton();
       });
 
     let fontSize = this.battleScene.tileWidth * this.uiScale;
@@ -92,6 +92,11 @@ export class UIScene extends Phaser.Scene {
   setButtonToReady() {
     this.button.setFillStyle(0x00ff00);
     this.buttonText.tint = 0x000000;
+  }
+
+  setButtonToNotReady() {
+    this.button.setFillStyle(0x293154);
+    this.buttonText.tint = this.uiFontColor;
   }
 
   // play this after player chose starter position and pressed start button
