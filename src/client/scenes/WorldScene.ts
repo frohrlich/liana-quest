@@ -224,8 +224,11 @@ export class WorldScene extends Phaser.Scene {
       this.npcBattleShieldFrame
     );
     this.battleIcons.push(battleIcon);
-    this.add.existing(battleIcon).setScale(this.unitScale);
-    battleIcon.setInteractive();
+    this.add
+      .existing(battleIcon)
+      .setScale(this.unitScale)
+      .setInteractive()
+      .setDepth(10000);
 
     battleIcon.on("pointerup", () => {
       this.socket.emit("playerClickedBattleIcon", id);
