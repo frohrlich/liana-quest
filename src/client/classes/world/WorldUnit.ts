@@ -5,6 +5,16 @@ import { WorldOnlinePlayer } from "./WorldOnlinePlayer";
 
 // unit in the world mode, as opposed to the Unit class for battle
 export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
+  // time for moving by 1 tile (in ms)
+  moveDuration = 150;
+
+  interactionMenuWidth = 60;
+  interactionMenuHeight = 11;
+  interactionMenuOffsetX = 2;
+  interactionMenuOffsetY = 2;
+
+  fontSize = 8;
+
   id: string;
   myScene: WorldScene;
   // position on the grid
@@ -14,12 +24,12 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   movePath: Phaser.Math.Vector2[] = [];
   moveChain: any = {};
   frameNumber: number;
+  interactionMenuRectangle: Phaser.GameObjects.Rectangle;
+  interactionMenuText: Phaser.GameObjects.BitmapText;
 
   direction: string = "down";
   isMoving: boolean = false;
-
-  // time for moving by 1 tile (in ms)
-  moveDuration = 150;
+  unitName: Phaser.GameObjects.BitmapText;
 
   constructor(
     scene: Phaser.Scene,
@@ -113,6 +123,8 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
       },
       onUpdate: () => {
         this.depth = this.y;
+        this.moveInteractionMenuToPlayerPosition();
+        this.moveUnitNameToPlayerPosition();
       },
       duration: this.moveDuration,
       repeat: 0,
@@ -165,6 +177,8 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
         break;
     }
     this.direction = direction;
+
+    return this;
   }
 
   // convert a tile position (index) to actual unit pixel position
@@ -241,5 +255,110 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     if (path && path.length > 0) {
       this.moveAlong(path);
     }
+  }
+
+  displayInteractionMenu() {
+    this.interactionMenuRectangle.setVisible(true);
+    this.interactionMenuText.setVisible(true);
+    this.interactionMenuRectangle.setInteractive();
+  }
+
+  hideInteractionMenu() {
+    this.interactionMenuRectangle.setVisible(false);
+    this.interactionMenuText.setVisible(false);
+    this.interactionMenuRectangle.disableInteractive();
+  }
+
+  moveInteractionMenuToPlayerPosition() {
+    if (this.interactionMenuRectangle) {
+      const rectanglePosY = this.isOnTop()
+        ? this.y + this.displayHeight
+        : this.y - this.displayHeight + this.interactionMenuOffsetY;
+      this.interactionMenuRectangle.setPosition(
+        this.x + this.displayWidth + this.interactionMenuOffsetX,
+        rectanglePosY
+      );
+      const textPosY = this.isOnTop()
+        ? this.y + this.displayHeight - 3
+        : this.y - this.displayHeight - 1;
+      this.interactionMenuText.setPosition(
+        this.x + this.displayWidth / 3 + 1,
+        textPosY
+      );
+    }
+  }
+
+  makeInteractionMenu() {
+    this.interactionMenuRectangle = this.myScene.add
+      .rectangle(
+        0,
+        0,
+        this.interactionMenuWidth,
+        this.interactionMenuHeight,
+        0xffffff,
+        0.9
+      )
+      .setVisible(false)
+      .setOrigin(0.3, 0.5)
+      .setDepth(10001);
+    const text = "Challenge";
+    this.interactionMenuText = this.myScene.add
+      .bitmapText(0, 0, "dogicapixel", text, this.fontSize)
+      .setVisible(false)
+      .setTint(0x000000)
+      .setDepth(10002);
+    this.moveInteractionMenuToPlayerPosition();
+    return this;
+  }
+
+  private isOnTop() {
+    return this.y < this.myScene.tileHeight * 3;
+  }
+
+  activateSelectEvents() {
+    this.on("pointerup", () => {
+      this.selectUnit();
+    });
+    return this;
+  }
+
+  selectUnit() {
+    this.displayInteractionMenu();
+    this.showUnitName();
+    this.myScene.selectedUnit = this;
+  }
+
+  unSelectUnit() {
+    this.hideInteractionMenu();
+    this.hideUnitName();
+    this.myScene.selectedUnit = null;
+  }
+
+  makeUnitName() {
+    this.unitName = this.myScene.add
+      .bitmapText(0, 0, "dogicapixelbold", this.type, this.fontSize)
+      .setVisible(false)
+      .setDepth(10002);
+    this.moveUnitNameToPlayerPosition();
+  }
+
+  moveUnitNameToPlayerPosition() {
+    if (this.unitName) {
+      const posX = this.isOnTop()
+        ? this.x - this.unitName.displayWidth * 0.8
+        : this.x;
+      const posY = this.isOnTop()
+        ? this.y + this.displayHeight / 2
+        : this.y + this.displayHeight;
+      this.unitName.setPosition(posX, posY).setOrigin(0.5, 0.5);
+    }
+  }
+
+  hideUnitName() {
+    this.unitName.setVisible(false);
+  }
+
+  showUnitName() {
+    this.unitName.setVisible(true);
   }
 }

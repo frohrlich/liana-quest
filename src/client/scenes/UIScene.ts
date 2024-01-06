@@ -106,8 +106,7 @@ export class UIScene extends Phaser.Scene {
 
   // change start button to end turn button for the rest of the battle
   createEndTurnButton() {
-    this.button.setFillStyle(0x15192b);
-    this.buttonText.setTint(0x00701c);
+    this.deactivateEndTurnButtonVisually();
     this.buttonText.text = "End turn";
     this.button.off("pointerup");
     this.button.on("pointerup", () => {

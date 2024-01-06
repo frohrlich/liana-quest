@@ -9,6 +9,7 @@ import {
 import { WorldOnlinePlayer } from "../classes/world/WorldOnlinePlayer";
 import { BattleIcon } from "../classes/world/BattleIcon";
 import { ServerUnit } from "../../server/classes/ServerUnit";
+import { WorldUnit } from "../classes/world/WorldUnit";
 
 interface UnitPosition {
   indX: number;
@@ -24,6 +25,7 @@ export class WorldScene extends Phaser.Scene {
   unitScale = 1.5;
   animFramerate = 7;
   npcBattleShieldFrame = 54;
+  isBattleActivated = false;
 
   background: Phaser.Tilemaps.TilemapLayer;
   tileWidth: number;
@@ -36,6 +38,7 @@ export class WorldScene extends Phaser.Scene {
   socket: Socket;
   otherPlayers: WorldOnlinePlayer[] = [];
   devantJoueur: Phaser.Tilemaps.TilemapLayer;
+  selectedUnit: WorldUnit;
 
   constructor() {
     super({
@@ -71,7 +74,7 @@ export class WorldScene extends Phaser.Scene {
     });
 
     this.socket.on("newPlayer", (playerInfo: ServerWorldUnit) => {
-      this.addOtherPlayers(playerInfo);
+      this.addOtherPlayer(playerInfo);
     });
 
     this.socket.on("playerLeft", (playerId: string) => {
@@ -96,7 +99,7 @@ export class WorldScene extends Phaser.Scene {
           this.showTileMapLayers();
           this.enableMovingOnClick(this.background, this.obstacles);
         } else {
-          this.addOtherPlayers(player);
+          this.addOtherPlayer(player);
         }
       });
     });
@@ -251,24 +254,29 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  addOtherPlayers(playerInfo: ServerWorldUnit) {
-    const playerData = this.findUnitDataByName(playerInfo.type);
+  addOtherPlayer(serverWorldUnit: ServerWorldUnit) {
+    const playerData = this.findUnitDataByName(serverWorldUnit.type);
     const otherPlayer = new WorldOnlinePlayer(
       this,
-      playerInfo.id,
-      playerInfo.indX,
-      playerInfo.indY,
+      serverWorldUnit.id,
+      serverWorldUnit.indX,
+      serverWorldUnit.indY,
       "player",
       playerData.frame,
-      playerInfo.type
+      serverWorldUnit.type
     );
-    otherPlayer.tint = playerInfo.tint;
-    otherPlayer.scale = this.unitScale;
-    otherPlayer.changeDirection(playerInfo.direction);
-    this.add.existing(otherPlayer);
+    this.add
+      .existing(otherPlayer)
+      .setTint(serverWorldUnit.tint)
+      .setScale(this.unitScale)
+      .setInteractive()
+      .changeDirection(serverWorldUnit.direction)
+      .activateSelectEvents()
+      .makeInteractionMenu()
+      .makeUnitName();
     this.otherPlayers.push(otherPlayer);
 
-    if (!this.anims.exists("left" + playerInfo.type)) {
+    if (!this.anims.exists("left" + serverWorldUnit.type)) {
       this.createAnimations(
         playerData.frame,
         this.animFramerate,
@@ -392,7 +400,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   onMeetEnemy(player: any, enemy: any) {
-    if (!this.battleHasStarted && player.isMoving) {
+    if (this.isBattleActivated && !this.battleHasStarted && player.isMoving) {
       this.battleHasStarted = true;
       this.socket.emit("startBattle", enemy.id);
     }
@@ -418,8 +426,12 @@ export class WorldScene extends Phaser.Scene {
         const targetVec = background.worldToTileXY(worldX, worldY);
         if (
           background.getTileAt(targetVec.x, targetVec.y) &&
-          !obstacles.getTileAt(targetVec.x, targetVec.y)
+          !obstacles.getTileAt(targetVec.x, targetVec.y) &&
+          !this.isPlayerThere(targetVec.x, targetVec.y)
         ) {
+          if (this.selectedUnit) {
+            this.selectedUnit.unSelectUnit();
+          }
           this.socket.emit("playerMovement", {
             indX: targetVec.x,
             indY: targetVec.y,
@@ -432,6 +444,12 @@ export class WorldScene extends Phaser.Scene {
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.off(Phaser.Input.Events.POINTER_UP);
     });
+  }
+
+  isPlayerThere(x: number, y: number) {
+    return this.otherPlayers.some(
+      (player) => player.indX === x && player.indY === y
+    );
   }
 
   // create a set of animations from a framerate and a base sprite

@@ -192,12 +192,12 @@ export class Unit extends Phaser.GameObjects.Sprite {
   }
 
   private moveUnitAttributes() {
-    this.moveHealthBar();
+    this.moveHealthBarToPlayerPosition();
     this.moveTeamIdentifier();
-    if (this.effectIcon) this.moveEffectIcon();
+    if (this.effectIcon) this.moveEffectIconToPlayerPosition();
   }
 
-  moveHealthBar() {
+  moveHealthBarToPlayerPosition() {
     const barWidth = this.displayWidth * 1.2;
     this.healthBar.x = this.x - barWidth / 2;
     // if unit is on top of screen health bar must be below it
@@ -622,13 +622,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
     }
     this.healthBar.fillRect(0, 0, barWidth, 8);
 
-    // position the bar
-    this.healthBar.x = this.x - barWidth / 2;
-    this.healthBar.y = this.isOnTop()
-      ? this.y + this.healthBarUnderUnitOffset
-      : this.y - this.displayHeight - this.healthBarOverUnitOffset;
     this.healthBar.setDepth(10000);
     if (!this.isSelected) this.healthBar.setVisible(false);
+    this.moveHealthBarToPlayerPosition();
   }
 
   // add spells to a unit
@@ -650,26 +646,20 @@ export class Unit extends Phaser.GameObjects.Sprite {
     if (effectOverTime) {
       this.effectOverTime = { ...effectOverTime };
       if (this.effectIcon) this.effectIcon.destroy();
-      this.effectIcon = this.makeEffectIcon(effectOverTime);
+      this.makeEffectIcon(effectOverTime);
     }
   }
 
   makeEffectIcon(effectOverTime: EffectOverTime) {
-    const icon = this.scene.add.image(
-      this.x,
-      this.isOnTop()
-        ? this.y + this.effectIconUnderUnitOffset
-        : this.y - this.displayHeight - this.effectIconOverUnitOffset,
-      "player",
-      effectOverTime.frame
-    );
-    icon.scale = 1;
-    icon.setDepth(9999);
-    if (!this.isSelected) icon.setVisible(false);
-    return icon;
+    this.effectIcon = this.scene.add
+      .image(0, 0, "player", effectOverTime.frame)
+      .setScale(1)
+      .setDepth(9999);
+    if (!this.isSelected) this.effectIcon.setVisible(false);
+    this.moveEffectIconToPlayerPosition();
   }
 
-  moveEffectIcon() {
+  moveEffectIconToPlayerPosition() {
     this.effectIcon.x = this.x;
     this.effectIcon.y = this.isOnTop()
       ? this.y + this.effectIconUnderUnitOffset
