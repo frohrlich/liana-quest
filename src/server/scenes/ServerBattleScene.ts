@@ -300,7 +300,7 @@ export class ServerBattleScene {
   checkDead(unit: ServerUnit) {
     if (unit.isDead()) {
       this.removeUnitFromBattle(unit.id);
-      if (unit.isUnitTurn) {
+      if (!this.battleIsFinished && unit.isUnitTurn) {
         this.io.to(this.id).emit("endPlayerTurn", unit);
         this.turnIndex--;
         this.nextTurn();
@@ -597,6 +597,7 @@ export class ServerBattleScene {
   }
 
   private endBattle() {
+    this.battleIsFinished = true;
     // if battle against npc is lost, make it reappear on world map
     if (
       this.timeline.length > 0 &&

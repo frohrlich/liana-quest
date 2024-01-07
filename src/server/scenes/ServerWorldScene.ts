@@ -69,15 +69,15 @@ export class ServerWorldScene {
       socket.on("startBattle", (enemyId: string) => {
         const myPlayer = this.findCurrentPlayer(socket);
         const myNpc = this.findNpcById(enemyId);
-        if (myNpc && myPlayer) {
+        if (myNpc && myNpc.isVisible && myPlayer) {
           socket.leave("world");
           this.movePlayerToBattle(socket);
-          const battleId = "battle_" + enemyId;
+          const battleId = uuidv4();
           socket.join(battleId);
           this.ongoingBattles.push(
             new ServerBattleScene(this, io, myPlayer, myNpc, battleId)
           );
-          this.hideEnemyAndShowBattleIcon(enemyId);
+          this.hideEnemyAndCreateBattleIcon(enemyId, battleId);
         }
       });
 
@@ -95,7 +95,7 @@ export class ServerWorldScene {
           this.movePlayerToBattle(socket);
           this.movePlayerToBattle(challengedPlayerSocket);
 
-          const battleId = "battle_" + socket.id;
+          const battleId = uuidv4();
           socket.join(battleId);
           challengedPlayerSocket.join(battleId);
 
@@ -108,7 +108,11 @@ export class ServerWorldScene {
               battleId
             )
           );
-          this.showChallengeBattleIcons(socket.id, challengedPlayerId);
+          this.createChallengeBattleIcons(
+            socket.id,
+            challengedPlayerId,
+            battleId
+          );
         }
       });
 
@@ -407,14 +411,14 @@ export class ServerWorldScene {
     }
   }
 
-  hideEnemyAndShowBattleIcon(enemyId: string) {
+  hideEnemyAndCreateBattleIcon(enemyId: string, battleId: string) {
     const myNpc = this.findNpcById(enemyId);
     if (myNpc) {
       myNpc.isVisible = false;
       const myBattleIcon: ServerBattleIcon = {
         indX: myNpc.indX,
         indY: myNpc.indY,
-        battleId: "battle_" + myNpc.id,
+        battleId: battleId,
         isChallenge: false,
         isTeamA: true,
         id: uuidv4(),
@@ -427,14 +431,18 @@ export class ServerWorldScene {
     }
   }
 
-  showChallengeBattleIcons(playerId: string, challengedPlayerId: string) {
+  createChallengeBattleIcons(
+    playerId: string,
+    challengedPlayerId: string,
+    battleId: string
+  ) {
     const myPlayer = this.findPlayerInBattlesById(playerId);
     const myChallengedPlayer = this.findPlayerInBattlesById(challengedPlayerId);
     if (myPlayer && myChallengedPlayer) {
       const myPlayerBattleIcon: ServerBattleIcon = {
         indX: myPlayer.indX,
         indY: myPlayer.indY,
-        battleId: "battle_" + myPlayer.id,
+        battleId: battleId,
         isChallenge: true,
         isTeamA: true,
         id: uuidv4(),
@@ -442,7 +450,7 @@ export class ServerWorldScene {
       const myChallengedPlayerBattleIcon: ServerBattleIcon = {
         indX: myChallengedPlayer.indX,
         indY: myChallengedPlayer.indY,
-        battleId: "battle_" + myPlayer.id,
+        battleId: battleId,
         isChallenge: true,
         isTeamA: false,
         id: uuidv4(),
