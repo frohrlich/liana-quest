@@ -42,7 +42,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   // chain of tweens containing the successive moving tweens in path from tile A to tile B
   moveChain: any = {};
   frameNumber: number;
-  isAlly: boolean;
+  isTeamA: boolean;
   healthBar!: Phaser.GameObjects.Graphics;
   // team identifier under unit's feet (blue ally, red enemy)
   identifier!: Phaser.GameObjects.Image;
@@ -67,7 +67,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     maxPm: number,
     maxPa: number,
     maxHp: number,
-    isAlly: boolean
+    isTeamA: boolean
   ) {
     super(scene, x, y, texture, frame);
     this.baseTint = baseTint;
@@ -84,7 +84,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.direction = "";
     this.isMoving = false;
     this.frameNumber = frame;
-    this.isAlly = isAlly;
+    this.isTeamA = isTeamA;
 
     // tween move chain setup
     this.moveChain.targets = this;
@@ -108,6 +108,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
 
   // on select, highlight unit, show healthbar and effect icon, and show unit stats in UI
   selectUnit() {
+    this.myScene.units.forEach((unit) => {
+      unit.unselectUnit();
+    });
     this.isSelected = true;
     this.tint = this.selectedTint;
     this.timelineSlot.tint = this.selectedTint;
@@ -318,7 +321,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   }
 
   private addSummonedUnit(serverSummonedUnit: ServerUnit) {
-    const summonedUnit = this.myScene.addUnit(serverSummonedUnit, this.isAlly);
+    const summonedUnit = this.myScene.addUnit(serverSummonedUnit, this.isTeamA);
     this.summonedUnits.push(summonedUnit);
   }
 
@@ -589,7 +592,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   // create team identifier (circle under unit's feet)
   createTeamIdentifier(scale: number) {
     // identifier frame on the spritesheet (red circle or blue circle)
-    let identifierFrame = this.isAlly ? 34 : 33;
+    let identifierFrame = this.isTeamA ? 34 : 33;
     this.identifier = this.scene.add.image(
       this.x,
       this.y,

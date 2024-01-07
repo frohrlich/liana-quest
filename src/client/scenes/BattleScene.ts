@@ -26,8 +26,8 @@ export class BattleScene extends Phaser.Scene {
   endBattleDelay: number = 400;
 
   currentPlayer: Player;
-  allies: Unit[] = [];
-  enemies: Unit[] = [];
+  teamA: Unit[] = [];
+  teamB: Unit[] = [];
   units: Unit[] = [];
   clickedTile: Phaser.Tilemaps.Tile | null;
   tileWidth: number;
@@ -48,11 +48,10 @@ export class BattleScene extends Phaser.Scene {
   overlays: Phaser.GameObjects.Rectangle[] = [];
   spellAoeOverlay: Phaser.GameObjects.Rectangle[] = [];
   pathOverlay: Phaser.GameObjects.Rectangle[] = [];
-  enemyType: string;
   grid: Phaser.GameObjects.Grid;
-  enemyId: string;
-  playerStarterTiles: Phaser.Tilemaps.Tile[];
-  enemyStarterTiles: Phaser.Tilemaps.Tile[];
+  unitBId: string;
+  teamAStarterTiles: Phaser.Tilemaps.Tile[];
+  teamBStarterTiles: Phaser.Tilemaps.Tile[];
   worldScene: WorldScene;
   socket: Socket;
   playerId: string;
@@ -72,7 +71,7 @@ export class BattleScene extends Phaser.Scene {
       setTimeout(() => {
         // @ts-ignore
         location.reload(true);
-      }, 200);
+      }, 500);
     });
     this.playerId = this.socket.id;
 
@@ -80,8 +79,8 @@ export class BattleScene extends Phaser.Scene {
     this.turnIndex = 0;
     this.spellVisible = false;
 
-    // get id of the enemy from the world scene
-    this.enemyId = data.enemiesInfo[0].id;
+    // get id of the unit B from the world scene
+    this.unitBId = data.teamAInfo[0].id;
 
     this.createTilemap(data);
     this.addUnitsOnStart(data);
@@ -178,17 +177,30 @@ export class BattleScene extends Phaser.Scene {
   }
 
   setupStartPosition() {
-    const playerColor = 0x0000ff;
-    const enemyColor = 0xff0000;
+    const teamAColor = 0x0000ff;
+    const teamBColor = 0xff0000;
 
-    this.playerStarterTiles.forEach((tile) => {
+    // allies starter tiles are interactive, enemies starter tiles are not
+    const isPlayerInTeamA = this.teamA.some(
+      (unit) => unit.id === this.socket.id
+    );
+    const alliedStarterTiles = isPlayerInTeamA
+      ? this.teamAStarterTiles
+      : this.teamBStarterTiles;
+    const enemyStarterTiles = isPlayerInTeamA
+      ? this.teamBStarterTiles
+      : this.teamAStarterTiles;
+    const alliedColor = isPlayerInTeamA ? teamAColor : teamBColor;
+    const enemyColor = isPlayerInTeamA ? teamBColor : teamAColor;
+
+    alliedStarterTiles.forEach((tile) => {
       // overlay the tiles with an interactive transparent rectangle
       let overlay = this.add.rectangle(
         tile.pixelX + 0.5 * tile.width,
         tile.pixelY + 0.5 * tile.height,
         tile.width,
         tile.height,
-        playerColor,
+        alliedColor,
         0.4
       );
       overlay.setInteractive();
@@ -211,7 +223,7 @@ export class BattleScene extends Phaser.Scene {
       });
     });
 
-    this.enemyStarterTiles.forEach((tile) => {
+    enemyStarterTiles.forEach((tile) => {
       // overlay the tile with an interactive transparent rectangle
       let overlay = this.add.rectangle(
         tile.pixelX + 0.5 * tile.width,
@@ -237,7 +249,7 @@ export class BattleScene extends Phaser.Scene {
     this.socket.on(
       "playerJoinedBattle",
       (newPlayer: ServerUnit, timeline: ServerUnit[]) => {
-        this.addUnit(newPlayer, newPlayer.isAlly);
+        this.addUnit(newPlayer, newPlayer.isTeamA);
         this.syncTimelineWithServer(timeline);
         this.uiScene.updateTimeline(this.timeline);
       }
@@ -289,7 +301,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private calculatePlayerStarterTiles() {
-    this.playerStarterTiles = this.background.filterTiles(
+    this.teamAStarterTiles = this.background.filterTiles(
       (tile: Phaser.Tilemaps.Tile) => !this.obstacles.getTileAt(tile.x, tile.y),
       this,
       0,
@@ -300,7 +312,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private calculateEnemyStarterTiles() {
-    this.enemyStarterTiles = this.background.filterTiles(
+    this.teamBStarterTiles = this.background.filterTiles(
       (tile: Phaser.Tilemaps.Tile) => !this.obstacles.getTileAt(tile.x, tile.y),
       this,
       Math.floor((this.map.width * 2) / 3),
@@ -355,8 +367,8 @@ export class BattleScene extends Phaser.Scene {
   startBattle() {
     this.clearOverlay();
     this.removeReadyIcons();
-    this.enemyStarterTiles = [];
-    this.playerStarterTiles = [];
+    this.teamBStarterTiles = [];
+    this.teamAStarterTiles = [];
     this.uiScene.startBattle();
     this.listenToMainBattleEvents();
     this.displayBattleStartScreen();
@@ -464,7 +476,7 @@ export class BattleScene extends Phaser.Scene {
     let prevPlayer = this.timeline[this.turnIndex];
     if (prevPlayer) {
       this.uiScene.uiTimelineBackgrounds[this.turnIndex].fillColor =
-        prevPlayer.isAlly ? 0x0000ff : 0xff0000;
+        prevPlayer.isTeamA ? 0x0000ff : 0xff0000;
     }
 
     this.turnIndex = turnIndex;
@@ -477,15 +489,16 @@ export class BattleScene extends Phaser.Scene {
 
     // allies
     this.addTeamOnStart(data, true);
-    this.currentPlayer = this.findUnitById(this.socket.id) as Player;
     // enemies
     this.addTeamOnStart(data, false);
+
+    this.currentPlayer = this.findUnitById(this.socket.id) as Player;
   }
 
-  private addTeamOnStart(data: any, isAlly: boolean) {
-    const unitsInfo = isAlly ? data.alliesInfo : data.enemiesInfo;
+  private addTeamOnStart(data: any, isTeamA: boolean) {
+    const unitsInfo = isTeamA ? data.teamAInfo : data.teamBInfo;
     unitsInfo.forEach((serverUnit: ServerUnit) => {
-      this.addUnit(serverUnit, isAlly);
+      this.addUnit(serverUnit, isTeamA);
     });
   }
 
@@ -495,8 +508,8 @@ export class BattleScene extends Phaser.Scene {
     });
     this.units = [];
     this.timeline = [];
-    this.allies = [];
-    this.enemies = [];
+    this.teamA = [];
+    this.teamB = [];
   }
 
   private createTilemap(data: any) {
@@ -679,7 +692,7 @@ export class BattleScene extends Phaser.Scene {
   };
 
   // add a unit to the scene
-  addUnit(serverUnit: ServerUnit, allied: boolean) {
+  addUnit(serverUnit: ServerUnit, isTeamA: boolean) {
     // see if we find a unit with the name given by the world scene in the array
     // of all available units
     const unitData = unitsAvailable.find(
@@ -702,7 +715,7 @@ export class BattleScene extends Phaser.Scene {
           serverUnit.pm,
           serverUnit.pa,
           serverUnit.hp,
-          allied
+          isTeamA
         );
       } else {
         unit = new Player(
@@ -717,7 +730,7 @@ export class BattleScene extends Phaser.Scene {
           serverUnit.pm,
           serverUnit.pa,
           serverUnit.hp,
-          allied
+          isTeamA
         );
       }
       unit.type = unitData.name;
@@ -740,10 +753,10 @@ export class BattleScene extends Phaser.Scene {
       unit.setPosition(initialUnitX, initialUnitY);
       const unitScale = 1.5;
       unit.setScale(unitScale);
-      if (allied) {
-        this.allies.push(unit);
+      if (isTeamA) {
+        this.teamA.push(unit);
       } else {
-        this.enemies.push(unit);
+        this.teamB.push(unit);
       }
       this.units.push(unit);
       // add spells
@@ -897,7 +910,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   removeUnitFromTeam(unit: Unit) {
-    const teamArray = unit.isAlly ? this.allies : this.enemies;
+    const teamArray = unit.isTeamA ? this.teamA : this.teamB;
     const index = teamArray.findIndex((unit) => unit == unit);
     if (index !== -1) {
       teamArray.splice(index, 1);
@@ -1248,7 +1261,7 @@ export class BattleScene extends Phaser.Scene {
   gameOver() {
     this.resetScene();
     // tell world scene to make npc reappear
-    this.socket.emit("npcWinFight", this.enemyId);
+    this.socket.emit("npcWinFight", this.unitBId);
     this.scene.start("GameOverScene");
   }
 

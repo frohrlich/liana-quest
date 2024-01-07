@@ -15,7 +15,7 @@ export class Npc extends Unit {
     maxPm: number,
     maxPa: number,
     maxHp: number,
-    isAlly: boolean
+    isTeamA: boolean
   ) {
     super(
       scene,
@@ -29,7 +29,7 @@ export class Npc extends Unit {
       maxPm,
       maxPa,
       maxHp,
-      isAlly
+      isTeamA
     );
   }
 }

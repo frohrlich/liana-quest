@@ -9,9 +9,10 @@ export class WorldOnlinePlayer extends WorldUnit {
     indY: number,
     texture: string,
     frame: number,
-    name: string
+    name: string,
+    baseTint: number
   ) {
-    super(scene, id, indX, indY, texture, frame, name);
+    super(scene, id, indX, indY, texture, frame, name, baseTint);
   }
 
   override updateServerDirection() {

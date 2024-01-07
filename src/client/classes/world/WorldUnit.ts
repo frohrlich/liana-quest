@@ -30,6 +30,8 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   direction: string = "down";
   isMoving: boolean = false;
   unitName: Phaser.GameObjects.BitmapText;
+  selectedTint = 0x777777;
+  baseTint: number;
 
   constructor(
     scene: Phaser.Scene,
@@ -38,7 +40,8 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     indY: number,
     texture: string,
     frame: number,
-    name: string
+    name: string,
+    baseTint: number
   ) {
     super(scene, 0, 0, texture, frame);
     this.id = id;
@@ -50,6 +53,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     this.y = this.tilePosToPixelsY(indY);
     this.depth = this.y;
     this.type = name;
+    this.baseTint = baseTint;
 
     // chain of tweens containing the successive moving tweens in path from tile A to tile B
     this.moveChain.targets = this;
@@ -300,7 +304,11 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
       )
       .setVisible(false)
       .setOrigin(0.3, 0.5)
-      .setDepth(10001);
+      .setDepth(10001)
+      .on("pointerup", () => {
+        this.myScene.startChallenge(this);
+      });
+
     const text = "Challenge";
     this.interactionMenuText = this.myScene.add
       .bitmapText(0, 0, "dogicapixel", text, this.fontSize)
@@ -317,18 +325,21 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
 
   activateSelectEvents() {
     this.on("pointerup", () => {
+      if (this.myScene.selectedUnit) this.myScene.selectedUnit.unSelectUnit();
       this.selectUnit();
     });
     return this;
   }
 
   selectUnit() {
+    this.tint = this.selectedTint;
     this.displayInteractionMenu();
     this.showUnitName();
     this.myScene.selectedUnit = this;
   }
 
   unSelectUnit() {
+    this.tint = this.baseTint;
     this.hideInteractionMenu();
     this.hideUnitName();
     this.myScene.selectedUnit = null;

@@ -8,20 +8,20 @@ import { UITimelineSlot } from "../classes/UI/UITimelineSlot";
 import { UIText } from "../classes/UI/UIText";
 
 export class UIScene extends Phaser.Scene {
-  graphics!: Phaser.GameObjects.Graphics;
-  battleScene!: BattleScene;
-  uiTabWidth!: number;
+  graphics: Phaser.GameObjects.Graphics;
+  battleScene: BattleScene;
+  uiTabWidth: number;
   // global scale for the UI (change it when changing game resolution)
   uiScale: number = 2.5;
   uiFontColor = 0x00ff40;
   // y coordinates of the top of the UI
-  topY!: number;
-  uiTabHeight!: number;
+  topY: number;
+  uiTabHeight: number;
   uiSpells: UISpell[] = [];
   uiTimeline: UITimelineSlot[] = [];
   uiTimelineBackgrounds: Phaser.GameObjects.Rectangle[] = [];
-  handle!: Phaser.GameObjects.Rectangle;
-  unitStats!: UnitStatDisplay;
+  handle: Phaser.GameObjects.Rectangle;
+  unitStats: UnitStatDisplay;
   buttonText: Phaser.GameObjects.BitmapText;
   button: Phaser.GameObjects.Rectangle;
 
@@ -193,7 +193,7 @@ export class UIScene extends Phaser.Scene {
         offsetY + (unitHeight * this.uiScale) / 2 + topMargin,
         unitWidth * this.uiScale,
         unitHeight * this.uiScale,
-        unit.isAlly ? 0x0000ff : 0xff0000,
+        unit.isTeamA ? 0x0000ff : 0xff0000,
         0.3
       );
       this.uiTimelineBackgrounds.push(background);

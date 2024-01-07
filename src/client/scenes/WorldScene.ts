@@ -70,7 +70,7 @@ export class WorldScene extends Phaser.Scene {
       setTimeout(() => {
         // @ts-ignore
         location.reload(true);
-      }, 200);
+      }, 500);
     });
 
     this.socket.on("newPlayer", (playerInfo: ServerWorldUnit) => {
@@ -188,8 +188,8 @@ export class WorldScene extends Phaser.Scene {
     this.socket.on(
       "battleHasStarted",
       (
-        allies: ServerUnit[],
-        enemies: ServerUnit[],
+        teamA: ServerUnit[],
+        teamB: ServerUnit[],
         timeline: ServerUnit[],
         mapName: string
       ) => {
@@ -201,8 +201,8 @@ export class WorldScene extends Phaser.Scene {
           callback: () => {
             this.resetScene();
             this.scene.start("BattleScene", {
-              alliesInfo: allies,
-              enemiesInfo: enemies,
+              teamAInfo: teamA,
+              teamBInfo: teamB,
               timeline: timeline,
               mapName: mapName,
             });
@@ -263,7 +263,8 @@ export class WorldScene extends Phaser.Scene {
       serverWorldUnit.indY,
       "player",
       playerData.frame,
-      serverWorldUnit.type
+      serverWorldUnit.type,
+      serverWorldUnit.tint
     );
     this.add
       .existing(otherPlayer)
@@ -311,7 +312,8 @@ export class WorldScene extends Phaser.Scene {
       playerPosY,
       "player",
       playerData.frame,
-      playerData.name
+      playerData.name,
+      playerInfo.tint
     );
     this.player.tint = playerInfo.tint;
     this.physics.add.existing(this.player);
@@ -378,7 +380,8 @@ export class WorldScene extends Phaser.Scene {
         indY,
         "player",
         enemyData.frame,
-        enemyType
+        enemyType,
+        myEnemyData.tint
       );
       this.spawns.add(myEnemy, true);
       myEnemy.setHitboxScale(1.5);
@@ -543,4 +546,11 @@ export class WorldScene extends Phaser.Scene {
       repeat: 0,
     });
   };
+
+  startChallenge(unit: WorldUnit) {
+    if (unit && !this.battleHasStarted) {
+      this.battleHasStarted = true;
+      this.socket.emit("startChallenge", unit.id);
+    }
+  }
 }

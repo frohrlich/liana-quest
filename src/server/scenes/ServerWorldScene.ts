@@ -11,6 +11,7 @@ export interface ServerWorldUnit {
   type: string;
   isVisible: boolean;
   tint: integer;
+  isPlayable: boolean;
 }
 
 export interface Position {
@@ -22,15 +23,17 @@ export interface ServerBattleIcon {
   indX: number;
   indY: number;
   id: string;
+  challenge: boolean;
 }
 
 export class ServerWorldScene {
   players: ServerWorldUnit[] = [];
+  sockets: Socket[] = [];
   playersCurrentlyInBattle: ServerWorldUnit[] = [];
   npcs: ServerWorldUnit[] = [];
   battleIcons: ServerBattleIcon[] = [];
   ongoingBattles: ServerBattleScene[] = [];
-  enemyCount = 15;
+  enemyCount = 0;
   minPosition = 0; // min starter position for enemies (distance from upper left corner)
   maxPosition = 5; // max starter position for enemies
   io: Server;
@@ -54,6 +57,7 @@ export class ServerWorldScene {
         direction: "down",
         isVisible: true,
         tint: randomColor,
+        isPlayable: true,
       };
 
       // create a new player and add it to our players object
@@ -68,9 +72,40 @@ export class ServerWorldScene {
           const battleId = "battle_" + enemyId;
           socket.join(battleId);
           this.ongoingBattles.push(
-            new ServerBattleScene(this, io, socket, myPlayer, myNpc, battleId)
+            new ServerBattleScene(this, io, myPlayer, myNpc, battleId)
           );
           this.hideEnemyAndShowBattleIcon(enemyId);
+        }
+      });
+
+      socket.on("startChallenge", (challengedPlayerId: string) => {
+        const myPlayer = this.findCurrentPlayer(socket);
+        const challengedPlayer = this.findPlayerById(challengedPlayerId);
+        if (challengedPlayer && myPlayer) {
+          const challengedPlayerSocket = this.findSocketById(
+            challengedPlayer.id
+          );
+
+          socket.leave("world");
+          challengedPlayerSocket.leave("world");
+
+          this.movePlayerToBattle(socket);
+          this.movePlayerToBattle(challengedPlayerSocket);
+
+          const battleId = "battle_" + challengedPlayerId;
+          socket.join(battleId);
+          challengedPlayerSocket.join(battleId);
+
+          this.ongoingBattles.push(
+            new ServerBattleScene(
+              this,
+              io,
+              myPlayer,
+              challengedPlayer,
+              battleId
+            )
+          );
+          this.showChallengeBattleIcons(socket.id, challengedPlayerId);
         }
       });
 
@@ -81,7 +116,7 @@ export class ServerWorldScene {
         socket.join(id);
         const myBattle = this.ongoingBattles.find((battle) => battle.id === id);
         if (myBattle) {
-          myBattle.addPlayerAfterBattleStart(socket, myPlayer, true);
+          myBattle.addPlayerAfterBattleStart(myPlayer, true);
         }
       });
 
@@ -162,6 +197,10 @@ export class ServerWorldScene {
     return this.npcs.find((npc) => npc.id === enemyId);
   }
 
+  private findPlayerById(playerId: string) {
+    return this.players.find((player) => player.id === playerId);
+  }
+
   private createMap() {
     let tmx = require("tmx-parser");
 
@@ -204,6 +243,7 @@ export class ServerWorldScene {
         direction: "down",
         isVisible: true,
         tint: randomColor,
+        isPlayable: false,
       };
       this.npcs.push(npc);
 
@@ -277,6 +317,7 @@ export class ServerWorldScene {
 
   addNewPlayer(newPlayer: ServerWorldUnit, socket: Socket) {
     this.players.push(newPlayer);
+    this.sockets.push(socket);
     // update all other players of the new player
     socket.broadcast.to("world").emit("newPlayer", newPlayer);
   }
@@ -340,10 +381,8 @@ export class ServerWorldScene {
   }
 
   hideEnemyAndShowBattleIcon(enemyId: string) {
-    const index = this.npcs.findIndex((npc) => npc.id === enemyId);
-    let myNpc: ServerWorldUnit;
-    if (index !== -1) {
-      myNpc = this.npcs[index];
+    const myNpc = this.findNpcById(enemyId);
+    if (myNpc) {
       myNpc.isVisible = false;
       // emit a message to all players to hide this npc during the fight
       this.io.to("world").emit("npcHidden", enemyId);
@@ -353,12 +392,41 @@ export class ServerWorldScene {
         indX: myNpc.indX,
         indY: myNpc.indY,
         id: "battle_" + myNpc.id,
+        challenge: false,
       };
       this.battleIcons.push(myBattleIcon);
     }
   }
 
+  showChallengeBattleIcons(playerId: string, challengedPlayerId: string) {
+    const myPlayer = this.findPlayerById(playerId);
+    const myChallengedPlayer = this.findPlayerById(challengedPlayerId);
+    if (myPlayer && myChallengedPlayer) {
+      // emit a message to all players to show battle icon in place of the npc that just got into a fight
+      this.io
+        .to("world")
+        .emit("addChallengeBattleIcons", myPlayer, myChallengedPlayer);
+      const myPlayerBattleIcon: ServerBattleIcon = {
+        indX: myPlayer.indX,
+        indY: myPlayer.indY,
+        id: "battle_" + myPlayer.id,
+        challenge: true,
+      };
+      const myChallengedPlayerBattleIcon: ServerBattleIcon = {
+        indX: myChallengedPlayer.indX,
+        indY: myChallengedPlayer.indY,
+        id: "battle_" + myPlayer.id,
+        challenge: true,
+      };
+      this.battleIcons.push(myPlayerBattleIcon, myChallengedPlayerBattleIcon);
+    }
+  }
+
   findCurrentPlayer(socket) {
     return this.players.find((player) => player.id === socket.id);
+  }
+
+  findSocketById(id: string) {
+    return this.sockets.find((socket) => socket.id === id);
   }
 }

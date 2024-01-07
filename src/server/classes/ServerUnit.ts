@@ -10,7 +10,7 @@ export class ServerUnit {
   isReady: boolean;
   id: string;
   isPlayable: boolean;
-  isAlly: boolean;
+  isTeamA: boolean;
   indX: number;
   indY: number;
   type: string;
@@ -30,7 +30,7 @@ export class ServerUnit {
     isReady: boolean,
     id: string,
     isPlayable: boolean,
-    isAlly: boolean,
+    isTeamA: boolean,
     indX: number,
     indY: number,
     type: string,
@@ -40,7 +40,7 @@ export class ServerUnit {
     this.id = id;
     this.tint = tint;
     this.isPlayable = isPlayable;
-    this.isAlly = isAlly;
+    this.isTeamA = isTeamA;
     this.indX = indX;
     this.indY = indY;
     this.type = type;
@@ -304,7 +304,7 @@ export class ServerUnit {
 
   // return true if the given unit is a foe for this npc
   isEnemy(unit: ServerUnit) {
-    return this.isAlly ? !unit.isAlly : unit.isAlly;
+    return this.isTeamA ? !unit.isTeamA : unit.isTeamA;
   }
 
   isDead() {
