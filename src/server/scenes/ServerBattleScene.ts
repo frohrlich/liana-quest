@@ -192,8 +192,8 @@ export class ServerBattleScene {
     this.nextTurn();
 
     // tell world map you can't join battle anymore
-    this.io.to("world").emit("removeBattleIcon", this.id);
-    this.worldScene.removeBattleIcon(this.id);
+    this.io.to("world").emit("removeBattleIcons", this.id);
+    this.worldScene.removeBattleIcons(this.id);
   }
 
   nextTurn() {
@@ -550,7 +550,11 @@ export class ServerBattleScene {
       this.io.to(this.id).emit("playerLeft", id);
     }
 
-    // check if either team has no living unit left
+    this.checkIfBattleIsOver();
+  }
+
+  // check if either team has no living unit left
+  private checkIfBattleIsOver() {
     if (!this.timeline.some((unit) => unit.isTeamA)) {
       this.loseBattle(this.teamA);
       this.winBattle(this.teamB);
@@ -559,6 +563,22 @@ export class ServerBattleScene {
       this.loseBattle(this.teamB);
       this.winBattle(this.teamA);
       this.endBattle();
+    }
+  }
+
+  // use this when player disconnects during battle
+  removeCompletelyUnitFromBattle(id: string) {
+    this.removeUnitFromArray(this.teamA, id);
+    this.removeUnitFromArray(this.teamB, id);
+    this.removeUnitFromArray(this.units, id);
+
+    this.removeUnitFromBattle(id);
+  }
+
+  private removeUnitFromArray(array: ServerUnit[], id: string) {
+    let index = array.findIndex((player) => player.id === id);
+    if (index !== -1) {
+      array.splice(index, 1);
     }
   }
 
@@ -577,10 +597,16 @@ export class ServerBattleScene {
   }
 
   private endBattle() {
+    // if battle against npc is lost, make it reappear on world map
+    if (
+      this.timeline.length > 0 &&
+      !this.timeline.some((unit) => unit.isPlayable)
+    ) {
+      this.worldScene.makeNpcVisibleAgain(this.teamB[0].id);
+    }
     this.makeSocketsLeaveBattleRoom();
     this.worldScene.removeBattle(this.id);
-    this.worldScene.removeBattleIcon(this.id);
-    this.io.to("world").emit("removeBattleIcon", this.id);
+    this.worldScene.removeBattleIcons(this.id);
   }
 
   private makeSocketsLeaveBattleRoom() {

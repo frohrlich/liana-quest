@@ -6,7 +6,7 @@ import { Player } from "../classes/battle/Player";
 import { Spell } from "../classes/battle/Spell";
 import { UIScene } from "./UIScene";
 import isVisible from "../utils/lineOfSight";
-import { UnitData, unitsAvailable } from "../data/UnitData";
+import { unitsAvailable } from "../data/UnitData";
 import { heal, javelin, punch, sting } from "../data/SpellData";
 import { WorldScene } from "./WorldScene";
 import { ServerUnit } from "../../server/classes/ServerUnit";
@@ -49,7 +49,6 @@ export class BattleScene extends Phaser.Scene {
   spellAoeOverlay: Phaser.GameObjects.Rectangle[] = [];
   pathOverlay: Phaser.GameObjects.Rectangle[] = [];
   grid: Phaser.GameObjects.Grid;
-  unitBId: string;
   teamAStarterTiles: Phaser.Tilemaps.Tile[];
   teamBStarterTiles: Phaser.Tilemaps.Tile[];
   worldScene: WorldScene;
@@ -78,9 +77,6 @@ export class BattleScene extends Phaser.Scene {
     // refresh scene to its original state
     this.turnIndex = 0;
     this.spellVisible = false;
-
-    // get id of the unit B from the world scene
-    this.unitBId = data.teamAInfo[0].id;
 
     this.createTilemap(data);
     this.addUnitsOnStart(data);
@@ -195,45 +191,67 @@ export class BattleScene extends Phaser.Scene {
 
     alliedStarterTiles.forEach((tile) => {
       // overlay the tiles with an interactive transparent rectangle
-      let overlay = this.add.rectangle(
-        tile.pixelX + 0.5 * tile.width,
-        tile.pixelY + 0.5 * tile.height,
-        tile.width,
-        tile.height,
-        alliedColor,
-        0.4
-      );
-      overlay.setInteractive();
-      this.overlays.push(overlay);
-
+      let overlay = this.generateStarterOverlay(tile, alliedColor);
       // on click, teleport to new starter position
-      overlay.on("pointerup", () => {
-        if (!this.isUnitThere(tile.x, tile.y)) {
-          this.socket.emit("playerChangedStartPosition", this.playerId, {
-            indX: tile.x,
-            indY: tile.y,
-          });
-        }
-      });
-      overlay.on("pointerover", () => {
-        tile.tint = 0x0000ff;
-      });
-      overlay.on("pointerout", () => {
-        tile.tint = 0xffffff;
-      });
+      this.addStartingOverlayInteractivity(overlay, tile);
     });
 
     enemyStarterTiles.forEach((tile) => {
-      // overlay the tile with an interactive transparent rectangle
-      let overlay = this.add.rectangle(
-        tile.pixelX + 0.5 * tile.width,
-        tile.pixelY + 0.5 * tile.height,
-        tile.width,
-        tile.height,
-        enemyColor,
-        0.4
-      );
+      let overlay = this.generateStarterOverlay(tile, enemyColor);
       this.overlays.push(overlay);
+    });
+
+    this.listenToPreparationPhaseEvents();
+  }
+
+  private addStartingOverlayInteractivity(
+    overlay: Phaser.GameObjects.Rectangle,
+    tile: Phaser.Tilemaps.Tile
+  ) {
+    overlay.on("pointerup", () => {
+      if (!this.isUnitThere(tile.x, tile.y)) {
+        this.socket.emit("playerChangedStartPosition", this.playerId, {
+          indX: tile.x,
+          indY: tile.y,
+        });
+      }
+    });
+    overlay.on("pointerover", () => {
+      tile.tint = 0x0000ff;
+    });
+    overlay.on("pointerout", () => {
+      tile.tint = 0xffffff;
+    });
+  }
+
+  private generateStarterOverlay(
+    tile: Phaser.Tilemaps.Tile,
+    alliedColor: number
+  ) {
+    let overlay = this.add.rectangle(
+      tile.pixelX + 0.5 * tile.width,
+      tile.pixelY + 0.5 * tile.height,
+      tile.width,
+      tile.height,
+      alliedColor,
+      0.4
+    );
+    overlay.setInteractive();
+    this.overlays.push(overlay);
+    return overlay;
+  }
+
+  private listenToPreparationPhaseEvents() {
+    this.socket.on("battleIsWon", () => {
+      setTimeout(() => {
+        this.endBattle();
+      }, this.endBattleDelay);
+    });
+
+    this.socket.on("battleIsLost", () => {
+      setTimeout(() => {
+        this.gameOver();
+      }, this.endBattleDelay);
     });
 
     this.socket.on(
@@ -456,18 +474,6 @@ export class BattleScene extends Phaser.Scene {
           this.isPlayerTurn = false;
         }
       }
-    });
-
-    this.socket.on("battleIsWon", () => {
-      setTimeout(() => {
-        this.endBattle();
-      }, this.endBattleDelay);
-    });
-
-    this.socket.on("battleIsLost", () => {
-      setTimeout(() => {
-        this.gameOver();
-      }, this.endBattleDelay);
     });
   }
 
@@ -1260,8 +1266,6 @@ export class BattleScene extends Phaser.Scene {
 
   gameOver() {
     this.resetScene();
-    // tell world scene to make npc reappear
-    this.socket.emit("npcWinFight", this.unitBId);
     this.scene.start("GameOverScene");
   }
 

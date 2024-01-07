@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { WorldNpc } from "../classes/world/WorldNpc";
-import { UnitData, unitsAvailable } from "../data/UnitData";
+import { unitsAvailable } from "../data/UnitData";
 import { Socket, io } from "socket.io-client";
 import {
   ServerBattleIcon,
@@ -19,13 +19,16 @@ interface UnitPosition {
 }
 
 export class WorldScene extends Phaser.Scene {
-  player!: WorldOnlinePlayer;
-  spawns!: Phaser.Physics.Arcade.Group;
-  battleIcons: BattleIcon[] = [];
   unitScale = 1.5;
   animFramerate = 7;
-  npcBattleShieldFrame = 54;
-  isBattleActivated = false;
+  npcBattleIconFrame = 54;
+  teamABattleIconFrame = 56;
+  teamBBattleIconFrame = 55;
+  isBattleActivated = true;
+
+  player: WorldOnlinePlayer;
+  spawns: Phaser.Physics.Arcade.Group;
+  battleIcons: BattleIcon[] = [];
 
   background: Phaser.Tilemaps.TilemapLayer;
   tileWidth: number;
@@ -160,16 +163,38 @@ export class WorldScene extends Phaser.Scene {
       });
     });
 
-    // when a battle starts, show the shield to join battle
-    this.socket.on("addBattleIcon", (npc: ServerWorldUnit) => {
-      this.addBattleIconFromPositionAndId(
-        npc.indX,
-        npc.indY,
-        "battle_" + npc.id
-      );
+    // when a battle starts, show the icon to join battle
+    this.socket.on("addBattleIcon", (npc: ServerWorldUnit, id: string) => {
+      this.addBattleIconFromPositionAndId(npc.indX, npc.indY, id, false, true);
     });
 
-    // when a battle preparation phase is over, remove the shield
+    // when a challenge starts, show the icons to join either team
+    this.socket.on(
+      "addChallengeBattleIcons",
+      (
+        player: ServerWorldUnit,
+        challengedPlayer: ServerWorldUnit,
+        playerBattleIconId,
+        challengedPlayerBattleIconId
+      ) => {
+        this.addBattleIconFromPositionAndId(
+          player.indX,
+          player.indY,
+          playerBattleIconId,
+          true,
+          true
+        );
+        this.addBattleIconFromPositionAndId(
+          challengedPlayer.indX,
+          challengedPlayer.indY,
+          challengedPlayerBattleIconId,
+          true,
+          false
+        );
+      }
+    );
+
+    // when a battle's preparation phase is over, remove the icon(s)
     this.socket.on("removeBattleIcon", (id: string) => {
       const myBattleIcon = this.battleIcons.find((icon) => icon.id === id);
       if (myBattleIcon) myBattleIcon.destroy();
@@ -216,15 +241,25 @@ export class WorldScene extends Phaser.Scene {
   private addBattleIconFromPositionAndId(
     indX: number,
     indY: number,
-    id: string
+    id: string,
+    isChallenge: boolean,
+    isTeamA: boolean
   ) {
+    let battleIconFrame: number;
+    if (!isChallenge) {
+      battleIconFrame = this.npcBattleIconFrame;
+    } else {
+      battleIconFrame = isTeamA
+        ? this.teamABattleIconFrame
+        : this.teamBBattleIconFrame;
+    }
     const battleIcon = new BattleIcon(
       this,
       id,
       this.map.tileToWorldX(indX),
       this.map.tileToWorldY(indY),
       "player",
-      this.npcBattleShieldFrame
+      battleIconFrame
     );
     this.battleIcons.push(battleIcon);
     this.add
@@ -243,7 +278,9 @@ export class WorldScene extends Phaser.Scene {
       this.addBattleIconFromPositionAndId(
         battleIcon.indX,
         battleIcon.indY,
-        battleIcon.id
+        battleIcon.id,
+        battleIcon.isChallenge,
+        battleIcon.isTeamA
       );
     });
   }

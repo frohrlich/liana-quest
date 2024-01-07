@@ -4,7 +4,6 @@ import { Spell } from "./Spell";
 import { UITimelineSlot } from "../UI/UITimelineSlot";
 import { EffectOverTime } from "./EffectOverTime";
 import { ServerUnit } from "../../../server/classes/ServerUnit";
-import { unitsAvailable } from "../../data/UnitData";
 
 export class Unit extends Phaser.GameObjects.Sprite {
   // use these to manipulate sprite positions around units
@@ -15,7 +14,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   healthBarScale = 1.2;
 
   selectedTint = 0x777777;
-  readyIconFrame = 55;
+  readyIconFrame = 57;
   deathDelay = 200;
 
   myScene: BattleScene;
