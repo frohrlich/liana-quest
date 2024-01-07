@@ -37,7 +37,7 @@ export class BattleScene extends Phaser.Scene {
   tileset: Phaser.Tilemaps.Tileset | null;
   obstacles: Phaser.Tilemaps.TilemapLayer | null;
   background: Phaser.Tilemaps.TilemapLayer | null;
-  turnIndex: number;
+  timelineIndex: number;
   timeline: Unit[] = [];
   isPlayerTurn: boolean;
   accessibleTiles: TilePath[] = [];
@@ -54,6 +54,7 @@ export class BattleScene extends Phaser.Scene {
   worldScene: WorldScene;
   socket: Socket;
   playerId: string;
+  isInPreparationPhase: boolean;
 
   constructor() {
     super({
@@ -62,6 +63,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   create(data: any): void {
+    this.isInPreparationPhase = true;
     this.isPlayerTurn = false;
     this.worldScene = this.scene.get("WorldScene") as WorldScene;
     this.socket = this.worldScene.socket;
@@ -75,7 +77,7 @@ export class BattleScene extends Phaser.Scene {
     this.playerId = this.socket.id;
 
     // refresh scene to its original state
-    this.turnIndex = 0;
+    this.timelineIndex = 0;
     this.spellVisible = false;
 
     this.createTilemap(data);
@@ -109,12 +111,14 @@ export class BattleScene extends Phaser.Scene {
   }
 
   addDisconnectListener() {
-    this.socket.on("playerLeft", (playerId: string) => {
-      this.units.forEach((otherPlayer: Unit) => {
-        if (playerId === otherPlayer.id) {
-          otherPlayer.die();
-        }
-      });
+    this.socket.on("playerLeft", (playerId: string, timeline: ServerUnit[]) => {
+      const index = this.timeline.findIndex((unit) => unit.id === playerId);
+      if (index !== -1) {
+        if (this.timelineIndex > index) this.timelineIndex--;
+        this.timeline[index].die();
+      }
+      this.syncTimelineWithServer(timeline);
+      this.uiScene.updateTimeline(this.timeline, this.isInPreparationPhase);
     });
   }
 
@@ -269,7 +273,7 @@ export class BattleScene extends Phaser.Scene {
       (newPlayer: ServerUnit, timeline: ServerUnit[]) => {
         this.addUnit(newPlayer, newPlayer.isTeamA);
         this.syncTimelineWithServer(timeline);
-        this.uiScene.updateTimeline(this.timeline);
+        this.uiScene.updateTimeline(this.timeline, true);
       }
     );
 
@@ -383,6 +387,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   startBattle() {
+    this.isInPreparationPhase = false;
     this.clearOverlay();
     this.removeReadyIcons();
     this.teamBStarterTiles = [];
@@ -477,15 +482,15 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  changeTimelineIndex = (turnIndex: number) => {
+  changeTimelineIndex = (timelineIndex: number) => {
     // clear previous player highlight on the timeline
-    let prevPlayer = this.timeline[this.turnIndex];
+    let prevPlayer = this.timeline[this.timelineIndex];
     if (prevPlayer) {
-      this.uiScene.uiTimelineBackgrounds[this.turnIndex].fillColor =
+      this.uiScene.uiTimelineBackgrounds[this.timelineIndex].fillColor =
         prevPlayer.isTeamA ? 0x0000ff : 0xff0000;
     }
 
-    this.turnIndex = turnIndex;
+    this.timelineIndex = timelineIndex;
     this.highlightCurrentUnitInTimeline();
   };
 
@@ -562,7 +567,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private highlightCurrentUnitInTimeline() {
-    this.uiScene.uiTimelineBackgrounds[this.turnIndex].fillColor = 0xffffff;
+    this.uiScene.uiTimelineBackgrounds[this.timelineIndex].fillColor = 0xffffff;
   }
 
   // checks if the unit can access this tile with their remaining PMs
@@ -906,12 +911,17 @@ export class BattleScene extends Phaser.Scene {
 
   removeUnitFromBattle(unit: Unit) {
     this.removeFromObstacleLayer(unit.indX, unit.indY);
-    this.removeUnitFromTimeline(unit);
     this.removeUnitFromTeam(unit);
     this.refreshAccessibleTiles();
-    if (this.spellVisible) {
-      this.clearSpellRange();
-      this.displaySpellRange(this.currentSpell);
+    if (this.isPlayerTurn) {
+      if (this.spellVisible) {
+        this.clearSpellRange();
+        this.displaySpellRange(this.currentSpell);
+      } else {
+        this.clearAccessibleTiles();
+        this.refreshAccessibleTiles();
+        this.highlightAccessibleTiles(this.accessibleTiles);
+      }
     }
   }
 
@@ -1217,25 +1227,14 @@ export class BattleScene extends Phaser.Scene {
 
   // return true if there is a unit at the specified position
   isUnitThere(x: number, y: number): boolean {
-    return this.units.some((unit) => unit.indX == x && unit.indY == y);
+    return this.timeline.some((unit) => unit.indX == x && unit.indY == y);
   }
 
   // return unit at the specified position
   getUnitAtPos(indX: number, indY: number) {
-    return this.units.find((unit) => unit.indX === indX && unit.indY === indY);
-  }
-
-  removeUnitFromTimeline(unit: Unit) {
-    const index = this.timeline.findIndex(
-      (timelineUnit) => timelineUnit == unit
+    return this.timeline.find(
+      (unit) => unit.indX === indX && unit.indY === indY
     );
-    if (index !== -1) {
-      this.timeline.splice(index, 1);
-      if (index <= this.turnIndex) this.turnIndex--;
-      if (this.timeline.length > 0) {
-        this.uiScene.updateTimeline(this.timeline);
-      }
-    }
   }
 
   clearSpellRange() {

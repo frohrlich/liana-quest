@@ -36,7 +36,7 @@ export class ServerBattleScene {
   mapName: string;
 
   isInPreparationMode: boolean;
-  turnIndex: number = 0;
+  timelineIndex: number = 0;
 
   constructor(
     worldScene: ServerWorldScene,
@@ -197,18 +197,19 @@ export class ServerBattleScene {
   }
 
   nextTurn() {
-    if (this.turnIndex >= this.timeline.length) {
-      this.turnIndex = 0;
+    if (this.timelineIndex >= this.timeline.length) {
+      this.timelineIndex = 0;
     }
 
-    const currentUnit = this.timeline[this.turnIndex];
+    const currentUnit = this.timeline[this.timelineIndex];
 
     const effectOverTime = { ...currentUnit.effectOverTime };
     currentUnit.undergoEffectOverTime();
     this.checkDead(currentUnit);
     this.io
       .to(this.id)
-      .emit("unitTurnBegins", currentUnit, effectOverTime, this.turnIndex);
+      .emit("unitTurnBegins", currentUnit, effectOverTime, this.timelineIndex);
+
     if (!this.battleIsFinished) {
       if (!currentUnit.isDead()) {
         if (currentUnit.isPlayable) {
@@ -217,7 +218,7 @@ export class ServerBattleScene {
         } else {
           currentUnit.playTurn(this);
         }
-        this.turnIndex++;
+        this.timelineIndex++;
       } else {
         this.nextTurn();
       }
@@ -302,7 +303,7 @@ export class ServerBattleScene {
       this.removeUnitFromBattle(unit.id);
       if (!this.battleIsFinished && unit.isUnitTurn) {
         this.io.to(this.id).emit("endPlayerTurn", unit);
-        this.turnIndex--;
+        this.timelineIndex--;
         this.nextTurn();
       }
     }
@@ -396,11 +397,13 @@ export class ServerBattleScene {
   }
 
   getUnitAtPos(indX: number, indY: number) {
-    return this.units.find((unit) => unit.indX === indX && unit.indY === indY);
+    return this.timeline.find(
+      (unit) => unit.indX === indX && unit.indY === indY
+    );
   }
 
   everyoneIsReady() {
-    return this.units.every((unit) => unit.isReady);
+    return this.timeline.every((unit) => unit.isReady);
   }
 
   addUnitsOnStart(unitA: ServerWorldUnit, unitB: ServerWorldUnit) {
@@ -522,7 +525,7 @@ export class ServerBattleScene {
 
   // return true if there is a unit at the specified position
   isUnitThere(x: number, y: number): boolean {
-    return this.units.some((unit) => unit.indX == x && unit.indY == y);
+    return this.timeline.some((unit) => unit.indX == x && unit.indY == y);
   }
 
   // play order : alternate between allies and enemies
@@ -547,7 +550,9 @@ export class ServerBattleScene {
       });
       this.removeFromObstacleLayer(myUnit.indX, myUnit.indY);
       this.timeline.splice(index, 1);
-      this.io.to(this.id).emit("playerLeft", id);
+      if (this.timelineIndex > index) this.timelineIndex--;
+
+      this.io.to(this.id).emit("playerLeft", id, this.timeline);
     }
 
     this.checkIfBattleIsOver();

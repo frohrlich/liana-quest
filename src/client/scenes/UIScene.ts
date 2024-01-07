@@ -35,7 +35,7 @@ export class UIScene extends Phaser.Scene {
     this.battleScene = this.scene.get("BattleScene") as BattleScene;
     this.drawOutline();
     this.createStartButton();
-    this.updateTimeline(this.battleScene.timeline);
+    this.updateTimeline(this.battleScene.timeline, true);
     this.unitStats = this.addStats(0, 0, this.battleScene.currentPlayer);
     const spellTitle = new UIText(this, 1.5, 0.1, "Spells");
     this.refreshSpells();
@@ -129,7 +129,7 @@ export class UIScene extends Phaser.Scene {
     this.buttonText.setTint(this.uiFontColor);
   }
 
-  updateTimeline(timeline: Unit[]) {
+  updateTimeline(timeline: Unit[], isPreparationPhase = false) {
     // scale factor for the timeline
     const topMargin = 10;
     const leftMargin = 10;
@@ -202,6 +202,21 @@ export class UIScene extends Phaser.Scene {
     }
 
     // move the timeline around by grabbing the handle
+    this.makeTimelineHandleDraggable(unitWidth, handleWidth);
+
+    if (!isPreparationPhase) this.highlightCurrentUnitInTimeline(timeline);
+  }
+
+  private highlightCurrentUnitInTimeline(timeline: Unit[]) {
+    let fillIndex = 0;
+    if (this.battleScene.timelineIndex < timeline.length) {
+      fillIndex = this.battleScene.timelineIndex;
+    }
+    const currentBackground = this.uiTimelineBackgrounds[fillIndex];
+    if (currentBackground) currentBackground.fillColor = 0xffffff;
+  }
+
+  private makeTimelineHandleDraggable(unitWidth: number, handleWidth: number) {
     this.handle.setInteractive({ draggable: true });
     this.handle.on(
       "drag",
@@ -217,13 +232,6 @@ export class UIScene extends Phaser.Scene {
         }
       }
     );
-
-    let fillIndex = 0;
-    if (this.battleScene.turnIndex < timeline.length) {
-      fillIndex = this.battleScene.turnIndex;
-    }
-    const currentBackground = this.uiTimelineBackgrounds[fillIndex];
-    if (currentBackground) currentBackground.fillColor = 0xffffff;
   }
 
   // draw the outline of the UI
