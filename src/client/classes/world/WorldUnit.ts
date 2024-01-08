@@ -1,17 +1,18 @@
 import Phaser from "phaser";
 import { WorldScene } from "../../scenes/WorldScene";
 import findPath from "../../utils/findPath";
-import { WorldOnlinePlayer } from "./WorldOnlinePlayer";
 
 // unit in the world mode, as opposed to the Unit class for battle
 export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   // time for moving by 1 tile (in ms)
   moveDuration = 150;
 
-  interactionMenuWidth = 60;
-  interactionMenuHeight = 11;
+  interactionMenuWidth = 62;
+  interactionMenuHeight = 12;
   interactionMenuOffsetX = 2;
-  interactionMenuOffsetY = 2;
+  interactionMenuOffsetY = 5;
+  interactionMenuOnTopOffsetY = 0;
+  interactionMenuOnRightOffsetX = 9;
 
   fontSize = 8;
 
@@ -32,6 +33,8 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   unitName: Phaser.GameObjects.BitmapText;
   selectedTint = 0x777777;
   baseTint: number;
+  unitNameText: Phaser.GameObjects.BitmapText;
+  unitNameRectangle: Phaser.GameObjects.Rectangle;
 
   constructor(
     scene: Phaser.Scene,
@@ -276,19 +279,33 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   moveInteractionMenuToPlayerPosition() {
     if (this.interactionMenuRectangle) {
       const rectanglePosY = this.isOnTop()
-        ? this.y + this.displayHeight
+        ? this.y +
+          this.displayHeight +
+          this.interactionMenuHeight -
+          3 +
+          this.interactionMenuOnTopOffsetY
         : this.y - this.displayHeight + this.interactionMenuOffsetY;
-      this.interactionMenuRectangle.setPosition(
-        this.x + this.displayWidth + this.interactionMenuOffsetX,
-        rectanglePosY
-      );
+      const rectanglePosX = this.isOnRightSide()
+        ? this.x -
+          this.interactionMenuWidth +
+          this.interactionMenuOnRightOffsetX
+        : this.x + this.displayWidth + this.interactionMenuOffsetX;
+      this.interactionMenuRectangle.setPosition(rectanglePosX, rectanglePosY);
       const textPosY = this.isOnTop()
-        ? this.y + this.displayHeight - 3
-        : this.y - this.displayHeight - 1;
-      this.interactionMenuText.setPosition(
-        this.x + this.displayWidth / 3 + 1,
-        textPosY
-      );
+        ? this.y +
+          this.displayHeight +
+          this.interactionMenuHeight -
+          6 +
+          this.interactionMenuOnTopOffsetY
+        : this.y - this.displayHeight + this.interactionMenuOffsetY - 3;
+      const textPosX = this.isOnRightSide()
+        ? this.x -
+          this.interactionMenuWidth -
+          this.displayWidth +
+          this.interactionMenuOnRightOffsetX +
+          7
+        : this.x + this.displayWidth / 3 + 1;
+      this.interactionMenuText.setPosition(textPosX, textPosY);
     }
   }
 
@@ -302,6 +319,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
         0xffffff,
         0.9
       )
+      .setStrokeStyle(1, 0x000000, 0.9)
       .setVisible(false)
       .setOrigin(0.3, 0.5)
       .setDepth(10001)
@@ -321,6 +339,10 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
 
   private isOnTop() {
     return this.y < this.myScene.tileHeight * 3;
+  }
+
+  private isOnRightSide() {
+    return this.x > this.myScene.map.widthInPixels - this.myScene.tileWidth * 4;
   }
 
   activateSelectEvents() {
@@ -346,30 +368,69 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   }
 
   makeUnitName() {
-    this.unitName = this.myScene.add
-      .bitmapText(0, 0, "dogicapixelbold", this.type, this.fontSize)
+    this.unitNameRectangle = this.myScene.add
+      .rectangle(
+        0,
+        0,
+        this.interactionMenuWidth,
+        this.interactionMenuHeight,
+        0xcccccc,
+        0.9
+      )
+      .setStrokeStyle(1, 0x000000, 0.9)
       .setVisible(false)
+      .setOrigin(0.3, 0.5)
+      .setDepth(10001);
+
+    const text = this.type;
+    this.unitNameText = this.myScene.add
+      .bitmapText(0, 0, "dogicapixelbold", text, this.fontSize)
+      .setVisible(false)
+      .setTint(0x000000)
       .setDepth(10002);
     this.moveUnitNameToPlayerPosition();
+    return this;
   }
 
   moveUnitNameToPlayerPosition() {
-    if (this.unitName) {
-      const posX = this.isOnTop()
-        ? this.x - this.unitName.displayWidth * 0.8
-        : this.x;
-      const posY = this.isOnTop()
-        ? this.y + this.displayHeight / 2
-        : this.y + this.displayHeight;
-      this.unitName.setPosition(posX, posY).setOrigin(0.5, 0.5);
+    if (this.unitNameRectangle) {
+      const rectanglePosY = this.isOnTop()
+        ? this.y + this.displayHeight - 3 + this.interactionMenuOnTopOffsetY
+        : this.y -
+          this.displayHeight -
+          this.interactionMenuHeight +
+          this.interactionMenuOffsetY;
+      const rectanglePosX = this.isOnRightSide()
+        ? this.x -
+          this.interactionMenuWidth +
+          this.interactionMenuOnRightOffsetX
+        : this.x + this.displayWidth + this.interactionMenuOffsetX;
+      this.unitNameRectangle.setPosition(rectanglePosX, rectanglePosY);
+      const textPosY = this.isOnTop()
+        ? this.y + this.displayHeight + this.interactionMenuOnTopOffsetY - 6
+        : this.y -
+          this.displayHeight -
+          this.interactionMenuHeight +
+          this.interactionMenuOffsetY -
+          3;
+      const textPosX = this.isOnRightSide()
+        ? this.x -
+          this.interactionMenuWidth -
+          this.displayWidth +
+          this.interactionMenuOnRightOffsetX +
+          7
+        : this.x + this.displayWidth / 3 + 1;
+      this.unitNameText.setPosition(textPosX, textPosY);
     }
   }
 
   hideUnitName() {
-    this.unitName.setVisible(false);
+    this.unitNameRectangle.setVisible(false);
+    this.unitNameText.setVisible(false);
   }
 
   showUnitName() {
-    this.unitName.setVisible(true);
+    this.unitNameRectangle.setVisible(true);
+    this.unitNameText.setVisible(true);
   }
 }
