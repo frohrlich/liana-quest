@@ -1,5 +1,4 @@
 import Phaser from "phaser";
-import { io, Socket } from "socket.io-client";
 import { npcsAvailable } from "../data/NpcData";
 
 export class BootScene extends Phaser.Scene {
@@ -35,6 +34,9 @@ export class BootScene extends Phaser.Scene {
       frameWidth: 16,
       frameHeight: 16,
     });
+
+    // illustrations
+    this.load.image("princess", "public/assets/images/princess.png");
 
     // fonts
     this.load.bitmapFont(

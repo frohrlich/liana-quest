@@ -8,6 +8,7 @@ export class WorldNpc extends WorldUnit {
   // range (in tiles) of a random movement on the map
   movingRange = 3;
   dialogData: DialogData;
+  illustrationKey: string;
 
   constructor(
     scene: Phaser.Scene,
@@ -18,10 +19,12 @@ export class WorldNpc extends WorldUnit {
     frame: number,
     name: string,
     baseTint: number,
-    dialogData: DialogData = null
+    dialogData: DialogData = null,
+    illustrationKey: string = null
   ) {
     super(scene, id, indX, indY, texture, frame, name, baseTint);
     this.dialogData = dialogData;
+    this.illustrationKey = illustrationKey;
   }
 
   makeSpeakOption() {

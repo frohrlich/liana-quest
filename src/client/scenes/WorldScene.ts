@@ -222,6 +222,7 @@ export class WorldScene extends Phaser.Scene {
         timeline: ServerUnit[],
         mapName: string
       ) => {
+        this.scene.stop("DialogScene");
         // shake the world
         this.cameras.main.shake(300);
         // start battle
@@ -255,7 +256,8 @@ export class WorldScene extends Phaser.Scene {
             npcData.frame,
             npcData.name,
             0xffffff,
-            npcData.dialog
+            npcData.dialog,
+            npcData.imageKey
           )
         )
         .setScale(this.unitScale)
@@ -495,9 +497,7 @@ export class WorldScene extends Phaser.Scene {
           !this.isPlayerThere(targetVec.x, targetVec.y) &&
           !this.isNpcThere(targetVec.x, targetVec.y)
         ) {
-          if (this.selectedUnit) {
-            this.selectedUnit.unSelectUnit();
-          }
+          this.unselectCurrentUnit();
           this.socket.emit("playerMovement", {
             indX: targetVec.x,
             indY: targetVec.y,
@@ -510,6 +510,12 @@ export class WorldScene extends Phaser.Scene {
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.off(Phaser.Input.Events.POINTER_UP);
     });
+  }
+
+  unselectCurrentUnit() {
+    if (this.selectedUnit) {
+      this.selectedUnit.unSelectUnit();
+    }
   }
 
   isNpcThere(indX: number, indY: number) {
@@ -622,6 +628,13 @@ export class WorldScene extends Phaser.Scene {
   }
 
   startDialog(npc: WorldNpc) {
-    console.log("hellu");
+    if (!this.battleHasStarted) {
+      this.unselectCurrentUnit();
+      this.scene.launch("DialogScene", {
+        dialogData: npc.dialogData,
+        imageKey: npc.illustrationKey,
+        characterName: npc.name,
+      });
+    }
   }
 }
