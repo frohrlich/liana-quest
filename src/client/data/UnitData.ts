@@ -11,8 +11,8 @@ export interface UnitData {
 
 export const amazon: UnitData = {
   HP: 100,
-  PM: 12,
-  PA: 20,
+  PM: 6,
+  PA: 6,
   spells: "deadly javelin, herbal medicine, sting",
   frame: 6,
   name: "Amazon",
@@ -22,7 +22,7 @@ export const snowman: UnitData = {
   HP: 100,
   PM: 6,
   PA: 6,
-  spells: "deadly javelin",
+  spells: "sting",
   frame: 30,
   name: "Snowman",
 };
@@ -31,16 +31,16 @@ export const dude: UnitData = {
   HP: 100,
   PM: 6,
   PA: 6,
-  spells: "deadly javelin, sting, punch",
+  spells: "deadly javelin",
   frame: 0,
   name: "Dude",
 };
 
 export const princess: UnitData = {
-  HP: 50,
+  HP: 15,
   PM: 3,
   PA: 6,
-  spells: "sting, punch, deadly javelin",
+  spells: "sting",
   frame: 3,
   name: "Princess",
 };

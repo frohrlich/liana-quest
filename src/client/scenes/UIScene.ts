@@ -8,20 +8,20 @@ import { UITimelineSlot } from "../classes/UI/UITimelineSlot";
 import { UIText } from "../classes/UI/UIText";
 
 export class UIScene extends Phaser.Scene {
-  graphics!: Phaser.GameObjects.Graphics;
-  battleScene!: BattleScene;
-  uiTabWidth!: number;
+  graphics: Phaser.GameObjects.Graphics;
+  battleScene: BattleScene;
+  uiTabWidth: number;
   // global scale for the UI (change it when changing game resolution)
   uiScale: number = 2.5;
   uiFontColor = 0x00ff40;
   // y coordinates of the top of the UI
-  topY!: number;
-  uiTabHeight!: number;
+  topY: number;
+  uiTabHeight: number;
   uiSpells: UISpell[] = [];
   uiTimeline: UITimelineSlot[] = [];
   uiTimelineBackgrounds: Phaser.GameObjects.Rectangle[] = [];
-  handle!: Phaser.GameObjects.Rectangle;
-  unitStats!: UnitStatDisplay;
+  handle: Phaser.GameObjects.Rectangle;
+  unitStats: UnitStatDisplay;
   buttonText: Phaser.GameObjects.BitmapText;
   button: Phaser.GameObjects.Rectangle;
 
@@ -35,7 +35,7 @@ export class UIScene extends Phaser.Scene {
     this.battleScene = this.scene.get("BattleScene") as BattleScene;
     this.drawOutline();
     this.createStartButton();
-    this.updateTimeline(this.battleScene.timeline);
+    this.updateTimeline(this.battleScene.timeline, true);
     this.unitStats = this.addStats(0, 0, this.battleScene.currentPlayer);
     const spellTitle = new UIText(this, 1.5, 0.1, "Spells");
     this.refreshSpells();
@@ -70,7 +70,11 @@ export class UIScene extends Phaser.Scene {
     this.button = this.add
       .rectangle(xPos, yPos, this.uiTabWidth * 0.85, this.uiTabHeight * 0.65)
       .setStrokeStyle(2, 0xcccccc)
-      .setFillStyle(0x293154);
+      .setFillStyle(0x293154)
+      .setInteractive()
+      .on("pointerup", () => {
+        this.battleScene.playerClickedReadyButton();
+      });
 
     let fontSize = this.battleScene.tileWidth * this.uiScale;
     this.buttonText = this.add
@@ -82,11 +86,7 @@ export class UIScene extends Phaser.Scene {
         fontSize
       )
       .setTint(this.uiFontColor)
-      .setOrigin(0.5, 0.5)
-      .setInteractive()
-      .on("pointerup", () => {
-        this.battleScene.playerIsReady();
-      });
+      .setOrigin(0.5, 0.5);
   }
 
   setButtonToReady() {
@@ -94,20 +94,22 @@ export class UIScene extends Phaser.Scene {
     this.buttonText.tint = 0x000000;
   }
 
+  setButtonToNotReady() {
+    this.button.setFillStyle(0x293154);
+    this.buttonText.tint = this.uiFontColor;
+  }
+
   // play this after player chose starter position and pressed start button
   startBattle() {
     this.createEndTurnButton();
-    this.disableSpells(false);
-    this.refreshSpells();
   }
 
   // change start button to end turn button for the rest of the battle
   createEndTurnButton() {
-    this.button.setFillStyle(0x293154);
-    this.buttonText.setTint(this.uiFontColor);
+    this.deactivateEndTurnButtonVisually();
     this.buttonText.text = "End turn";
-    this.buttonText.off("pointerup");
-    this.buttonText.on("pointerup", () => {
+    this.button.off("pointerup");
+    this.button.on("pointerup", () => {
       if (
         this.battleScene.isPlayerTurn &&
         !this.battleScene.currentPlayer.isMoving
@@ -117,7 +119,17 @@ export class UIScene extends Phaser.Scene {
     });
   }
 
-  updateTimeline(timeline: Unit[]) {
+  deactivateEndTurnButtonVisually() {
+    this.button.setFillStyle(0x15192b);
+    this.buttonText.setTint(0x00701c);
+  }
+
+  activateEndTurnButtonVisually() {
+    this.button.setFillStyle(0x293154);
+    this.buttonText.setTint(this.uiFontColor);
+  }
+
+  updateTimeline(timeline: Unit[], isPreparationPhase = false) {
     // scale factor for the timeline
     const topMargin = 10;
     const leftMargin = 10;
@@ -163,16 +175,14 @@ export class UIScene extends Phaser.Scene {
         unit,
         this.uiScale
       );
-      slot.tint = unit.baseTint;
+      slot.tint = unit.isSelected ? unit.selectedTint : unit.baseTint;
       // on hover, highlight the timeline slot and its corresponding unit
       slot.setInteractive();
       slot.on("pointerover", () => {
         slot.unit.selectUnit();
-        slot.unit.healthBar.setVisible(true);
       });
       slot.on("pointerout", () => {
         slot.unit.unselectUnit();
-        slot.unit.healthBar.setVisible(false);
       });
       // add background color to identify team
       let background = this.add.rectangle(
@@ -183,7 +193,7 @@ export class UIScene extends Phaser.Scene {
         offsetY + (unitHeight * this.uiScale) / 2 + topMargin,
         unitWidth * this.uiScale,
         unitHeight * this.uiScale,
-        unit.isAlly ? 0x0000ff : 0xff0000,
+        unit.isTeamA ? 0x0000ff : 0xff0000,
         0.3
       );
       this.uiTimelineBackgrounds.push(background);
@@ -192,6 +202,21 @@ export class UIScene extends Phaser.Scene {
     }
 
     // move the timeline around by grabbing the handle
+    this.makeTimelineHandleDraggable(unitWidth, handleWidth);
+
+    if (!isPreparationPhase) this.highlightCurrentUnitInTimeline(timeline);
+  }
+
+  private highlightCurrentUnitInTimeline(timeline: Unit[]) {
+    let fillIndex = 0;
+    if (this.battleScene.timelineIndex < timeline.length) {
+      fillIndex = this.battleScene.timelineIndex;
+    }
+    const currentBackground = this.uiTimelineBackgrounds[fillIndex];
+    if (currentBackground) currentBackground.fillColor = 0xffffff;
+  }
+
+  private makeTimelineHandleDraggable(unitWidth: number, handleWidth: number) {
     this.handle.setInteractive({ draggable: true });
     this.handle.on(
       "drag",
@@ -207,13 +232,6 @@ export class UIScene extends Phaser.Scene {
         }
       }
     );
-
-    let fillIndex = 0;
-    if (this.battleScene.turnIndex < timeline.length) {
-      fillIndex = this.battleScene.turnIndex;
-    }
-    const currentBackground = this.uiTimelineBackgrounds[fillIndex];
-    if (currentBackground) currentBackground.fillColor = 0xffffff;
   }
 
   // draw the outline of the UI
@@ -246,14 +264,30 @@ export class UIScene extends Phaser.Scene {
     this.uiTabHeight = height;
   }
 
-  endTurn() {
+  endPlayerTurn() {
+    this.disableSpells(true);
+    this.deactivateEndTurnButtonVisually();
+  }
+
+  startPlayerTurn() {
+    this.activateEndTurnButtonVisually();
+    this.disableSpells(false);
+    this.refreshSpells();
     this.refreshUI();
-    this.clearSpellsHighlight();
   }
 
   refreshUI() {
     this.changeStatsUnit(this.battleScene.currentPlayer);
     this.uiSpells.forEach((uiSpell) => {
+      uiSpell.refresh();
+    });
+    this.unitStats.refresh();
+  }
+
+  refreshUIAfterSpell(spell: Spell) {
+    this.uiSpells.forEach((uiSpell) => {
+      // replace local spell with one from server, to update cooldown
+      if (uiSpell.spell.name === spell.name) uiSpell.spell = spell;
       uiSpell.refresh();
     });
     this.unitStats.refresh();

@@ -87,12 +87,17 @@ export class UISpell extends UIElement {
       !this.battleScene.currentPlayer.isMoving
     ) {
       if (!this.isInaccessible()) {
-        this.myScene.clearSpellsHighlight();
-        this.isHighlighted = true;
-        this.refresh();
-        this.battleScene.displaySpellRange(this.spell);
+        this.activateSpell();
       }
     }
+  }
+
+  private activateSpell() {
+    this.myScene.clearSpellsHighlight();
+    this.isHighlighted = true;
+    this.refresh();
+    this.battleScene.clearSpellRange();
+    this.battleScene.displaySpellRange(this.spell);
   }
 
   addInfoText() {
@@ -177,7 +182,7 @@ export class UISpell extends UIElement {
       height += lineHeight;
     }
 
-    let width = 20 * scale + maxLength * (this.fontSize * 0.6);
+    let width = 20 * scale + maxLength * (this.fontSize * 0.65);
 
     const xPos = this.x + width / 2 + infoOffset;
     const yPos = this.y - height / 2 - infoOffset;

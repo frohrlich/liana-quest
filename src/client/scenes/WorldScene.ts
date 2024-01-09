@@ -1,11 +1,15 @@
 import Phaser from "phaser";
 import { WorldNpc } from "../classes/world/WorldNpc";
-import { UnitData, unitsAvailable } from "../data/UnitData";
+import { unitsAvailable } from "../data/UnitData";
 import { Socket, io } from "socket.io-client";
-import { ServerWorldUnit } from "../../server/scenes/ServerWorldScene";
+import {
+  ServerBattleIcon,
+  ServerWorldUnit,
+} from "../../server/scenes/ServerWorldScene";
 import { WorldOnlinePlayer } from "../classes/world/WorldOnlinePlayer";
 import { BattleIcon } from "../classes/world/BattleIcon";
 import { ServerUnit } from "../../server/classes/ServerUnit";
+import { WorldUnit } from "../classes/world/WorldUnit";
 
 interface UnitPosition {
   indX: number;
@@ -15,12 +19,16 @@ interface UnitPosition {
 }
 
 export class WorldScene extends Phaser.Scene {
-  player!: WorldOnlinePlayer;
-  spawns!: Phaser.Physics.Arcade.Group;
-  battleIcons: BattleIcon[] = [];
   unitScale = 1.5;
   animFramerate = 7;
-  npcBattleShieldFrame = 54;
+  npcBattleIconFrame = 54;
+  teamABattleIconFrame = 56;
+  teamBBattleIconFrame = 55;
+  isBattleActivated = true;
+
+  player: WorldOnlinePlayer;
+  spawns: Phaser.Physics.Arcade.Group;
+  battleIcons: BattleIcon[] = [];
 
   background: Phaser.Tilemaps.TilemapLayer;
   tileWidth: number;
@@ -33,6 +41,7 @@ export class WorldScene extends Phaser.Scene {
   socket: Socket;
   otherPlayers: WorldOnlinePlayer[] = [];
   devantJoueur: Phaser.Tilemaps.TilemapLayer;
+  selectedUnit: WorldUnit;
 
   constructor() {
     super({
@@ -61,11 +70,14 @@ export class WorldScene extends Phaser.Scene {
     this.socket.off();
 
     this.socket.on("disconnect", () => {
-      location.reload();
+      setTimeout(() => {
+        // @ts-ignore
+        location.reload(true);
+      }, 500);
     });
 
     this.socket.on("newPlayer", (playerInfo: ServerWorldUnit) => {
-      this.addOtherPlayers(playerInfo);
+      this.addOtherPlayer(playerInfo);
     });
 
     this.socket.on("playerLeft", (playerId: string) => {
@@ -90,7 +102,7 @@ export class WorldScene extends Phaser.Scene {
           this.showTileMapLayers();
           this.enableMovingOnClick(this.background, this.obstacles);
         } else {
-          this.addOtherPlayers(player);
+          this.addOtherPlayer(player);
         }
       });
     });
@@ -108,6 +120,10 @@ export class WorldScene extends Phaser.Scene {
 
     this.socket.on("currentNpcs", (npcs: ServerWorldUnit[]) => {
       this.addEnemies(npcs);
+    });
+
+    this.socket.on("currentBattleIcons", (battleIcons: ServerBattleIcon[]) => {
+      this.addBattleIconsFromServerInfo(battleIcons);
     });
 
     this.socket.on("enemyWasKilled", (id: string) => {
@@ -147,28 +163,41 @@ export class WorldScene extends Phaser.Scene {
       });
     });
 
-    // when a battle starts, show the shield to join battle
-    this.socket.on("addBattleIcon", (npc: ServerWorldUnit) => {
-      const battleIcon = new BattleIcon(
-        this,
-        npc.id,
-        this.map.tileToWorldX(npc.indX),
-        this.map.tileToWorldY(npc.indY),
-        "player",
-        this.npcBattleShieldFrame
-      );
-      this.battleIcons.push(battleIcon);
-      this.add.existing(battleIcon).setScale(this.unitScale);
-      battleIcon.setInteractive();
-
-      battleIcon.on("pointerup", () => {
-        this.socket.emit("playerClickedBattleIcon", npc.id);
-      });
+    // when a battle starts, show the icon to join battle
+    this.socket.on("addBattleIcon", (npc: ServerWorldUnit, id: string) => {
+      this.addBattleIconFromPositionAndId(npc.indX, npc.indY, id, false, true);
     });
 
-    // when a battle preparation phase is over, remove the shield
-    this.socket.on("removeBattleIcon", (enemyId: string) => {
-      this.battleIcons.find((icon) => icon.id === enemyId).destroy();
+    // when a challenge starts, show the icons to join either team
+    this.socket.on(
+      "addChallengeBattleIcons",
+      (
+        player: ServerWorldUnit,
+        challengedPlayer: ServerWorldUnit,
+        playerBattleIconId,
+        challengedPlayerBattleIconId
+      ) => {
+        this.addBattleIconFromPositionAndId(
+          player.indX,
+          player.indY,
+          playerBattleIconId,
+          true,
+          true
+        );
+        this.addBattleIconFromPositionAndId(
+          challengedPlayer.indX,
+          challengedPlayer.indY,
+          challengedPlayerBattleIconId,
+          true,
+          false
+        );
+      }
+    );
+
+    // when a battle's preparation phase is over, remove the icon(s)
+    this.socket.on("removeBattleIcon", (id: string) => {
+      const myBattleIcon = this.battleIcons.find((icon) => icon.id === id);
+      if (myBattleIcon) myBattleIcon.destroy();
     });
 
     this.socket.on("npcWonFight", (npcId: string) => {
@@ -184,8 +213,8 @@ export class WorldScene extends Phaser.Scene {
     this.socket.on(
       "battleHasStarted",
       (
-        allies: ServerUnit[],
-        enemies: ServerUnit[],
+        teamA: ServerUnit[],
+        teamB: ServerUnit[],
         timeline: ServerUnit[],
         mapName: string
       ) => {
@@ -197,8 +226,8 @@ export class WorldScene extends Phaser.Scene {
           callback: () => {
             this.resetScene();
             this.scene.start("BattleScene", {
-              alliesInfo: allies,
-              enemiesInfo: enemies,
+              teamAInfo: teamA,
+              teamBInfo: teamB,
               timeline: timeline,
               mapName: mapName,
             });
@@ -209,30 +238,83 @@ export class WorldScene extends Phaser.Scene {
     );
   }
 
+  private addBattleIconFromPositionAndId(
+    indX: number,
+    indY: number,
+    id: string,
+    isChallenge: boolean,
+    isTeamA: boolean
+  ) {
+    let battleIconFrame: number;
+    if (!isChallenge) {
+      battleIconFrame = this.npcBattleIconFrame;
+    } else {
+      battleIconFrame = isTeamA
+        ? this.teamABattleIconFrame
+        : this.teamBBattleIconFrame;
+    }
+    const battleIcon = new BattleIcon(
+      this,
+      id,
+      this.map.tileToWorldX(indX),
+      this.map.tileToWorldY(indY),
+      "player",
+      battleIconFrame
+    );
+    this.battleIcons.push(battleIcon);
+    this.add
+      .existing(battleIcon)
+      .setScale(this.unitScale)
+      .setInteractive()
+      .setDepth(10000);
+
+    battleIcon.on("pointerup", () => {
+      this.socket.emit("playerClickedBattleIcon", id);
+    });
+  }
+
+  addBattleIconsFromServerInfo(battleIcons: ServerBattleIcon[]) {
+    battleIcons.forEach((battleIcon) => {
+      this.addBattleIconFromPositionAndId(
+        battleIcon.indX,
+        battleIcon.indY,
+        battleIcon.id,
+        battleIcon.isChallenge,
+        battleIcon.isTeamA
+      );
+    });
+  }
+
   initSocket() {
     if (!this.socket) {
       this.socket = io();
     }
   }
 
-  addOtherPlayers(playerInfo: ServerWorldUnit) {
-    const playerData = this.findUnitDataByName(playerInfo.type);
+  addOtherPlayer(serverWorldUnit: ServerWorldUnit) {
+    const playerData = this.findUnitDataByName(serverWorldUnit.type);
     const otherPlayer = new WorldOnlinePlayer(
       this,
-      playerInfo.id,
-      playerInfo.indX,
-      playerInfo.indY,
+      serverWorldUnit.id,
+      serverWorldUnit.indX,
+      serverWorldUnit.indY,
       "player",
       playerData.frame,
-      playerInfo.type
+      serverWorldUnit.type,
+      serverWorldUnit.tint
     );
-    otherPlayer.tint = playerInfo.tint;
-    otherPlayer.scale = this.unitScale;
-    otherPlayer.changeDirection(playerInfo.direction);
-    this.add.existing(otherPlayer);
+    this.add
+      .existing(otherPlayer)
+      .setTint(serverWorldUnit.tint)
+      .setScale(this.unitScale)
+      .setInteractive()
+      .changeDirection(serverWorldUnit.direction)
+      .activateSelectEvents()
+      .makeInteractionMenu()
+      .makeUnitName();
     this.otherPlayers.push(otherPlayer);
 
-    if (!this.anims.exists("left" + playerInfo.type)) {
+    if (!this.anims.exists("left" + serverWorldUnit.type)) {
       this.createAnimations(
         playerData.frame,
         this.animFramerate,
@@ -267,7 +349,8 @@ export class WorldScene extends Phaser.Scene {
       playerPosY,
       "player",
       playerData.frame,
-      playerData.name
+      playerData.name,
+      playerInfo.tint
     );
     this.player.tint = playerInfo.tint;
     this.physics.add.existing(this.player);
@@ -334,7 +417,8 @@ export class WorldScene extends Phaser.Scene {
         indY,
         "player",
         enemyData.frame,
-        enemyType
+        enemyType,
+        myEnemyData.tint
       );
       this.spawns.add(myEnemy, true);
       myEnemy.setHitboxScale(1.5);
@@ -356,7 +440,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   onMeetEnemy(player: any, enemy: any) {
-    if (!this.battleHasStarted && player.isMoving) {
+    if (this.isBattleActivated && !this.battleHasStarted && player.isMoving) {
       this.battleHasStarted = true;
       this.socket.emit("startBattle", enemy.id);
     }
@@ -382,8 +466,12 @@ export class WorldScene extends Phaser.Scene {
         const targetVec = background.worldToTileXY(worldX, worldY);
         if (
           background.getTileAt(targetVec.x, targetVec.y) &&
-          !obstacles.getTileAt(targetVec.x, targetVec.y)
+          !obstacles.getTileAt(targetVec.x, targetVec.y) &&
+          !this.isPlayerThere(targetVec.x, targetVec.y)
         ) {
+          if (this.selectedUnit) {
+            this.selectedUnit.unSelectUnit();
+          }
           this.socket.emit("playerMovement", {
             indX: targetVec.x,
             indY: targetVec.y,
@@ -396,6 +484,12 @@ export class WorldScene extends Phaser.Scene {
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.off(Phaser.Input.Events.POINTER_UP);
     });
+  }
+
+  isPlayerThere(x: number, y: number) {
+    return this.otherPlayers.some(
+      (player) => player.indX === x && player.indY === y
+    );
   }
 
   // create a set of animations from a framerate and a base sprite
@@ -489,4 +583,11 @@ export class WorldScene extends Phaser.Scene {
       repeat: 0,
     });
   };
+
+  startChallenge(unit: WorldUnit) {
+    if (unit && !this.battleHasStarted) {
+      this.battleHasStarted = true;
+      this.socket.emit("startChallenge", unit.id);
+    }
+  }
 }

@@ -3,14 +3,13 @@ import { Spell } from "../../client/classes/battle/Spell";
 import { javelin, punch, sting, heal } from "../../client/data/SpellData";
 import { unitsAvailable } from "../../client/data/UnitData";
 import { Vector2 } from "../utils/findPath";
-import isVisible from "../utils/lineOfSight";
 import { ServerBattleScene } from "../scenes/ServerBattleScene";
 
 export class ServerUnit {
   isReady: boolean;
   id: string;
   isPlayable: boolean;
-  isAlly: boolean;
+  isTeamA: boolean;
   indX: number;
   indY: number;
   type: string;
@@ -30,7 +29,7 @@ export class ServerUnit {
     isReady: boolean,
     id: string,
     isPlayable: boolean,
-    isAlly: boolean,
+    isTeamA: boolean,
     indX: number,
     indY: number,
     type: string,
@@ -40,7 +39,7 @@ export class ServerUnit {
     this.id = id;
     this.tint = tint;
     this.isPlayable = isPlayable;
-    this.isAlly = isAlly;
+    this.isTeamA = isTeamA;
     this.indX = indX;
     this.indY = indY;
     this.type = type;
@@ -264,18 +263,20 @@ export class ServerUnit {
         startVec,
         this.pm
       );
+      if (accessibleTiles.length === 0) return 0;
       // then chooses one randomly
       const randMove = Math.floor(Math.random() * (accessibleTiles.length - 1));
       const pos = accessibleTiles[randMove].pos;
       let path = accessibleTiles[randMove].path;
+
       if (path) {
-        battleScene.removeFromObstacleLayer(this);
+        battleScene.removeFromObstacleLayer(this.indX, this.indY);
         this.indX = pos.x;
         this.indY = pos.y;
-        battleScene.addToObstacleLayer(pos);
+        battleScene.addToObstacleLayer(pos.x, pos.y);
         this.pm -= path.length;
         // emit a message to all players about the unit that moved
-        battleScene.io.to(battleScene.id).emit("unitMoved", this);
+        battleScene.io.to(battleScene.id).emit("unitMoved", this, path);
 
         return path.length;
       }
@@ -302,7 +303,7 @@ export class ServerUnit {
 
   // return true if the given unit is a foe for this npc
   isEnemy(unit: ServerUnit) {
-    return this.isAlly ? !unit.isAlly : unit.isAlly;
+    return this.isTeamA ? !unit.isTeamA : unit.isTeamA;
   }
 
   isDead() {
