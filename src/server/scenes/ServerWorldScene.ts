@@ -29,9 +29,9 @@ export interface ServerBattleIcon {
 }
 
 export class ServerWorldScene {
-  enemyCount = 2;
-  minPosition = 0; // min starter position for enemies (distance from upper left corner)
-  maxPosition = 5; // max starter position for enemies
+  enemyCount = 10;
+  minPosition = 5; // min starter position for enemies (distance from upper left corner)
+  maxPosition = 999; // max starter position for enemies
 
   players: ServerWorldUnit[] = [];
   sockets: Socket[] = [];

@@ -24,7 +24,7 @@ export class WorldScene extends Phaser.Scene {
   npcBattleIconFrame = 54;
   teamABattleIconFrame = 56;
   teamBBattleIconFrame = 55;
-  isBattleActivated = false;
+  isBattleActivated = true;
 
   player: WorldOnlinePlayer;
   spawns: Phaser.Physics.Arcade.Group;

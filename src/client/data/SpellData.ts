@@ -12,7 +12,7 @@ export const javelin = new Spell(
   42,
   1,
   5,
-  3,
+  4,
   "Deadly Javelin",
   true,
   true,
@@ -27,37 +27,36 @@ export const javelin = new Spell(
   0,
   poison,
   null,
-  4
+  3
 );
 
-export const punch = new Spell(51, 1, 1, 2, "Punch", true, false, 55);
+export const punch = new Spell(51, 1, 1, 4, "Punch", true, false, 50);
 
 export const sting = new Spell(
   60,
   0,
-  30,
+  10,
   2,
   "Sting",
   false,
   false,
-  100,
-  1,
+  10,
+  0,
   1,
   0,
   1,
   0,
   "monoTarget",
   0,
-  0,
-  poison
+  1
 );
 
 export const heal = new Spell(
   69,
   0,
-  8,
-  3,
-  "Herbal medicine",
+  4,
+  4,
+  "Royal medicine",
   true,
   false,
   0,
@@ -68,7 +67,7 @@ export const heal = new Spell(
   1,
   "star",
   2,
-  0,
+  2,
   null,
   princess
 );

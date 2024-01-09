@@ -3,7 +3,6 @@ import { Spell } from "../../client/classes/battle/Spell";
 import { javelin, punch, sting, heal } from "../../client/data/SpellData";
 import { unitsAvailable } from "../../client/data/UnitData";
 import { Vector2 } from "../utils/findPath";
-import isVisible from "../utils/lineOfSight";
 import { ServerBattleScene } from "../scenes/ServerBattleScene";
 
 export class ServerUnit {

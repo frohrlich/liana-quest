@@ -284,8 +284,10 @@ export class UIScene extends Phaser.Scene {
     this.unitStats.refresh();
   }
 
-  refreshUIAfterSpell() {
+  refreshUIAfterSpell(spell: Spell) {
     this.uiSpells.forEach((uiSpell) => {
+      // replace local spell with one from server, to update cooldown
+      if (uiSpell.spell.name === spell.name) uiSpell.spell = spell;
       uiSpell.refresh();
     });
     this.unitStats.refresh();
