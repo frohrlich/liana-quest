@@ -10,6 +10,7 @@ import { WorldOnlinePlayer } from "../classes/world/WorldOnlinePlayer";
 import { BattleIcon } from "../classes/world/BattleIcon";
 import { ServerUnit } from "../../server/classes/ServerUnit";
 import { WorldUnit } from "../classes/world/WorldUnit";
+import { NpcData } from "../data/NpcData";
 
 interface UnitPosition {
   indX: number;
@@ -40,6 +41,7 @@ export class WorldScene extends Phaser.Scene {
   battleHasStarted: boolean;
   socket: Socket;
   otherPlayers: WorldOnlinePlayer[] = [];
+  npcs: NpcData[];
   devantJoueur: Phaser.Tilemaps.TilemapLayer;
   selectedUnit: WorldUnit;
 
@@ -49,7 +51,8 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  create(): void {
+  create(data: any): void {
+    this.npcs = data.npcs;
     this.battleHasStarted = false;
     this.createTilemap();
     // tells server scene is ready to receive info
@@ -100,7 +103,8 @@ export class WorldScene extends Phaser.Scene {
           this.addPlayer(player);
           this.setupCamera();
           this.showTileMapLayers();
-          this.enableMovingOnClick(this.background, this.obstacles);
+          this.addStaticNpcs(this.npcs);
+          this.enableMovingOnClick();
         } else {
           this.addOtherPlayer(player);
         }
@@ -238,6 +242,30 @@ export class WorldScene extends Phaser.Scene {
     );
   }
 
+  addStaticNpcs(npcs: NpcData[]) {
+    npcs.forEach((npcData) => {
+      this.add
+        .existing(
+          new WorldNpc(
+            this,
+            null,
+            npcData.indX,
+            npcData.indY,
+            "player",
+            npcData.frame,
+            npcData.name,
+            0xffffff,
+            npcData.dialog
+          )
+        )
+        .setScale(this.unitScale)
+        .setInteractive()
+        .makeUnitName()
+        .makeSpeakOption()
+        .activateSelectEvents();
+    });
+  }
+
   private addBattleIconFromPositionAndId(
     indX: number,
     indY: number,
@@ -310,7 +338,7 @@ export class WorldScene extends Phaser.Scene {
       .setInteractive()
       .changeDirection(serverWorldUnit.direction)
       .activateSelectEvents()
-      .makeInteractionMenu()
+      .makeChallengeOption()
       .makeUnitName();
     this.otherPlayers.push(otherPlayer);
 
@@ -454,20 +482,18 @@ export class WorldScene extends Phaser.Scene {
     this.otherPlayers = [];
   }
 
-  enableMovingOnClick(
-    background: Phaser.Tilemaps.TilemapLayer,
-    obstacles: Phaser.Tilemaps.TilemapLayer
-  ) {
+  enableMovingOnClick() {
     // on clicking on a tile
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
       (pointer: Phaser.Input.Pointer) => {
         const { worldX, worldY } = pointer;
-        const targetVec = background.worldToTileXY(worldX, worldY);
+        const targetVec = this.background.worldToTileXY(worldX, worldY);
         if (
-          background.getTileAt(targetVec.x, targetVec.y) &&
-          !obstacles.getTileAt(targetVec.x, targetVec.y) &&
-          !this.isPlayerThere(targetVec.x, targetVec.y)
+          this.background.getTileAt(targetVec.x, targetVec.y) &&
+          !this.obstacles.getTileAt(targetVec.x, targetVec.y) &&
+          !this.isPlayerThere(targetVec.x, targetVec.y) &&
+          !this.isNpcThere(targetVec.x, targetVec.y)
         ) {
           if (this.selectedUnit) {
             this.selectedUnit.unSelectUnit();
@@ -486,9 +512,13 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  isPlayerThere(x: number, y: number) {
+  isNpcThere(indX: number, indY: number) {
+    return this.npcs.some((npc) => npc.indX === indX && npc.indY === indY);
+  }
+
+  isPlayerThere(indX: number, indY: number) {
     return this.otherPlayers.some(
-      (player) => player.indX === x && player.indY === y
+      (player) => player.indX === indX && player.indY === indY
     );
   }
 
@@ -589,5 +619,9 @@ export class WorldScene extends Phaser.Scene {
       this.battleHasStarted = true;
       this.socket.emit("startChallenge", unit.id);
     }
+  }
+
+  startDialog(npc: WorldNpc) {
+    console.log("hellu");
   }
 }

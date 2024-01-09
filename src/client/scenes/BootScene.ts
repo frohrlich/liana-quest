@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { io, Socket } from "socket.io-client";
+import { npcsAvailable } from "../data/NpcData";
 
 export class BootScene extends Phaser.Scene {
   socket: any;
@@ -49,6 +50,6 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.scene.start("WorldScene");
+    this.scene.start("WorldScene", { npcs: npcsAvailable });
   }
 }

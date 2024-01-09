@@ -309,7 +309,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  makeInteractionMenu() {
+  makeChallengeOption() {
     this.interactionMenuRectangle = this.myScene.add
       .rectangle(
         0,
