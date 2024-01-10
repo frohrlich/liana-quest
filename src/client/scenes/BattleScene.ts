@@ -23,7 +23,6 @@ export interface TilePath {
 export class BattleScene extends Phaser.Scene {
   fontSize: 8;
   animFramerate: number = 5;
-  endBattleDelay: number = 400;
 
   currentPlayer: Player;
   teamA: Unit[] = [];
@@ -247,15 +246,11 @@ export class BattleScene extends Phaser.Scene {
 
   private listenToPreparationPhaseEvents() {
     this.socket.on("battleIsWon", () => {
-      setTimeout(() => {
-        this.endBattle();
-      }, this.endBattleDelay);
+      this.endBattle();
     });
 
     this.socket.on("battleIsLost", () => {
-      setTimeout(() => {
-        this.gameOver();
-      }, this.endBattleDelay);
+      this.gameOver();
     });
 
     this.socket.on(

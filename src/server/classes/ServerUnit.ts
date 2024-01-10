@@ -158,9 +158,9 @@ export class ServerUnit {
     );
 
     if (
+      playerSpell &&
       this.pa >= spell.cost &&
       playerSpell.cooldown <= 0 &&
-      playerSpell &&
       battleScene.isPosAccessibleToSpell(playerPos, targetVec, spell)
     ) {
       this.pa -= spell.cost;

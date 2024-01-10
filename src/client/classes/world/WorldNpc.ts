@@ -27,7 +27,7 @@ export class WorldNpc extends WorldUnit {
     this.illustrationKey = illustrationKey;
   }
 
-  makeSpeakOption() {
+  makeTalkOption() {
     this.interactionMenuRectangle = this.myScene.add
       .rectangle(
         0,
@@ -46,7 +46,7 @@ export class WorldNpc extends WorldUnit {
         this.myScene.startDialog(this);
       });
 
-    const text = "Speak";
+    const text = "Talk";
     this.interactionMenuText = this.myScene.add
       .bitmapText(0, 0, "dogicapixel", text, this.fontSize)
       .setVisible(false)

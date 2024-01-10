@@ -263,7 +263,7 @@ export class WorldScene extends Phaser.Scene {
         .setScale(this.unitScale)
         .setInteractive()
         .makeUnitName()
-        .makeSpeakOption()
+        .makeTalkOption()
         .activateSelectEvents();
     });
   }

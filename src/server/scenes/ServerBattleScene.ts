@@ -17,6 +17,8 @@ export interface ServerTilePath {
 }
 
 export class ServerBattleScene {
+  endBattleDelay = 400;
+
   worldScene: ServerWorldScene;
   io: Server;
   id: string;
@@ -303,7 +305,6 @@ export class ServerBattleScene {
       this.removeUnitFromBattle(unit.id);
       if (!this.battleIsFinished && unit.isUnitTurn) {
         this.io.to(this.id).emit("endPlayerTurn", unit);
-        this.timelineIndex--;
         this.nextTurn();
       }
     }
@@ -561,14 +562,24 @@ export class ServerBattleScene {
   // check if either team has no living unit left
   private checkIfBattleIsOver() {
     if (!this.timeline.some((unit) => unit.isTeamA)) {
-      this.loseBattle(this.teamA);
-      this.winBattle(this.teamB);
-      this.endBattle();
+      this.endBattleAfterDelay(this.teamB, this.teamA, this.endBattleDelay);
     } else if (!this.timeline.some((unit) => !unit.isTeamA)) {
-      this.loseBattle(this.teamB);
-      this.winBattle(this.teamA);
-      this.endBattle();
+      this.endBattleAfterDelay(this.teamA, this.teamB, this.endBattleDelay);
     }
+  }
+
+  // end battle after short delay to ensure current effects are properly displayed
+  private endBattleAfterDelay(
+    winningTeam: ServerUnit[],
+    losingTeam: ServerUnit[],
+    delay: number
+  ) {
+    this.battleIsFinished = true;
+    setTimeout(() => {
+      this.loseBattle(losingTeam);
+      this.winBattle(winningTeam);
+      this.endBattle();
+    }, delay);
   }
 
   // use this when player disconnects during battle
@@ -602,7 +613,6 @@ export class ServerBattleScene {
   }
 
   private endBattle() {
-    this.battleIsFinished = true;
     // if battle against npc is lost, make it reappear on world map
     if (
       this.timeline.length > 0 &&
