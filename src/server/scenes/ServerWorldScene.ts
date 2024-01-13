@@ -29,7 +29,7 @@ export interface ServerBattleIcon {
 }
 
 export class ServerWorldScene {
-  enemyCount = 10;
+  enemyCount = 0;
   minPosition = 0; // min starter position for enemies (distance from upper left corner)
   maxPosition = 5; // max starter position for enemies
 
@@ -53,8 +53,11 @@ export class ServerWorldScene {
       let randomColor = Math.floor(Math.random() * 16777215);
 
       const newPlayer = {
-        indX: Math.floor(Math.random() * 5) + 1,
-        indY: Math.floor(Math.random() * 5) + 1,
+        // indX: Math.floor(Math.random() * 5) + 1,
+        // indY: Math.floor(Math.random() * 5) + 1,
+
+        indX: this.map.width - 5,
+        indY: 5,
         id: socket.id,
         type: "Amazon",
         direction: "down",

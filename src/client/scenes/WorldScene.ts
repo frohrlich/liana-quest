@@ -10,7 +10,7 @@ import { WorldOnlinePlayer } from "../classes/world/WorldOnlinePlayer";
 import { BattleIcon } from "../classes/world/BattleIcon";
 import { ServerUnit } from "../../server/classes/ServerUnit";
 import { WorldUnit } from "../classes/world/WorldUnit";
-import { NpcData } from "../data/NpcData";
+import { NpcData, WorldData } from "../data/WorldData";
 
 interface UnitPosition {
   indX: number;
@@ -25,7 +25,7 @@ export class WorldScene extends Phaser.Scene {
   npcBattleIconFrame = 54;
   teamABattleIconFrame = 56;
   teamBBattleIconFrame = 55;
-  isBattleActivated = true;
+  isBattleActivated = false;
 
   player: WorldOnlinePlayer;
   spawns: Phaser.Physics.Arcade.Group;
@@ -51,10 +51,10 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  create(data: any): void {
-    this.npcs = data.npcs;
+  create(worldData: WorldData): void {
+    this.npcs = worldData.npcs;
     this.battleHasStarted = false;
-    this.createTilemap();
+    this.createTilemap(worldData.mapName);
     // tells server scene is ready to receive info
     this.events.once("preupdate", () => {
       this.initSocket();
@@ -399,11 +399,14 @@ export class WorldScene extends Phaser.Scene {
     return unitsAvailable.find((unitData) => unitData.name === playerName);
   }
 
-  private createTilemap() {
-    this.map = this.make.tilemap({ key: "map" });
+  private createTilemap(mapName: string) {
+    this.map = this.make.tilemap({ key: mapName + "_map" });
     this.tileWidth = this.map.tileWidth;
     this.tileHeight = this.map.tileHeight;
-    this.tileset = this.map.addTilesetImage("forest_tilemap", "tiles");
+    this.tileset = this.map.addTilesetImage(
+      mapName + "_tilemap",
+      mapName + "_tiles"
+    );
     this.background = this.map
       .createLayer("calque_background", this.tileset!, 0, 0)
       .setVisible(false);
@@ -631,7 +634,7 @@ export class WorldScene extends Phaser.Scene {
     if (!this.battleHasStarted) {
       this.unselectCurrentUnit();
       this.scene.launch("DialogScene", {
-        dialogData: npc.dialogData,
+        dialog: npc.dialogData,
         imageKey: npc.illustrationKey,
         characterName: npc.name,
       });

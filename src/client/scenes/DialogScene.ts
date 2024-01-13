@@ -1,4 +1,5 @@
-import { DialogData } from "../data/NpcData";
+import { WorldNpc } from "../classes/world/WorldNpc";
+import { DialogData, NpcData, findWorldMapByName } from "../data/WorldData";
 import { WorldScene } from "./WorldScene";
 
 export class DialogScene extends Phaser.Scene {
@@ -32,7 +33,7 @@ export class DialogScene extends Phaser.Scene {
   create(data: any) {
     this.worldScene = this.scene.get("WorldScene") as WorldScene;
     this.imageKey = data.imageKey;
-    this.dialogData = data.dialogData;
+    this.dialogData = data.dialog;
     this.characterName = data.characterName;
 
     this.displayImage();
@@ -125,7 +126,13 @@ export class DialogScene extends Phaser.Scene {
       .setStrokeStyle(2, 0xeeeeee)
       .setInteractive()
       .setOrigin(0, 0)
-      .on("pointerup", () => {});
+      .on("pointerup", () => {
+        this.scene.stop("DialogScene");
+        this.worldScene.resetScene();
+        this.worldScene.scene.restart(
+          findWorldMapByName(this.dialogData.responseDestination)
+        );
+      });
   }
 
   displayDialog() {

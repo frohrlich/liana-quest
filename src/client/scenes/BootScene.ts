@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { npcsAvailable } from "../data/NpcData";
+import { findWorldMapByName } from "../data/WorldData";
 
 export class BootScene extends Phaser.Scene {
   socket: any;
@@ -11,14 +11,14 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     // map tiles
-    this.load.image("tiles", "public/assets/map/spritesheet.png");
+    this.load.image("forest_tiles", "public/assets/map/spritesheet.png");
     this.load.image(
       "dungeon_tiles",
       "public/assets/map/dungeon_spritesheet.png"
     );
 
     // maps in json format
-    this.load.tilemapTiledJSON("map", "public/assets/map/map.json");
+    this.load.tilemapTiledJSON("forest_map", "public/assets/map/map.json");
     this.load.tilemapTiledJSON(
       "dungeon_map",
       "public/assets/map/dungeon_map.json"
@@ -60,6 +60,6 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.scene.start("WorldScene", { npcs: npcsAvailable });
+    this.scene.start("WorldScene", findWorldMapByName("forest"));
   }
 }

@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { WorldUnit } from "./WorldUnit";
-import { DialogData } from "../../data/NpcData";
+import { DialogData } from "../../data/WorldData";
 
 export class WorldNpc extends WorldUnit {
   // delay between each random movement of the npc on the map
