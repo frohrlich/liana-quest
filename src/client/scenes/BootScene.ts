@@ -18,23 +18,39 @@ export class BootScene extends Phaser.Scene {
     );
 
     // maps in json format
-    this.load.tilemapTiledJSON("forest_map", "public/assets/map/map.json");
+    this.load.tilemapTiledJSON(
+      "forest_map",
+      "public/assets/map/forest_map.json"
+    );
     this.load.tilemapTiledJSON(
       "dungeon_map",
       "public/assets/map/dungeon_map.json"
     );
 
     this.load.tilemapTiledJSON(
-      "battlemap1",
-      "public/assets/map/battlemap1.json"
+      "forest_battlemap1",
+      "public/assets/map/forest_battlemap1.json"
     );
     this.load.tilemapTiledJSON(
-      "battlemap2",
-      "public/assets/map/battlemap2.json"
+      "forest_battlemap2",
+      "public/assets/map/forest_battlemap2.json"
     );
     this.load.tilemapTiledJSON(
-      "battlemap3",
-      "public/assets/map/battlemap3.json"
+      "forest_battlemap3",
+      "public/assets/map/forest_battlemap3.json"
+    );
+
+    this.load.tilemapTiledJSON(
+      "dungeon_battlemap1",
+      "public/assets/map/dungeon_battlemap1.json"
+    );
+    this.load.tilemapTiledJSON(
+      "dungeon_battlemap2",
+      "public/assets/map/dungeon_battlemap2.json"
+    );
+    this.load.tilemapTiledJSON(
+      "dungeon_battlemap3",
+      "public/assets/map/dungeon_battlemap3.json"
     );
 
     // characters

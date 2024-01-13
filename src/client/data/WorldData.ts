@@ -1,4 +1,4 @@
-// this file contains the data for all world maps in the game, including npcs present
+// this file contains the client-side data for all world maps in the game, including npcs present
 
 export interface WorldData {
   npcs: NpcData[];

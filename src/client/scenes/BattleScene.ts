@@ -525,7 +525,10 @@ export class BattleScene extends Phaser.Scene {
     this.tileHeight = this.map.tileHeight;
 
     // get the tileset
-    this.tileset = this.map.addTilesetImage("forest_tilemap", "tiles");
+    this.tileset = this.map.addTilesetImage(
+      this.worldScene.mapName + "_tilemap",
+      this.worldScene.mapName + "_tiles"
+    );
 
     // create layers
     this.background = this.map.createLayer(

@@ -10,7 +10,7 @@ import { WorldOnlinePlayer } from "../classes/world/WorldOnlinePlayer";
 import { BattleIcon } from "../classes/world/BattleIcon";
 import { ServerUnit } from "../../server/classes/ServerUnit";
 import { WorldUnit } from "../classes/world/WorldUnit";
-import { NpcData, WorldData } from "../data/WorldData";
+import { NpcData, WorldData, findWorldMapByName } from "../data/WorldData";
 
 interface UnitPosition {
   indX: number;
@@ -25,7 +25,7 @@ export class WorldScene extends Phaser.Scene {
   npcBattleIconFrame = 54;
   teamABattleIconFrame = 56;
   teamBBattleIconFrame = 55;
-  isBattleActivated = false;
+  isBattleActivated = true;
 
   player: WorldOnlinePlayer;
   spawns: Phaser.Physics.Arcade.Group;
@@ -35,6 +35,7 @@ export class WorldScene extends Phaser.Scene {
   tileWidth: number;
   tileHeight: number;
   map: Phaser.Tilemaps.Tilemap;
+  mapName: string;
   obstacles: Phaser.Tilemaps.TilemapLayer;
   tileset: Phaser.Tilemaps.Tileset;
   enemyPositions: UnitPosition[] = [];
@@ -53,13 +54,14 @@ export class WorldScene extends Phaser.Scene {
 
   create(worldData: WorldData): void {
     this.npcs = worldData.npcs;
+    this.mapName = worldData.mapName;
     this.battleHasStarted = false;
-    this.createTilemap(worldData.mapName);
+    this.createTilemap();
     // tells server scene is ready to receive info
     this.events.once("preupdate", () => {
       this.initSocket();
       this.setupWeb();
-      this.socket.emit("worldSceneIsReady");
+      this.socket.emit("worldSceneIsReady", this.mapName);
     });
   }
 
@@ -241,6 +243,12 @@ export class WorldScene extends Phaser.Scene {
         });
       }
     );
+
+    this.socket.on("playerGoToMap", (destination: string) => {
+      this.scene.stop("DialogScene");
+      this.resetScene();
+      this.scene.restart(findWorldMapByName(destination));
+    });
   }
 
   addStaticNpcs(npcs: NpcData[]) {
@@ -399,13 +407,13 @@ export class WorldScene extends Phaser.Scene {
     return unitsAvailable.find((unitData) => unitData.name === playerName);
   }
 
-  private createTilemap(mapName: string) {
-    this.map = this.make.tilemap({ key: mapName + "_map" });
+  private createTilemap() {
+    this.map = this.make.tilemap({ key: this.mapName + "_map" });
     this.tileWidth = this.map.tileWidth;
     this.tileHeight = this.map.tileHeight;
     this.tileset = this.map.addTilesetImage(
-      mapName + "_tilemap",
-      mapName + "_tiles"
+      this.mapName + "_tilemap",
+      this.mapName + "_tiles"
     );
     this.background = this.map
       .createLayer("calque_background", this.tileset!, 0, 0)

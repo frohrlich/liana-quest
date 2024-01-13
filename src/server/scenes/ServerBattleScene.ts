@@ -194,7 +194,7 @@ export class ServerBattleScene {
     this.nextTurn();
 
     // tell world map you can't join battle anymore
-    this.io.to("world").emit("removeBattleIcons", this.id);
+    this.io.to(this.worldScene.roomId).emit("removeBattleIcons", this.id);
     this.worldScene.removeBattleIcons(this.id);
   }
 
@@ -482,7 +482,7 @@ export class ServerBattleScene {
     // choose map randomly among a set
     const mapCount = 3;
     const randomMapIndex = Math.floor(Math.random() * mapCount) + 1;
-    this.mapName = `battlemap${randomMapIndex}`;
+    this.mapName = `${this.worldScene.mapName}_battlemap${randomMapIndex}`;
 
     tmx.parseFile(`./public/assets/map/${this.mapName}.tmx`, (err, map) => {
       if (err) throw err;

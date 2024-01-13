@@ -1,5 +1,4 @@
-import { WorldNpc } from "../classes/world/WorldNpc";
-import { DialogData, NpcData, findWorldMapByName } from "../data/WorldData";
+import { DialogData } from "../data/WorldData";
 import { WorldScene } from "./WorldScene";
 
 export class DialogScene extends Phaser.Scene {
@@ -127,10 +126,9 @@ export class DialogScene extends Phaser.Scene {
       .setInteractive()
       .setOrigin(0, 0)
       .on("pointerup", () => {
-        this.scene.stop("DialogScene");
-        this.worldScene.resetScene();
-        this.worldScene.scene.restart(
-          findWorldMapByName(this.dialogData.responseDestination)
+        this.worldScene.socket.emit(
+          "goToMap",
+          this.dialogData.responseDestination
         );
       });
   }
