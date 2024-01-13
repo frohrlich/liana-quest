@@ -17,6 +17,8 @@ export interface ServerTilePath {
 }
 
 export class ServerBattleScene {
+  endBattleDelay = 400;
+
   worldScene: ServerWorldScene;
   io: Server;
   id: string;
@@ -192,7 +194,7 @@ export class ServerBattleScene {
     this.nextTurn();
 
     // tell world map you can't join battle anymore
-    this.io.to("world").emit("removeBattleIcons", this.id);
+    this.io.to(this.worldScene.roomId).emit("removeBattleIcons", this.id);
     this.worldScene.removeBattleIcons(this.id);
   }
 
@@ -303,7 +305,6 @@ export class ServerBattleScene {
       this.removeUnitFromBattle(unit.id);
       if (!this.battleIsFinished && unit.isUnitTurn) {
         this.io.to(this.id).emit("endPlayerTurn", unit);
-        this.timelineIndex--;
         this.nextTurn();
       }
     }
@@ -481,7 +482,7 @@ export class ServerBattleScene {
     // choose map randomly among a set
     const mapCount = 3;
     const randomMapIndex = Math.floor(Math.random() * mapCount) + 1;
-    this.mapName = `battlemap${randomMapIndex}`;
+    this.mapName = `${this.worldScene.mapName}_battlemap${randomMapIndex}`;
 
     tmx.parseFile(`./public/assets/map/${this.mapName}.tmx`, (err, map) => {
       if (err) throw err;
@@ -561,14 +562,24 @@ export class ServerBattleScene {
   // check if either team has no living unit left
   private checkIfBattleIsOver() {
     if (!this.timeline.some((unit) => unit.isTeamA)) {
-      this.loseBattle(this.teamA);
-      this.winBattle(this.teamB);
-      this.endBattle();
+      this.endBattleAfterDelay(this.teamB, this.teamA, this.endBattleDelay);
     } else if (!this.timeline.some((unit) => !unit.isTeamA)) {
-      this.loseBattle(this.teamB);
-      this.winBattle(this.teamA);
-      this.endBattle();
+      this.endBattleAfterDelay(this.teamA, this.teamB, this.endBattleDelay);
     }
+  }
+
+  // end battle after short delay to ensure current effects are properly displayed
+  private endBattleAfterDelay(
+    winningTeam: ServerUnit[],
+    losingTeam: ServerUnit[],
+    delay: number
+  ) {
+    this.battleIsFinished = true;
+    setTimeout(() => {
+      this.loseBattle(losingTeam);
+      this.winBattle(winningTeam);
+      this.endBattle();
+    }, delay);
   }
 
   // use this when player disconnects during battle
@@ -602,7 +613,6 @@ export class ServerBattleScene {
   }
 
   private endBattle() {
-    this.battleIsFinished = true;
     // if battle against npc is lost, make it reappear on world map
     if (
       this.timeline.length > 0 &&

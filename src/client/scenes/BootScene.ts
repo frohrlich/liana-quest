@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { io, Socket } from "socket.io-client";
+import { findWorldMapByName } from "../data/WorldData";
 
 export class BootScene extends Phaser.Scene {
   socket: any;
@@ -11,22 +11,46 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     // map tiles
-    this.load.image("tiles", "public/assets/map/spritesheet.png");
+    this.load.image("forest_tiles", "public/assets/map/spritesheet.png");
+    this.load.image(
+      "dungeon_tiles",
+      "public/assets/map/dungeon_spritesheet.png"
+    );
 
     // maps in json format
-    this.load.tilemapTiledJSON("map", "public/assets/map/map.json");
+    this.load.tilemapTiledJSON(
+      "forest_map",
+      "public/assets/map/forest_map.json"
+    );
+    this.load.tilemapTiledJSON(
+      "dungeon_map",
+      "public/assets/map/dungeon_map.json"
+    );
 
     this.load.tilemapTiledJSON(
-      "battlemap1",
-      "public/assets/map/battlemap1.json"
+      "forest_battlemap1",
+      "public/assets/map/forest_battlemap1.json"
     );
     this.load.tilemapTiledJSON(
-      "battlemap2",
-      "public/assets/map/battlemap2.json"
+      "forest_battlemap2",
+      "public/assets/map/forest_battlemap2.json"
     );
     this.load.tilemapTiledJSON(
-      "battlemap3",
-      "public/assets/map/battlemap3.json"
+      "forest_battlemap3",
+      "public/assets/map/forest_battlemap3.json"
+    );
+
+    this.load.tilemapTiledJSON(
+      "dungeon_battlemap1",
+      "public/assets/map/dungeon_battlemap1.json"
+    );
+    this.load.tilemapTiledJSON(
+      "dungeon_battlemap2",
+      "public/assets/map/dungeon_battlemap2.json"
+    );
+    this.load.tilemapTiledJSON(
+      "dungeon_battlemap3",
+      "public/assets/map/dungeon_battlemap3.json"
     );
 
     // characters
@@ -34,6 +58,9 @@ export class BootScene extends Phaser.Scene {
       frameWidth: 16,
       frameHeight: 16,
     });
+
+    // illustrations
+    this.load.image("princess", "public/assets/images/princess.png");
 
     // fonts
     this.load.bitmapFont(
@@ -49,6 +76,6 @@ export class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.scene.start("WorldScene");
+    this.scene.start("WorldScene", findWorldMapByName("forest"));
   }
 }

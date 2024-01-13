@@ -6,6 +6,7 @@ import { GameOverScene } from "./scenes/GameOverScene";
 import { WorldScene } from "./scenes/WorldScene";
 import screenfull from "screenfull";
 import { UAParser } from "ua-parser-js";
+import { DialogScene } from "./scenes/DialogScene";
 
 const config = {
   type: Phaser.AUTO,
@@ -24,7 +25,14 @@ const config = {
       debug: false,
     },
   },
-  scene: [BootScene, WorldScene, BattleScene, UIScene, GameOverScene],
+  scene: [
+    BootScene,
+    WorldScene,
+    DialogScene,
+    BattleScene,
+    UIScene,
+    GameOverScene,
+  ],
 };
 export class RpgGame extends Phaser.Game {
   constructor(config: Phaser.Types.Core.GameConfig) {
@@ -53,6 +61,10 @@ window.onload = () => {
       }
     }
   });
+
+  // gameDiv.hidden = false;
+  // fullscreenButton.hidden = true;
+  // fullscreenButtonDiv.style.display = "none";
 
   var game = new RpgGame(config);
 };

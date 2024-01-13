@@ -23,7 +23,6 @@ export interface TilePath {
 export class BattleScene extends Phaser.Scene {
   fontSize: 8;
   animFramerate: number = 5;
-  endBattleDelay: number = 400;
 
   currentPlayer: Player;
   teamA: Unit[] = [];
@@ -247,15 +246,11 @@ export class BattleScene extends Phaser.Scene {
 
   private listenToPreparationPhaseEvents() {
     this.socket.on("battleIsWon", () => {
-      setTimeout(() => {
-        this.endBattle();
-      }, this.endBattleDelay);
+      this.endBattle();
     });
 
     this.socket.on("battleIsLost", () => {
-      setTimeout(() => {
-        this.gameOver();
-      }, this.endBattleDelay);
+      this.gameOver();
     });
 
     this.socket.on(
@@ -530,7 +525,10 @@ export class BattleScene extends Phaser.Scene {
     this.tileHeight = this.map.tileHeight;
 
     // get the tileset
-    this.tileset = this.map.addTilesetImage("forest_tilemap", "tiles");
+    this.tileset = this.map.addTilesetImage(
+      this.worldScene.mapName + "_tilemap",
+      this.worldScene.mapName + "_tiles"
+    );
 
     // create layers
     this.background = this.map.createLayer(

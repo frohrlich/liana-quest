@@ -35,12 +35,12 @@ export const punch = new Spell(51, 1, 1, 4, "Punch", true, false, 50);
 export const sting = new Spell(
   60,
   0,
-  10,
-  2,
+  30,
+  0,
   "Sting",
   false,
   false,
-  10,
+  90,
   0,
   1,
   0,
@@ -48,7 +48,8 @@ export const sting = new Spell(
   0,
   "monoTarget",
   0,
-  1
+  0,
+  poison
 );
 
 export const heal = new Spell(

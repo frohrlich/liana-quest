@@ -56,6 +56,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     this.y = this.tilePosToPixelsY(indY);
     this.depth = this.y;
     this.type = name;
+    this.name = name;
     this.baseTint = baseTint;
 
     // chain of tweens containing the successive moving tweens in path from tile A to tile B
@@ -309,7 +310,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  makeInteractionMenu() {
+  makeChallengeOption() {
     this.interactionMenuRectangle = this.myScene.add
       .rectangle(
         0,
@@ -347,7 +348,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
 
   activateSelectEvents() {
     this.on("pointerup", () => {
-      if (this.myScene.selectedUnit) this.myScene.selectedUnit.unSelectUnit();
+      this.myScene.unselectCurrentUnit();
       this.selectUnit();
     });
     return this;

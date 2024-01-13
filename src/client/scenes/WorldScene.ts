@@ -10,6 +10,7 @@ import { WorldOnlinePlayer } from "../classes/world/WorldOnlinePlayer";
 import { BattleIcon } from "../classes/world/BattleIcon";
 import { ServerUnit } from "../../server/classes/ServerUnit";
 import { WorldUnit } from "../classes/world/WorldUnit";
+import { NpcData, WorldData, findWorldMapByName } from "../data/WorldData";
 
 interface UnitPosition {
   indX: number;
@@ -34,12 +35,14 @@ export class WorldScene extends Phaser.Scene {
   tileWidth: number;
   tileHeight: number;
   map: Phaser.Tilemaps.Tilemap;
+  mapName: string;
   obstacles: Phaser.Tilemaps.TilemapLayer;
   tileset: Phaser.Tilemaps.Tileset;
   enemyPositions: UnitPosition[] = [];
   battleHasStarted: boolean;
   socket: Socket;
   otherPlayers: WorldOnlinePlayer[] = [];
+  npcs: NpcData[];
   devantJoueur: Phaser.Tilemaps.TilemapLayer;
   selectedUnit: WorldUnit;
 
@@ -49,14 +52,16 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  create(): void {
+  create(worldData: WorldData): void {
+    this.npcs = worldData.npcs;
+    this.mapName = worldData.mapName;
     this.battleHasStarted = false;
     this.createTilemap();
     // tells server scene is ready to receive info
     this.events.once("preupdate", () => {
       this.initSocket();
       this.setupWeb();
-      this.socket.emit("worldSceneIsReady");
+      this.socket.emit("worldSceneIsReady", this.mapName);
     });
   }
 
@@ -100,7 +105,8 @@ export class WorldScene extends Phaser.Scene {
           this.addPlayer(player);
           this.setupCamera();
           this.showTileMapLayers();
-          this.enableMovingOnClick(this.background, this.obstacles);
+          this.addStaticNpcs(this.npcs);
+          this.enableMovingOnClick();
         } else {
           this.addOtherPlayer(player);
         }
@@ -218,6 +224,7 @@ export class WorldScene extends Phaser.Scene {
         timeline: ServerUnit[],
         mapName: string
       ) => {
+        this.scene.stop("DialogScene");
         // shake the world
         this.cameras.main.shake(300);
         // start battle
@@ -236,6 +243,37 @@ export class WorldScene extends Phaser.Scene {
         });
       }
     );
+
+    this.socket.on("playerGoToMap", (destination: string) => {
+      this.scene.stop("DialogScene");
+      this.resetScene();
+      this.scene.restart(findWorldMapByName(destination));
+    });
+  }
+
+  addStaticNpcs(npcs: NpcData[]) {
+    npcs.forEach((npcData) => {
+      this.add
+        .existing(
+          new WorldNpc(
+            this,
+            null,
+            npcData.indX,
+            npcData.indY,
+            "player",
+            npcData.frame,
+            npcData.name,
+            0xffffff,
+            npcData.dialog,
+            npcData.imageKey
+          )
+        )
+        .setScale(this.unitScale)
+        .setInteractive()
+        .makeUnitName()
+        .makeTalkOption()
+        .activateSelectEvents();
+    });
   }
 
   private addBattleIconFromPositionAndId(
@@ -310,7 +348,7 @@ export class WorldScene extends Phaser.Scene {
       .setInteractive()
       .changeDirection(serverWorldUnit.direction)
       .activateSelectEvents()
-      .makeInteractionMenu()
+      .makeChallengeOption()
       .makeUnitName();
     this.otherPlayers.push(otherPlayer);
 
@@ -370,10 +408,13 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private createTilemap() {
-    this.map = this.make.tilemap({ key: "map" });
+    this.map = this.make.tilemap({ key: this.mapName + "_map" });
     this.tileWidth = this.map.tileWidth;
     this.tileHeight = this.map.tileHeight;
-    this.tileset = this.map.addTilesetImage("forest_tilemap", "tiles");
+    this.tileset = this.map.addTilesetImage(
+      this.mapName + "_tilemap",
+      this.mapName + "_tiles"
+    );
     this.background = this.map
       .createLayer("calque_background", this.tileset!, 0, 0)
       .setVisible(false);
@@ -454,24 +495,20 @@ export class WorldScene extends Phaser.Scene {
     this.otherPlayers = [];
   }
 
-  enableMovingOnClick(
-    background: Phaser.Tilemaps.TilemapLayer,
-    obstacles: Phaser.Tilemaps.TilemapLayer
-  ) {
+  enableMovingOnClick() {
     // on clicking on a tile
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
       (pointer: Phaser.Input.Pointer) => {
         const { worldX, worldY } = pointer;
-        const targetVec = background.worldToTileXY(worldX, worldY);
+        const targetVec = this.background.worldToTileXY(worldX, worldY);
         if (
-          background.getTileAt(targetVec.x, targetVec.y) &&
-          !obstacles.getTileAt(targetVec.x, targetVec.y) &&
-          !this.isPlayerThere(targetVec.x, targetVec.y)
+          this.background.getTileAt(targetVec.x, targetVec.y) &&
+          !this.obstacles.getTileAt(targetVec.x, targetVec.y) &&
+          !this.isPlayerThere(targetVec.x, targetVec.y) &&
+          !this.isNpcThere(targetVec.x, targetVec.y)
         ) {
-          if (this.selectedUnit) {
-            this.selectedUnit.unSelectUnit();
-          }
+          this.unselectCurrentUnit();
           this.socket.emit("playerMovement", {
             indX: targetVec.x,
             indY: targetVec.y,
@@ -486,9 +523,19 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  isPlayerThere(x: number, y: number) {
+  unselectCurrentUnit() {
+    if (this.selectedUnit) {
+      this.selectedUnit.unSelectUnit();
+    }
+  }
+
+  isNpcThere(indX: number, indY: number) {
+    return this.npcs.some((npc) => npc.indX === indX && npc.indY === indY);
+  }
+
+  isPlayerThere(indX: number, indY: number) {
     return this.otherPlayers.some(
-      (player) => player.indX === x && player.indY === y
+      (player) => player.indX === indX && player.indY === indY
     );
   }
 
@@ -588,6 +635,17 @@ export class WorldScene extends Phaser.Scene {
     if (unit && !this.battleHasStarted) {
       this.battleHasStarted = true;
       this.socket.emit("startChallenge", unit.id);
+    }
+  }
+
+  startDialog(npc: WorldNpc) {
+    if (!this.battleHasStarted) {
+      this.unselectCurrentUnit();
+      this.scene.launch("DialogScene", {
+        dialog: npc.dialogData,
+        imageKey: npc.illustrationKey,
+        characterName: npc.name,
+      });
     }
   }
 }
