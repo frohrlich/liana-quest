@@ -302,8 +302,8 @@ export class WorldScene extends Phaser.Scene {
     const battleIcon = new BattleIcon(
       this,
       id,
-      this.map.tileToWorldX(indX),
-      this.map.tileToWorldY(indY),
+      indX,
+      indY,
       "player",
       battleIconFrame
     );
@@ -514,7 +514,8 @@ export class WorldScene extends Phaser.Scene {
           this.background.getTileAt(targetVec.x, targetVec.y) &&
           !this.obstacles.getTileAt(targetVec.x, targetVec.y) &&
           !this.isPlayerThere(targetVec.x, targetVec.y) &&
-          !this.isNpcThere(targetVec.x, targetVec.y)
+          !this.isNpcThere(targetVec.x, targetVec.y) &&
+          !this.isBattleIconThere(targetVec.x, targetVec.y)
         ) {
           this.unselectCurrentUnit();
           this.player.moveToPosition(targetVec.x, targetVec.y);
@@ -530,6 +531,12 @@ export class WorldScene extends Phaser.Scene {
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.off(Phaser.Input.Events.POINTER_UP);
     });
+  }
+
+  isBattleIconThere(indX: number, indY: number) {
+    return this.battleIcons.some(
+      (icon) => icon.indX === indX && icon.indY === indY
+    );
   }
 
   unselectCurrentUnit() {
