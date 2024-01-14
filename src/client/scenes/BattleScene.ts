@@ -633,6 +633,8 @@ export class BattleScene extends Phaser.Scene {
       // on clicking on a tile, move
       overlay.on("pointerup", () => {
         if (!this.currentPlayer.isMoving) {
+          // change player orientation before server response, so that player doesn't feel lag
+          this.currentPlayer.lookAtTile(tilePos.path[0]);
           this.socket.emit("playerMove", tilePos.pos);
         }
       });
@@ -1001,6 +1003,7 @@ export class BattleScene extends Phaser.Scene {
   ) {
     // on clicking on a tile, cast spell
     object.on("pointerup", () => {
+      // display spell cast animation immediately so that server lag is not felt by the player
       this.currentPlayer.lookAtTile(pos);
       this.currentPlayer.startAttackAnim(this.currentPlayer.direction);
       this.socket.emit("playerCastSpell", this.currentSpell, pos);

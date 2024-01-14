@@ -145,6 +145,8 @@ export class WorldScene extends Phaser.Scene {
           playerInfo.indX !== this.player.indX ||
           playerInfo.indY !== this.player.indY
         ) {
+          this.player.stopMovement();
+          this.tweens.killTweensOf(this.player);
           this.player.teleportToPosition(playerInfo.indX, playerInfo.indY);
         }
       } else {

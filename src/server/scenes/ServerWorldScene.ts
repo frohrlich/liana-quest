@@ -183,7 +183,6 @@ export class ServerWorldScene {
           x: movementData.indX,
           y: movementData.indY,
         };
-
         // check if movement is actually possible
         const path = findPath(
           startVec,
@@ -194,9 +193,9 @@ export class ServerWorldScene {
         if (path && path.length > 0) {
           currentPlayer.indX = movementData.indX;
           currentPlayer.indY = movementData.indY;
-          // emit a message to all players about the player that moved
-          io.to(this.roomId).emit("playerMoved", currentPlayer);
         }
+        // emit a message to all players about the player that moved
+        io.to(this.roomId).emit("playerMoved", currentPlayer);
       }
     });
 
