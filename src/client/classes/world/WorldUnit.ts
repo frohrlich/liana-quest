@@ -434,4 +434,13 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     this.unitNameRectangle.setVisible(true);
     this.unitNameText.setVisible(true);
   }
+
+  teleportToPosition(indX: number, indY: number) {
+    this.indX = indX;
+    this.indY = indY;
+    this.x = this.tilePosToPixelsX(indX);
+    this.y = this.tilePosToPixelsY(indY);
+    this.moveInteractionMenuToPlayerPosition();
+    this.moveUnitNameToPlayerPosition();
+  }
 }

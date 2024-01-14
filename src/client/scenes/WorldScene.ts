@@ -140,7 +140,13 @@ export class WorldScene extends Phaser.Scene {
 
     this.socket.on("playerMoved", (playerInfo: ServerWorldUnit) => {
       if (playerInfo.id === this.player.id) {
-        this.player.moveToPosition(playerInfo.indX, playerInfo.indY);
+        // if player position incoherent with server state, reconcile
+        if (
+          playerInfo.indX !== this.player.indX ||
+          playerInfo.indY !== this.player.indY
+        ) {
+          this.player.teleportToPosition(playerInfo.indX, playerInfo.indY);
+        }
       } else {
         this.otherPlayers.forEach((otherPlayer) => {
           if (playerInfo.id === otherPlayer.id) {
@@ -509,6 +515,7 @@ export class WorldScene extends Phaser.Scene {
           !this.isNpcThere(targetVec.x, targetVec.y)
         ) {
           this.unselectCurrentUnit();
+          this.player.moveToPosition(targetVec.x, targetVec.y);
           this.socket.emit("playerMovement", {
             indX: targetVec.x,
             indY: targetVec.y,

@@ -195,7 +195,7 @@ export class ServerWorldScene {
           currentPlayer.indX = movementData.indX;
           currentPlayer.indY = movementData.indY;
           // emit a message to all players about the player that moved
-          io.to(this.roomId).emit("playerMoved", currentPlayer, path);
+          io.to(this.roomId).emit("playerMoved", currentPlayer);
         }
       }
     });
