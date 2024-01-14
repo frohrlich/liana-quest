@@ -213,6 +213,7 @@ export class BattleScene extends Phaser.Scene {
   ) {
     overlay.on("pointerup", () => {
       if (!this.isUnitThere(tile.x, tile.y)) {
+        this.currentPlayer.teleportToPosition(tile.x, tile.y);
         this.socket.emit("playerChangedStartPosition", this.playerId, {
           indX: tile.x,
           indY: tile.y,
@@ -256,10 +257,23 @@ export class BattleScene extends Phaser.Scene {
     this.socket.on(
       "playerHasChangedStartPosition",
       (playerId: string, position: Position) => {
-        this.findUnitById(playerId).teleportToTile(
-          position.indX,
-          position.indY
-        );
+        const myPlayer = this.findUnitById(playerId);
+        if (myPlayer) {
+          if (this.currentPlayer.id === playerId) {
+            // if player position incoherent with server state, reconcile
+            if (
+              position.indX !== myPlayer.indX ||
+              position.indY !== myPlayer.indY
+            ) {
+              this.currentPlayer.teleportToPosition(
+                position.indX,
+                position.indY
+              );
+            }
+          } else {
+            myPlayer.teleportToPosition(position.indX, position.indY);
+          }
+        }
       }
     );
 
@@ -468,7 +482,7 @@ export class BattleScene extends Phaser.Scene {
       if (myUnit) {
         myUnit.synchronizeWithServerUnit(serverUnit);
         // in case something went wrong...
-        myUnit.teleportToTile(serverUnit.indX, serverUnit.indY);
+        myUnit.teleportToPosition(serverUnit.indX, serverUnit.indY);
         if (myUnit instanceof Player) {
           myUnit.endTurnAfterServerConfirmation(serverUnit);
           this.isPlayerTurn = false;

@@ -668,7 +668,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
       : this.y - this.displayHeight - this.effectIconOverUnitOffset;
   }
 
-  teleportToTile(indX: number, indY: number) {
+  teleportToPosition(indX: number, indY: number) {
     this.myScene.removeFromObstacleLayer(this.indX, this.indY);
     this.indX = indX;
     this.indY = indY;
