@@ -285,8 +285,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
     serverSummonedUnit: ServerUnit,
     timeline: ServerUnit[]
   ) {
-    this.lookAtTile(targetVec);
-    this.startAttackAnim(this.direction);
     this.unitsUndergoSpell(affectedUnits, spell);
     // if spell summons a unit AND targeted tile is free, summon the unit
     if (serverSummonedUnit) {

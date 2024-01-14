@@ -466,6 +466,11 @@ export class BattleScene extends Phaser.Scene {
             myUnit.moveDirectlyToNewPosition(serverUnit.indX, serverUnit.indY);
           }
           myUnit.synchronizeWithServerUnit(serverUnit);
+          // the player is supposed to have played its own animation on clicking, before server response
+          if (myUnit.id !== this.currentPlayer.id) {
+            myUnit.lookAtTile(targetVec);
+            myUnit.startAttackAnim(myUnit.direction);
+          }
           myUnit.castSpell(
             spell,
             targetVec,
@@ -996,6 +1001,8 @@ export class BattleScene extends Phaser.Scene {
   ) {
     // on clicking on a tile, cast spell
     object.on("pointerup", () => {
+      this.currentPlayer.lookAtTile(pos);
+      this.currentPlayer.startAttackAnim(this.currentPlayer.direction);
       this.socket.emit("playerCastSpell", this.currentSpell, pos);
     });
     // on hovering over a tile, display aoe zone
