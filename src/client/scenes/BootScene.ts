@@ -52,6 +52,10 @@ export class BootScene extends Phaser.Scene {
       "dungeon_battlemap3",
       "public/assets/map/dungeon_battlemap3.json"
     );
+    this.load.tilemapTiledJSON(
+      "forest_battlemap_new",
+      "public/assets/map/forest_battlemap_new.json"
+    );
 
     // characters
     this.load.spritesheet("player", "public/assets/RPG_assets.png", {

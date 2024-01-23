@@ -14,8 +14,11 @@ export class UIScene extends Phaser.Scene {
   // global scale for the UI (change it when changing game resolution)
   uiScale: number = 2.5;
   uiFontColor = 0x00ff40;
-  // y coordinates of the top of the UI
-  topY: number;
+  // x coordinates of the left of the UI
+  buttonTextFontSize = 32;
+  offset = 2;
+
+  leftX: number;
   uiTabHeight: number;
   uiSpells: UISpell[] = [];
   uiTimeline: UITimelineSlot[] = [];
@@ -24,6 +27,8 @@ export class UIScene extends Phaser.Scene {
   unitStats: UnitStatDisplay;
   buttonText: Phaser.GameObjects.BitmapText;
   button: Phaser.GameObjects.Rectangle;
+  mapWidth: number;
+  height: number;
 
   constructor() {
     super({
@@ -33,11 +38,12 @@ export class UIScene extends Phaser.Scene {
 
   create(): void {
     this.battleScene = this.scene.get("BattleScene") as BattleScene;
+    this.mapWidth = this.battleScene.map.widthInPixels;
     this.drawOutline();
     this.createStartButton();
     this.updateTimeline(this.battleScene.timeline, true);
     this.unitStats = this.addStats(0, 0, this.battleScene.currentPlayer);
-    const spellTitle = new UIText(this, 1.5, 0.1, "Spells");
+    const spellTitle = new UIText(this, 1, 0, "Spells");
     this.refreshSpells();
     this.disableSpells(true);
   }
@@ -49,8 +55,8 @@ export class UIScene extends Phaser.Scene {
     });
   }
 
-  addSpell(tab: number, posY: number, spell: Spell) {
-    this.uiSpells.push(new UISpell(this, tab, posY, spell));
+  addSpell(tab: number, posX: number, spell: Spell) {
+    this.uiSpells.push(new UISpell(this, tab, posX, spell));
   }
 
   addStats(tab: number, posY: number, unit: Unit) {
@@ -64,8 +70,8 @@ export class UIScene extends Phaser.Scene {
 
   createStartButton() {
     const textTopMargin = 2;
-    const xPos = this.uiTabWidth * 2.5;
-    const yPos = this.topY + this.uiTabHeight / 2;
+    const yPos = this.uiTabHeight * 2.5;
+    const xPos = this.leftX + this.uiTabWidth * 0.5;
 
     this.button = this.add
       .rectangle(xPos, yPos, this.uiTabWidth * 0.85, this.uiTabHeight * 0.65)
@@ -76,7 +82,7 @@ export class UIScene extends Phaser.Scene {
         this.battleScene.playerClickedReadyButton();
       });
 
-    let fontSize = this.battleScene.tileWidth * this.uiScale;
+    let fontSize = this.buttonTextFontSize;
     this.buttonText = this.add
       .bitmapText(
         xPos,
@@ -86,7 +92,8 @@ export class UIScene extends Phaser.Scene {
         fontSize
       )
       .setTint(this.uiFontColor)
-      .setOrigin(0.5, 0.5);
+      .setOrigin(0.5, 0.5)
+      .setCenterAlign();
   }
 
   setButtonToReady() {
@@ -107,7 +114,7 @@ export class UIScene extends Phaser.Scene {
   // change start button to end turn button for the rest of the battle
   createEndTurnButton() {
     this.deactivateEndTurnButtonVisually();
-    this.buttonText.text = "End turn";
+    this.buttonText.text = "End\nturn";
     this.button.off("pointerup");
     this.button.on("pointerup", () => {
       if (
@@ -238,30 +245,43 @@ export class UIScene extends Phaser.Scene {
   drawOutline() {
     const bounds = this.battleScene.cameras.main.getBounds();
     const zoom = this.battleScene.cameras.main.zoom;
-    const bottom = bounds.bottom * zoom;
-    const width = bounds.width * zoom;
-    const offset = 2;
-    const uiTabWidth = (width - offset * 2) / 3;
-    const height = 30 * this.uiScale;
+    this.leftX = this.mapWidth * zoom;
+    this.height = bounds.height * zoom;
+    const uiTabHeight = (this.height - this.offset * 2) / 3;
+    const uiWidth = this.game.canvas.width - this.leftX - this.offset;
 
     this.graphics = this.add.graphics();
     this.graphics.lineStyle(4, 0x79ae55);
     this.graphics.fillStyle(0x1d233c, 1);
-    this.graphics.strokeRect(offset, bottom, uiTabWidth, height);
-    this.graphics.fillRect(offset, bottom, uiTabWidth, height);
-    this.graphics.strokeRect(uiTabWidth + offset, bottom, uiTabWidth, height);
-    this.graphics.fillRect(uiTabWidth + offset, bottom, uiTabWidth, height);
+    this.graphics.strokeRect(this.leftX, this.offset, uiWidth, uiTabHeight);
+    this.graphics.fillRect(this.leftX, this.offset, uiWidth, uiTabHeight);
     this.graphics.strokeRect(
-      uiTabWidth * 2 + offset,
-      bottom,
-      uiTabWidth,
-      height
+      this.leftX,
+      uiTabHeight + this.offset,
+      uiWidth,
+      uiTabHeight
     );
-    this.graphics.fillRect(uiTabWidth * 2 + offset, bottom, uiTabWidth, height);
+    this.graphics.fillRect(
+      this.leftX,
+      uiTabHeight + this.offset,
+      uiWidth,
+      uiTabHeight
+    );
+    this.graphics.strokeRect(
+      this.leftX,
+      uiTabHeight * 2 + this.offset,
+      uiWidth,
+      uiTabHeight
+    );
+    this.graphics.fillRect(
+      this.leftX,
+      uiTabHeight * 2 + this.offset,
+      uiWidth,
+      uiTabHeight
+    );
 
-    this.uiTabWidth = uiTabWidth;
-    this.topY = bottom;
-    this.uiTabHeight = height;
+    this.uiTabHeight = uiTabHeight;
+    this.uiTabWidth = uiWidth;
   }
 
   endPlayerTurn() {
@@ -297,7 +317,7 @@ export class UIScene extends Phaser.Scene {
   displaySpells(unit: Unit) {
     for (let i = 0; i < unit.spells.length; i++) {
       const spell = unit.spells[i];
-      this.addSpell(1.15 + 0.33 * i, 1.35, spell);
+      this.addSpell(1.15, 0.14 + 0.33 * i, spell);
     }
   }
 

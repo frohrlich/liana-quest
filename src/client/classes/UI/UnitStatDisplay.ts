@@ -12,14 +12,13 @@ export class UnitStatDisplay extends UIElement {
     super(scene, tab, posY);
     this.unit = unit;
     this.unitName = this.addText(1, true, `${this.unit.type}`);
-    this.unitName.y -= 2;
 
     this.text = this.addText(
       1,
       false,
       `PA: ${this.unit.pa}\nPM: ${this.unit.pm}\nHP: ${this.unit.hp}`
     );
-    this.text.y += this.fontSize + 1;
+    this.text.y += this.fontSize + this.marginY / 2;
   }
 
   displayStats() {

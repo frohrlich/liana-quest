@@ -32,6 +32,28 @@ export const javelin = new Spell(
 
 export const punch = new Spell(51, 1, 1, 4, "Punch", true, false, 50);
 
+// DEV
+// export const sting = new Spell(
+//   60,
+//   0,
+//   30,
+//   0,
+//   "Sting",
+//   false,
+//   false,
+//   100,
+//   0,
+//   1,
+//   0,
+//   0,
+//   0,
+//   "monoTarget",
+//   0,
+//   0,
+//   null
+// );
+
+// PROD
 export const sting = new Spell(
   60,
   0,

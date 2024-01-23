@@ -480,9 +480,10 @@ export class ServerBattleScene {
     let tmx = require("tmx-parser");
 
     // choose map randomly among a set
-    const mapCount = 3;
-    const randomMapIndex = Math.floor(Math.random() * mapCount) + 1;
-    this.mapName = `${this.worldScene.mapName}_battlemap${randomMapIndex}`;
+    // const mapCount = 3;
+    // const randomMapIndex = Math.floor(Math.random() * mapCount) + 1;
+    // this.mapName = `${this.worldScene.mapName}_battlemap${randomMapIndex}`;
+    this.mapName = `${this.worldScene.mapName}_battlemap_new`;
 
     tmx.parseFile(`./public/assets/map/${this.mapName}.tmx`, (err, map) => {
       if (err) throw err;
@@ -628,7 +629,7 @@ export class ServerBattleScene {
   private makeSocketsLeaveBattleRoom() {
     this.worldPlayers.forEach((worldPlayer) => {
       const playerSocket = this.worldScene.findSocketById(worldPlayer.id);
-      playerSocket.leave(this.id);
+      if (playerSocket) playerSocket.leave(this.id);
     });
   }
 

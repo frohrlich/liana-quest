@@ -20,8 +20,8 @@ export class UISpell extends UIElement {
   spellCooldown: Phaser.GameObjects.BitmapText;
   disabled: boolean;
 
-  constructor(scene: Phaser.Scene, tab: number, posY: number, spell: Spell) {
-    super(scene, tab, posY);
+  constructor(scene: Phaser.Scene, tab: number, posX: number, spell: Spell) {
+    super(scene, tab, posX);
     this.spell = spell;
     this.battleScene = this.myScene.battleScene;
     this.addIcon();
@@ -184,7 +184,7 @@ export class UISpell extends UIElement {
 
     let width = 20 * scale + maxLength * (this.fontSize * 0.65);
 
-    const xPos = this.x + width / 2 + infoOffset;
+    const xPos = this.x - width / 2 - infoOffset;
     const yPos = this.y - height / 2 - infoOffset;
 
     this.infoRectangle = this.myScene.add.rectangle(

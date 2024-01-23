@@ -3,26 +3,30 @@ import { UIScene } from "../../scenes/UIScene";
 
 export abstract class UIElement {
   // which UI tab does this element belong to
-  // starting from 0 (leftmost)
+  // starting from 0 (topmost)
   tab: number;
   // vertical position in the tab (0-4)
-  posY: number;
+  posX: number;
   myScene: UIScene;
   fontSize: number;
   textStyle: Phaser.Types.GameObjects.Text.TextStyle;
   x: number;
   y: number;
-  margin: number;
+  marginX: number;
+  marginY: number;
 
-  constructor(scene: Phaser.Scene, tab: number, posY: number) {
+  constructor(scene: Phaser.Scene, tab: number, posX: number) {
     this.tab = tab;
-    this.posY = posY;
+    this.posX = posX;
     this.myScene = scene as UIScene;
     this.fontSize = this.myScene.battleScene.tileWidth;
 
-    this.margin = 2 * this.myScene.uiScale;
-    this.x = this.myScene.uiTabWidth * this.tab + this.margin;
-    this.y = this.myScene.topY + (this.fontSize + this.margin) * this.posY;
+    this.marginX = 2 * this.myScene.uiScale;
+    this.marginY = 4 * this.myScene.uiScale;
+    this.y =
+      (this.myScene.height / 3 + this.myScene.offset * 2) * this.tab +
+      this.marginY;
+    this.x = this.myScene.leftX + posX * this.myScene.uiTabWidth + this.marginX;
   }
 
   addText(
@@ -32,8 +36,8 @@ export abstract class UIElement {
   ): Phaser.GameObjects.BitmapText {
     return this.myScene.add
       .bitmapText(
-        this.x + this.margin,
-        this.y + this.margin,
+        this.x,
+        this.y,
         "dogicapixel" + (bold ? "bold" : ""),
         text,
         this.fontSize * scale
