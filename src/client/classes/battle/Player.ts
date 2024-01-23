@@ -75,7 +75,6 @@ export class Player extends Unit {
 
     if (serverSummonedUnit) {
       const mySummonedUnit = this.summonedUnits[this.summonedUnits.length - 1];
-      mySummonedUnit.selectUnit();
       this.myScene.activateSpellEvents(
         mySummonedUnit,
         new Phaser.Math.Vector2(mySummonedUnit.indX, mySummonedUnit.indY),

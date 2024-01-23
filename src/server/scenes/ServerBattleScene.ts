@@ -441,7 +441,7 @@ export class ServerBattleScene {
         const randTile = Math.floor(Math.random() * (starterTiles.length - 1));
         indX = starterTiles[randTile].indX;
         indY = starterTiles[randTile].indY;
-      } while (this.isUnitThere(indX, indY));
+      } while (this.isUnitThereOnStart(indX, indY));
       const myUnit = new ServerUnit(
         !isPlayable, // npcs are ready by default so the battle can start
         id,
@@ -525,9 +525,16 @@ export class ServerBattleScene {
     return this.units.find((unit) => unit.id === id);
   }
 
-  // return true if there is a unit at the specified position
+  /** Return true if there is a unit at the specified position */
   isUnitThere(x: number, y: number): boolean {
     return this.timeline.some((unit) => unit.indX == x && unit.indY == y);
+  }
+
+  /** Return true if there is a unit at the specified position
+   *  To be used during preparation phase, when timeline is not defined yet
+   */
+  isUnitThereOnStart(x: number, y: number): boolean {
+    return this.units.some((unit) => unit.indX == x && unit.indY == y);
   }
 
   // play order : alternate between allies and enemies
