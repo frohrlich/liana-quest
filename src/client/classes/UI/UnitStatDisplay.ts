@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { UIElement } from "./UIElement";
 import { Unit } from "../battle/Unit";
 
-// display unit stats (pa, pm, hp etc) on the UI
+/** Display unit stats (pa, pm, hp etc) on the UI. */
 export class UnitStatDisplay extends UIElement {
   unit: Unit;
   unitName: Phaser.GameObjects.BitmapText;

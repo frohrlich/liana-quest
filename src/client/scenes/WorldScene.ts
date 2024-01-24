@@ -57,7 +57,7 @@ export class WorldScene extends Phaser.Scene {
     this.mapName = worldData.mapName;
     this.battleHasStarted = false;
     this.createTilemap();
-    // tells server scene is ready to receive info
+    // tells server scene we're ready to receive info
     this.events.once("preupdate", () => {
       this.initSocket();
       this.setupWeb();
@@ -356,8 +356,8 @@ export class WorldScene extends Phaser.Scene {
       .setInteractive()
       .changeDirection(serverWorldUnit.direction)
       .activateSelectEvents()
-      .makeChallengeOption()
-      .makeUnitName();
+      .makeUnitName()
+      .makeChallengeOption();
     this.otherPlayers.push(otherPlayer);
 
     if (!this.anims.exists("left" + serverWorldUnit.type)) {
@@ -555,7 +555,7 @@ export class WorldScene extends Phaser.Scene {
     );
   }
 
-  // create a set of animations from a framerate and a base sprite
+  /** Creates a set of animations from a framerate and a base sprite. */
   createAnimations = (baseSprite: number, framerate: number, name: string) => {
     // animation for 'left' move, we don't need left and right
     // as we will use one and flip the sprite

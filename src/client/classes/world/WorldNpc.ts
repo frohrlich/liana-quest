@@ -28,31 +28,9 @@ export class WorldNpc extends WorldUnit {
   }
 
   makeTalkOption() {
-    this.interactionMenuRectangle = this.myScene.add
-      .rectangle(
-        0,
-        0,
-        this.interactionMenuWidth,
-        this.interactionMenuHeight,
-        0xffffff,
-        0.9
-      )
-      .setStrokeStyle(1, 0x000000, 0.9)
-      .setVisible(false)
-      .setOrigin(0.3, 0.5)
-      .setDepth(10001)
-      .on("pointerup", () => {
-        this.myScene.input.off("pointerup");
-        this.myScene.startDialog(this);
-      });
-
-    const text = "Talk";
-    this.interactionMenuText = this.myScene.add
-      .bitmapText(0, 0, "dogicapixel", text, this.fontSize)
-      .setVisible(false)
-      .setTint(0x000000)
-      .setDepth(10002);
-    this.moveInteractionMenuToPlayerPosition();
-    return this;
+    return this.makeInteractionMenuItem("Talk", 0xffffff, false, () => {
+      this.myScene.input.off("pointerup");
+      this.myScene.startDialog(this);
+    });
   }
 }

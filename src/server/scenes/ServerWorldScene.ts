@@ -4,7 +4,7 @@ import { ServerBattleScene } from "./ServerBattleScene";
 import { v4 as uuidv4 } from "uuid";
 import { ServerWorldData } from "../data/ServerWorldData";
 import { findWorldMapByName } from "../../client/data/WorldData";
-import { findServerWorldSceneByName } from "../server";
+import { Game } from "../Game";
 
 export interface ServerWorldUnit {
   id: string;
@@ -37,6 +37,7 @@ export class ServerWorldScene {
   enemyMaxPosition: number; // max starter position for enemies
   enemyType: string;
 
+  game: Game;
   players: ServerWorldUnit[] = [];
   sockets: Socket[] = [];
   playersCurrentlyInBattle: ServerWorldUnit[] = [];
@@ -51,8 +52,9 @@ export class ServerWorldScene {
   roomId: string;
   mapName: string;
 
-  constructor(io: Server, worldData: ServerWorldData) {
-    this.io = io;
+  constructor(game: Game, worldData: ServerWorldData) {
+    this.game = game;
+    this.io = game.io;
     this.enemyCount = worldData.enemyCount;
     this.enemyMinPosition = worldData.enemyMinPosition;
     this.enemyMaxPosition = worldData.enemyMaxPosition;
@@ -214,7 +216,8 @@ export class ServerWorldScene {
   }
 
   sendPlayerToOtherWorldScene(socket: Socket, destination: string) {
-    const worldSceneDestination = findServerWorldSceneByName(destination);
+    const worldSceneDestination =
+      this.game.findServerWorldSceneByName(destination);
     const currentPlayer = this.findCurrentPlayer(socket);
     if (worldSceneDestination && currentPlayer) {
       this.removePlayer(socket);
@@ -227,7 +230,7 @@ export class ServerWorldScene {
       socket.emit("playerGoToMap", worldSceneDestination.mapName);
     }
   }
-  //
+
   private canAnyNpcInCurrentMapSendPlayersToThisDestination(
     destination: string
   ) {
@@ -325,7 +328,7 @@ export class ServerWorldScene {
     }
   }
 
-  // get tiles that are not obstacles
+  /** Returns tiles that are not obstacles. */
   getFreeTiles() {
     const freePositions: Position[] = [];
     for (let indX = 0; indX < this.map.width; indX++) {
@@ -341,7 +344,6 @@ export class ServerWorldScene {
     return freePositions;
   }
 
-  // npc random movement over time
   private makeNpcMoveRandomly(
     delay: number,
     npc: ServerWorldUnit,
@@ -532,7 +534,7 @@ export class ServerWorldScene {
     }
   }
 
-  findCurrentPlayer(socket) {
+  findCurrentPlayer(socket: Socket) {
     return this.players.find((player) => player.id === socket.id);
   }
 

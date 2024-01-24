@@ -240,7 +240,7 @@ export class ServerUnit {
     }, pathLength * movementDuration);
   }
 
-  // returns true on success
+  /** Returns true on success. */
   tryToCastSpell(battleScene: ServerBattleScene) {
     const spell = this.spells[0];
     if (this.pa >= spell.cost && spell.cooldown <= 0) {
@@ -253,7 +253,7 @@ export class ServerUnit {
     return false;
   }
 
-  // attempts to find an accessible tile around unit and move to it
+  /** Attempts to find an accessible tile around unit and move to it. */
   tryToMove(battleScene: ServerBattleScene) {
     if (this.pm > 0) {
       const startVec: Vector2 = { x: this.indX, y: this.indY };
@@ -283,7 +283,7 @@ export class ServerUnit {
     return 0;
   }
 
-  // locates an accessible target for a given spell
+  /** Locates an accessible target for a given spell. */
   locateTarget(battleScene: ServerBattleScene, spell: Spell) {
     for (let i = 0; i < battleScene.background.tiles.length; i++) {
       let tileX = i % battleScene.map.width;
@@ -300,7 +300,7 @@ export class ServerUnit {
     }
   }
 
-  // return true if the given unit is a foe for this npc
+  /** Returns true if the given unit is a foe for this one. */
   isEnemy(unit: ServerUnit) {
     return this.isTeamA ? !unit.isTeamA : unit.isTeamA;
   }

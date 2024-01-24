@@ -7,6 +7,7 @@ import { UnitStatDisplay } from "../classes/UI/UnitStatDisplay";
 import { UITimelineSlot } from "../classes/UI/UITimelineSlot";
 import { UIText } from "../classes/UI/UIText";
 
+/** Battle UI. */
 export class UIScene extends Phaser.Scene {
   graphics: Phaser.GameObjects.Graphics;
   battleScene: BattleScene;
@@ -14,7 +15,6 @@ export class UIScene extends Phaser.Scene {
   // global scale for the UI (change it when changing game resolution)
   uiScale: number = 2.5;
   uiFontColor = 0x00ff40;
-  // x coordinates of the left of the UI
   buttonTextFontSize = 32;
   offset = 2;
 
@@ -106,12 +106,12 @@ export class UIScene extends Phaser.Scene {
     this.buttonText.tint = this.uiFontColor;
   }
 
-  // play this after player chose starter position and pressed start button
+  /** Play this when battle preparation phase ends. */
   startBattle() {
     this.createEndTurnButton();
   }
 
-  // change start button to end turn button for the rest of the battle
+  /** Changes start button to end turn button for the main phase of the battle. */
   createEndTurnButton() {
     this.deactivateEndTurnButtonVisually();
     this.buttonText.text = "End\nturn";
@@ -241,7 +241,6 @@ export class UIScene extends Phaser.Scene {
     );
   }
 
-  // draw the outline of the UI
   drawOutline() {
     const bounds = this.battleScene.cameras.main.getBounds();
     const zoom = this.battleScene.cameras.main.zoom;
@@ -313,7 +312,7 @@ export class UIScene extends Phaser.Scene {
     this.unitStats.refresh();
   }
 
-  // display unit spells on the spell slot of the UI
+  /** Displays unit spells on the spell slots of the UI. */
   displaySpells(unit: Unit) {
     for (let i = 0; i < unit.spells.length; i++) {
       const spell = unit.spells[i];

@@ -14,7 +14,7 @@ import { Socket } from "socket.io-client";
 import { Position } from "../../server/scenes/ServerWorldScene";
 import { EffectOverTime } from "../classes/battle/EffectOverTime";
 
-// Store a tile and the path to it
+/** Store a tile and the path to it (for movement). */
 export interface TilePath {
   pos: Phaser.Math.Vector2;
   path: Phaser.Math.Vector2[];
@@ -121,7 +121,7 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  // add event listener for spell unselect when clicking outside spell range
+  /** Adds event listener for spell unselect when clicking outside spell range. */
   private addSpellUnselectListener() {
     this.input.on(
       Phaser.Input.Events.POINTER_UP,
@@ -132,7 +132,6 @@ export class BattleScene extends Phaser.Scene {
 
           const targetVec = this.background!.worldToTileXY(worldX, worldY);
 
-          // if in spell mode
           if (this.spellVisible) {
             // if cliked outside spell range, unselect spell and go back to movement mode
             if (
@@ -391,7 +390,7 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  // play this after player chose starter position and pressed start button
+  /** Play this after player chose starter position and pressed ready button. */
   playerClickedReadyButton() {
     this.socket.emit("playerClickedReadyButton", this.socket.id);
   }
@@ -470,7 +469,7 @@ export class BattleScene extends Phaser.Scene {
           // the player is supposed to have played its own animation on clicking, before server response
           if (myUnit.id !== this.currentPlayer.id) {
             myUnit.lookAtTile(targetVec);
-            myUnit.startAttackAnim(myUnit.direction);
+            myUnit.startSpellCastAnimation(myUnit.direction);
           }
           myUnit.castSpell(
             spell,
@@ -588,8 +587,9 @@ export class BattleScene extends Phaser.Scene {
     this.uiScene.uiTimelineBackgrounds[this.timelineIndex].fillColor = 0xffffff;
   }
 
-  // checks if the unit can access this tile with their remaining PMs
-  // if there is a path, return it
+  /** Checks if the unit can access this tile with their remaining PMs.
+   *  If there is a path, return it.
+   */
   getPathToPosition(
     x: number,
     y: number,
@@ -599,7 +599,7 @@ export class BattleScene extends Phaser.Scene {
   ) {
     const startVec = new Phaser.Math.Vector2(unitX, unitY);
     const targetVec = new Phaser.Math.Vector2(x, y);
-    // pathfinding
+
     const path = findPath(
       startVec,
       targetVec,
@@ -613,8 +613,7 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  // highlight tiles accessible to the player
-  // and make them interactive
+  /** Highlights tiles accessible to the player and makes them interactive. */
   highlightAccessibleTiles = (positions: TilePath[]) => {
     let baseColor = 0xffffff;
     positions.forEach((tilePos) => {
@@ -649,7 +648,6 @@ export class BattleScene extends Phaser.Scene {
     });
   };
 
-  // highlight tiles on a path
   highlightPath(path: Phaser.Math.Vector2[]) {
     let highlightColor = 0xffffff;
     path.forEach((position) => {
@@ -674,8 +672,8 @@ export class BattleScene extends Phaser.Scene {
     this.pathOverlay = [];
   }
 
-  // calculate the accessible tiles around a position with a pm radius
-  // also store the path to each tile
+  /** Calculates the accessible tiles around a position with a pm radius.
+   * Also stores the path to each tile. */
   calculateAccessibleTiles = (
     pos: Phaser.Math.Vector2,
     pm: number
@@ -708,7 +706,7 @@ export class BattleScene extends Phaser.Scene {
     return tablePos;
   };
 
-  // refresh the accessible tiles around the player
+  /** Refresh the accessible tiles around the player. */
   refreshAccessibleTiles() {
     this.accessibleTiles = this.calculateAccessibleTiles(
       new Phaser.Math.Vector2(this.currentPlayer.indX, this.currentPlayer.indY),
@@ -716,13 +714,11 @@ export class BattleScene extends Phaser.Scene {
     );
   }
 
-  // clear highlighted tiles
   clearAccessibleTiles = () => {
     this.clearOverlay();
     this.clearPathHighlight();
   };
 
-  // add a unit to the scene
   addUnit(serverUnit: ServerUnit, isTeamA: boolean) {
     // see if we find a unit with the name given by the world scene in the array
     // of all available units
@@ -808,7 +804,7 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  // transform a list of spell names in a string into an array of Spell objects
+  /** Transforms a list of spell names in a string into an array of Spell objects. */
   decodeSpellString(spellStr: string) {
     let spellArray: Spell[] = [];
     spellStr.split(", ").forEach((spellName) => {
@@ -832,7 +828,7 @@ export class BattleScene extends Phaser.Scene {
     return spellArray;
   }
 
-  // create a set of animations from a framerate and a base sprite
+  /** Creates a set of animations from a framerate and a base sprite. */
   createAnimations = (baseSprite: number, framerate: number, name: string) => {
     // animation for 'left' move, we don't need left and right
     // as we will use one and flip the sprite
@@ -924,7 +920,6 @@ export class BattleScene extends Phaser.Scene {
     });
   };
 
-  // remove a unit from the obstacle layer
   removeFromObstacleLayer(indX: number, indY: number) {
     this.obstacles.removeTileAt(indX, indY);
   }
@@ -954,7 +949,6 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  // add a position to the obstacle layer
   addToObstacleLayer(target: Phaser.Math.Vector2) {
     let targetTile = this.background?.getTileAt(target.x, target.y);
     let newObstacle = this.obstacles?.putTileAt(
@@ -1007,7 +1001,7 @@ export class BattleScene extends Phaser.Scene {
     object.on("pointerup", () => {
       // display spell cast animation immediately so that server lag is not felt by the player
       this.currentPlayer.lookAtTile(pos);
-      this.currentPlayer.startAttackAnim(this.currentPlayer.direction);
+      this.currentPlayer.startSpellCastAnimation(this.currentPlayer.direction);
       this.socket.emit("playerCastSpell", this.currentSpell, pos);
     });
     // on hovering over a tile, display aoe zone
@@ -1025,7 +1019,7 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  // create aoe zone but doesn't display it yet
+  /** Creates aoe zone but doesn't display it yet. */
   createAoeZone(spell: Spell) {
     const highlightColor = 0xff0099;
     const alpha = 0.6;
@@ -1082,7 +1076,7 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  // update the position of the aoe zone, when player hovers over tile
+  /** Updates the position of the aoe zone, when player hovers over tile. */
   updateAoeZone(spell: Spell, x: number, y: number) {
     switch (spell.aoe) {
       case "monoTarget":
@@ -1206,11 +1200,10 @@ export class BattleScene extends Phaser.Scene {
     return unitsInAoe;
   }
 
-  // calculate spell range
   calculateSpellRange(unit: Unit, spell: Spell) {
     return this.background?.filterTiles(
       (tile: Phaser.Tilemaps.Tile) =>
-        this.isPosAccessibleToSpell(unit, spell, tile),
+        this.isTileAccessibleToSpell(unit, spell, tile),
       this,
       unit.indX - spell.maxRange,
       unit.indY - spell.maxRange,
@@ -1219,8 +1212,12 @@ export class BattleScene extends Phaser.Scene {
     );
   }
 
-  // return true if tile is visible for a given unit and spell
-  isPosAccessibleToSpell(unit: Unit, spell: Spell, tile: Phaser.Tilemaps.Tile) {
+  /** Returns true if tile is visible for a given unit and spell. */
+  isTileAccessibleToSpell(
+    unit: Unit,
+    spell: Spell,
+    tile: Phaser.Tilemaps.Tile
+  ) {
     let startVec = new Phaser.Math.Vector2(unit.indX, unit.indY);
     let targetVec = new Phaser.Math.Vector2(tile.x, tile.y);
     let distance =
@@ -1249,12 +1246,10 @@ export class BattleScene extends Phaser.Scene {
     return false;
   }
 
-  // return true if there is a unit at the specified position
-  isUnitThere(x: number, y: number): boolean {
-    return this.timeline.some((unit) => unit.indX == x && unit.indY == y);
+  isUnitThere(indX: number, indY: number): boolean {
+    return this.timeline.some((unit) => unit.indX == indX && unit.indY == indY);
   }
 
-  // return unit at the specified position
   getUnitAtPos(indX: number, indY: number) {
     return this.timeline.find(
       (unit) => unit.indX === indX && unit.indY === indY

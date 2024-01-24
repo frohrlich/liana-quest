@@ -1,6 +1,9 @@
 import Phaser from "phaser";
 import { WorldScene } from "../../scenes/WorldScene";
 
+/** This icon appears when a battle starts. Players can click on it to join
+ * the battle.
+ */
 export class BattleIcon extends Phaser.GameObjects.Image {
   id: string;
   myScene: WorldScene;

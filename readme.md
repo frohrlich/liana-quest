@@ -16,6 +16,7 @@ node dist/server.js
 - Font :
   https://www.dafont.com/dogica.font
   by Roberto Mocci (https://www.dafont.com/roberto-mocci.d8882)
-- Tileset :
+- Tilesets :
   https://opengameart.org/content/outdoor-tiles-again
+  https://opengameart.org/content/top-down-dungeon-tileset
   by Michele "Buch" Bucelli (https://opengameart.org/users/buch)

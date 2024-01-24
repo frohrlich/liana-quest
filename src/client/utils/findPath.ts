@@ -1,10 +1,6 @@
 import Phaser from "phaser";
 import { PriorityQueue } from "./PriorityQueue";
 
-// A* path finding algorithm
-// https://blog.ourcade.co/posts/2020/phaser-3-point-click-pathfinding-movement-tilemap/
-// https://www.youtube.com/watch?v=nFAvgeYPwZc
-
 export interface TilePosition {
   x: number;
   y: number;
@@ -16,6 +12,10 @@ interface CostValues {
 
 const toKey = (x: number, y: number) => `${x}x${y}`;
 
+/** A* path finding algorithm.
+ * @see {@link https://blog.ourcade.co/posts/2020/phaser-3-point-click-pathfinding-movement-tilemap/}
+ * @see {@link https://www.youtube.com/watch?v=nFAvgeYPwZc}
+ */
 const findPath = (
   start: Phaser.Math.Vector2,
   target: Phaser.Math.Vector2,

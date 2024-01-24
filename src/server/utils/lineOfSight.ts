@@ -1,8 +1,9 @@
 import { ServerBattleScene } from "../scenes/ServerBattleScene";
 import { Vector2 } from "./findPath";
 
-// https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
-
+/** Line of sight algorithm.
+ * @see {@link https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm}
+ */
 const isVisible = (
   startVec: Vector2,
   targetVec: Vector2,

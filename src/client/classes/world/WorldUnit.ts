@@ -2,11 +2,12 @@ import Phaser from "phaser";
 import { WorldScene } from "../../scenes/WorldScene";
 import findPath from "../../utils/findPath";
 
-// unit in the world mode, as opposed to the Unit class for battle
+/** Unit in the world mode, as opposed to the Unit class for battle. */
 export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   // time for moving by 1 tile (in ms)
   moveDuration = 150;
 
+  // use these to adjust interaction menu on click on unit
   interactionMenuWidth = 62;
   interactionMenuHeight = 12;
   interactionMenuOffsetX = 2;
@@ -25,16 +26,14 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   movePath: Phaser.Math.Vector2[] = [];
   moveChain: any = {};
   frameNumber: number;
-  interactionMenuRectangle: Phaser.GameObjects.Rectangle;
-  interactionMenuText: Phaser.GameObjects.BitmapText;
 
   direction: string = "down";
   isMoving: boolean = false;
   unitName: Phaser.GameObjects.BitmapText;
   selectedTint = 0x777777;
   baseTint: number;
-  unitNameText: Phaser.GameObjects.BitmapText;
-  unitNameRectangle: Phaser.GameObjects.Rectangle;
+  interactionMenuOutlines: Phaser.GameObjects.Rectangle[] = [];
+  interactionMenuTexts: Phaser.GameObjects.BitmapText[] = [];
 
   constructor(
     scene: Phaser.Scene,
@@ -80,7 +79,6 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     );
   }
 
-  // move along a path
   moveAlong(path: Phaser.Math.Vector2[]) {
     if (!path || path.length <= 0) {
       if (this.isMoving) {
@@ -93,8 +91,9 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     this.moveTo(this.movePath.shift()!);
   }
 
-  // check next direction to take
-  // and call move function that adds the actual movement to the tween chain
+  /** Checks next direction to take
+   * and calls move function that adds the 1 tile movement to the tween chain.
+   */
   moveTo(target: Phaser.Math.Vector2) {
     this.isMoving = true;
 
@@ -119,8 +118,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     this.moveAlong(this.movePath);
   }
 
-  // actual moving of the player
-  // via tweens
+  /** Actual moving of the player (by 1 tile) via tween. */
   move(targetIndX: number, targetIndY: number, direction: string) {
     this.moveChain.tweens.push({
       x: this.tilePosToPixelsX(targetIndX),
@@ -132,7 +130,6 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
       onUpdate: () => {
         this.depth = this.y;
         this.moveInteractionMenuToPlayerPosition();
-        this.moveUnitNameToPlayerPosition();
       },
       duration: this.moveDuration,
       repeat: 0,
@@ -140,8 +137,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
-  // stop player movement
-  // and their animations too
+  /** Stop player movement and their animations too. */
   stopMovement = () => {
     // clutch for when player is destroyed and keeps moving...
     if (this.anims) {
@@ -161,7 +157,6 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     }
   };
 
-  // change player direction
   changeDirection(direction: string) {
     switch (direction) {
       case "left":
@@ -189,16 +184,17 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     return this;
   }
 
-  // convert a tile position (index) to actual unit pixel position
+  /** Converts a tile position (index) to actual unit pixel position. */
   tilePosToPixelsX(indX: number) {
     return this.myScene.tileWidth * indX + this.width / 2;
   }
 
+  /** Converts a tile position (index) to actual unit pixel position. */
   tilePosToPixelsY(indY: number) {
     return this.myScene.tileHeight * indY + this.height / 6;
   }
 
-  // called when user clicks a tile while current movement is not finished
+  /** Called when user clicks a tile while current movement is not finished. */
   interruptMovement() {
     this.scene.tweens.killTweensOf(this);
     this.stopMovement();
@@ -266,76 +262,29 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   }
 
   displayInteractionMenu() {
-    this.interactionMenuRectangle.setVisible(true);
-    this.interactionMenuText.setVisible(true);
-    this.interactionMenuRectangle.setInteractive();
+    this.interactionMenuOutlines.forEach((outline) => {
+      outline.setVisible(true);
+      outline.setInteractive();
+    });
+    this.interactionMenuTexts.forEach((text) => {
+      text.setVisible(true);
+    });
   }
 
   hideInteractionMenu() {
-    this.interactionMenuRectangle.setVisible(false);
-    this.interactionMenuText.setVisible(false);
-    this.interactionMenuRectangle.disableInteractive();
-  }
-
-  moveInteractionMenuToPlayerPosition() {
-    if (this.interactionMenuRectangle) {
-      const rectanglePosY = this.isOnTop()
-        ? this.y +
-          this.displayHeight +
-          this.interactionMenuHeight -
-          3 +
-          this.interactionMenuOnTopOffsetY
-        : this.y - this.displayHeight + this.interactionMenuOffsetY;
-      const rectanglePosX = this.isOnRightSide()
-        ? this.x -
-          this.interactionMenuWidth +
-          this.interactionMenuOnRightOffsetX
-        : this.x + this.displayWidth + this.interactionMenuOffsetX;
-      this.interactionMenuRectangle.setPosition(rectanglePosX, rectanglePosY);
-      const textPosY = this.isOnTop()
-        ? this.y +
-          this.displayHeight +
-          this.interactionMenuHeight -
-          6 +
-          this.interactionMenuOnTopOffsetY
-        : this.y - this.displayHeight + this.interactionMenuOffsetY - 3;
-      const textPosX = this.isOnRightSide()
-        ? this.x -
-          this.interactionMenuWidth -
-          this.displayWidth +
-          this.interactionMenuOnRightOffsetX +
-          7
-        : this.x + this.displayWidth / 3 + 1;
-      this.interactionMenuText.setPosition(textPosX, textPosY);
-    }
+    this.interactionMenuOutlines.forEach((outline) => {
+      outline.setVisible(false);
+      outline.disableInteractive();
+    });
+    this.interactionMenuTexts.forEach((text) => {
+      text.setVisible(false);
+    });
   }
 
   makeChallengeOption() {
-    this.interactionMenuRectangle = this.myScene.add
-      .rectangle(
-        0,
-        0,
-        this.interactionMenuWidth,
-        this.interactionMenuHeight,
-        0xffffff,
-        0.9
-      )
-      .setStrokeStyle(1, 0x000000, 0.9)
-      .setVisible(false)
-      .setOrigin(0.3, 0.5)
-      .setDepth(10001)
-      .on("pointerup", () => {
-        this.myScene.startChallenge(this);
-      });
-
-    const text = "Challenge";
-    this.interactionMenuText = this.myScene.add
-      .bitmapText(0, 0, "dogicapixel", text, this.fontSize)
-      .setVisible(false)
-      .setTint(0x000000)
-      .setDepth(10002);
-    this.moveInteractionMenuToPlayerPosition();
-    return this;
+    return this.makeInteractionMenuItem("Challenge", 0xffffff, false, () =>
+      this.myScene.startChallenge(this)
+    );
   }
 
   private isOnTop() {
@@ -357,61 +306,91 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   selectUnit() {
     this.tint = this.selectedTint;
     this.displayInteractionMenu();
-    this.showUnitName();
     this.myScene.selectedUnit = this;
   }
 
   unSelectUnit() {
     this.tint = this.baseTint;
     this.hideInteractionMenu();
-    this.hideUnitName();
     this.myScene.selectedUnit = null;
   }
 
   makeUnitName() {
-    this.unitNameRectangle = this.myScene.add
+    return this.makeInteractionMenuItem(this.type, 0xcccccc, true);
+  }
+
+  makeInteractionMenuItem(
+    text: string,
+    backgroundColor: number,
+    bold: boolean,
+    onClickFunction: Function = null
+  ) {
+    const outline = this.myScene.add
       .rectangle(
         0,
         0,
         this.interactionMenuWidth,
         this.interactionMenuHeight,
-        0xcccccc,
+        backgroundColor,
         0.9
       )
       .setStrokeStyle(1, 0x000000, 0.9)
       .setVisible(false)
       .setOrigin(0.3, 0.5)
       .setDepth(10001);
+    if (onClickFunction) {
+      outline.on("pointerup", onClickFunction);
+    }
+    this.interactionMenuOutlines.push(outline);
 
-    const text = this.type;
-    this.unitNameText = this.myScene.add
-      .bitmapText(0, 0, "dogicapixelbold", text, this.fontSize)
+    const font = bold ? "dogicapixelbold" : "dogicapixel";
+    const textObject = this.myScene.add
+      .bitmapText(0, 0, font, text, this.fontSize)
       .setVisible(false)
       .setTint(0x000000)
       .setDepth(10002);
-    this.moveUnitNameToPlayerPosition();
+    this.interactionMenuTexts.push(textObject);
+
+    this.moveInteractionMenuToPlayerPosition();
+
     return this;
   }
 
-  moveUnitNameToPlayerPosition() {
-    if (this.unitNameRectangle) {
+  moveInteractionMenuToPlayerPosition() {
+    for (let i = 0; i < this.interactionMenuOutlines.length; i++) {
+      const outline = this.interactionMenuOutlines[i];
+      const text = this.interactionMenuTexts[i];
+
       const rectanglePosY = this.isOnTop()
-        ? this.y + this.displayHeight - 3 + this.interactionMenuOnTopOffsetY
+        ? this.y +
+          this.displayHeight +
+          i * this.interactionMenuHeight -
+          3 +
+          this.interactionMenuOnTopOffsetY
         : this.y -
           this.displayHeight -
-          this.interactionMenuHeight +
+          this.interactionMenuHeight *
+            (this.interactionMenuOutlines.length - 1) +
+          i * this.interactionMenuHeight +
           this.interactionMenuOffsetY;
       const rectanglePosX = this.isOnRightSide()
         ? this.x -
           this.interactionMenuWidth +
           this.interactionMenuOnRightOffsetX
         : this.x + this.displayWidth + this.interactionMenuOffsetX;
-      this.unitNameRectangle.setPosition(rectanglePosX, rectanglePosY);
+      outline.setPosition(rectanglePosX, rectanglePosY);
+
       const textPosY = this.isOnTop()
-        ? this.y + this.displayHeight + this.interactionMenuOnTopOffsetY - 6
+        ? this.y +
+          this.displayHeight +
+          i * this.interactionMenuHeight +
+          this.interactionMenuOnTopOffsetY -
+          6
         : this.y -
           this.displayHeight -
-          this.interactionMenuHeight +
+          this.interactionMenuHeight *
+            (this.interactionMenuOutlines.length - 1) +
+          i * this.interactionMenuHeight +
           this.interactionMenuOffsetY -
           3;
       const textPosX = this.isOnRightSide()
@@ -421,18 +400,8 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
           this.interactionMenuOnRightOffsetX +
           7
         : this.x + this.displayWidth / 3 + 1;
-      this.unitNameText.setPosition(textPosX, textPosY);
+      text.setPosition(textPosX, textPosY);
     }
-  }
-
-  hideUnitName() {
-    this.unitNameRectangle.setVisible(false);
-    this.unitNameText.setVisible(false);
-  }
-
-  showUnitName() {
-    this.unitNameRectangle.setVisible(true);
-    this.unitNameText.setVisible(true);
   }
 
   teleportToPosition(indX: number, indY: number) {
@@ -441,6 +410,16 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     this.x = this.tilePosToPixelsX(indX);
     this.y = this.tilePosToPixelsY(indY);
     this.moveInteractionMenuToPlayerPosition();
-    this.moveUnitNameToPlayerPosition();
+  }
+
+  destroy(fromScene?: boolean): void {
+    this.interactionMenuOutlines.forEach((outline) => {
+      outline.destroy(fromScene);
+    });
+    this.interactionMenuTexts.forEach((text) => {
+      text.destroy(fromScene);
+    });
+
+    super.destroy(fromScene);
   }
 }

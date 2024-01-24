@@ -250,7 +250,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.play(direction + this.type, true);
   };
 
-  startAttackAnim = (direction: string) => {
+  startSpellCastAnimation = (direction: string) => {
     this.setFlipX(direction.startsWith("left"));
     this.play(direction + "Attack" + this.type, true);
   };

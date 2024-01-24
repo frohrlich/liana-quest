@@ -1,14 +1,10 @@
 import express, { Application } from "express";
 import { Server } from "socket.io";
 import * as http from "http";
-import {
-  ServerWorldUnit,
-  Position,
-  ServerWorldScene,
-} from "./scenes/ServerWorldScene";
+import { ServerWorldUnit, Position } from "./scenes/ServerWorldScene";
 import { ServerUnit } from "./classes/ServerUnit";
 import { Vector2 } from "./utils/findPath";
-import { availableServerWorldMaps } from "./data/ServerWorldData";
+import { Game } from "./Game";
 
 const port = 8081;
 
@@ -67,20 +63,5 @@ server.listen(process.env.PORT || port, function () {
   console.log(`Listening on ${port}`);
 });
 
-// __________ Actual game start __________
-
-const serverWorldScenes: ServerWorldScene[] = [];
-
-availableServerWorldMaps.forEach((worldMapData) => {
-  serverWorldScenes.push(new ServerWorldScene(io, worldMapData));
-});
-
-// on connection, add player to first world scene of the array (our starter scene)
-io.on("connection", (socket) => {
-  const randomColor = Math.floor(Math.random() * 16777215);
-  serverWorldScenes[0].addNewPlayerToScene(socket, randomColor, "Amazon");
-});
-
-export const findServerWorldSceneByName = (name: string) => {
-  return serverWorldScenes.find((worldScene) => worldScene.mapName === name);
-};
+const myGame = new Game(io);
+myGame.start();

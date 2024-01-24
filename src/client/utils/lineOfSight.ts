@@ -1,8 +1,9 @@
 import Phaser from "phaser";
 import { BattleScene } from "../scenes/BattleScene";
 
-// https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
-
+/** Line of sight algorithm.
+ * @see {@link https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm}
+ */
 const isVisible = (
   startVec: Phaser.Math.Vector2,
   targetVec: Phaser.Math.Vector2,
