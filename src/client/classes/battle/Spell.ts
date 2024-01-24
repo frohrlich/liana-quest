@@ -1,6 +1,5 @@
 import { UnitData } from "../../data/UnitData";
 import { EffectOverTime } from "./EffectOverTime";
-import { Unit } from "./Unit";
 
 export class Spell {
   frame: number;

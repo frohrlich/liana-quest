@@ -6,7 +6,7 @@ import { EffectOverTime } from "./EffectOverTime";
 import { ServerUnit } from "../../../server/classes/ServerUnit";
 
 export class Unit extends Phaser.GameObjects.Sprite {
-  // use these to manipulate sprite positions around units
+  // use these to manipulate sprite positions around units (healthbar, effect icons etc)
   healthBarOverUnitOffset = 7;
   healthBarUnderUnitOffset = 32;
   effectIconOverUnitOffset = 19;
@@ -43,7 +43,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   frameNumber: number;
   isTeamA: boolean;
   healthBar!: Phaser.GameObjects.Graphics;
-  // team identifier under unit's feet (blue ally, red enemy)
+  // team identifier under unit's feet (blue team A, red team B)
   identifier!: Phaser.GameObjects.Image;
   spells: Spell[] = [];
   timelineSlot!: UITimelineSlot;
@@ -105,7 +105,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     });
   }
 
-  // on select, highlight unit, show healthbar and effect icon, and show unit stats in UI
+  /** On select, highlight unit, show healthbar and effect icon, and show unit stats in UI. */
   selectUnit() {
     this.myScene.units.forEach((unit) => {
       unit.unselectUnit();
@@ -127,7 +127,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.myScene.uiScene.changeStatsUnit(this.myScene.currentPlayer);
   }
 
-  // move along a path
   moveAlong(path: Phaser.Math.Vector2[]) {
     this.myScene.removeFromObstacleLayer(this.indX, this.indY);
 
@@ -143,8 +142,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.moveTo(this.movePath.shift());
   }
 
-  // check next direction to take
-  // and call move function that adds the actual movement to the tween chain
+  /** Check next direction to take
+   *   and call move function that adds the actual movement to the tween chain.
+   */
   moveTo(target: Phaser.Math.Vector2) {
     this.isMoving = true;
 
@@ -217,8 +217,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.identifier.y = this.y;
   }
 
-  // stop player movement
-  // and their animations too
+  /**
+   * Stop unit movement and their animations, and trigger additional actions if needed.
+   */
   stopMovement = () => {
     this.myScene.addToObstacleLayer(
       new Phaser.Math.Vector2(this.indX, this.indY)
@@ -232,11 +233,12 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.nextAction();
   };
 
-  // convert a tile position (index) to actual unit pixel position
+  /** Converts a tile position (index) to actual unit pixel position. */
   tilePosToPixelsX(indX: number) {
     return this.myScene.tileWidth * indX + this.width / 2;
   }
 
+  /** Converts a tile position (index) to actual unit pixel position. */
   tilePosToPixelsY(indY: number) {
     return this.myScene.tileHeight * indY + this.height / 6;
   }
@@ -277,7 +279,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
     return this.hp <= 0;
   }
 
-  // cast a spell at specified position
   castSpell(
     spell: Spell,
     targetVec: Phaser.Math.Vector2,
@@ -335,7 +336,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.checkDead();
   }
 
-  // move function without animations used for push/pull spells
+  /** Move function without animations used for push/pull spells. */
   moveDirectlyToNewPosition(indX: number, indY: number) {
     const startVec = new Phaser.Math.Vector2(this.indX, this.indY);
     const targetVec = new Phaser.Math.Vector2(indX, indY);
@@ -378,7 +379,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
     }
   }
 
-  // display damage animation when unit is hit
   displaySpellEffect(
     damage: number,
     malusPM: number,
@@ -499,7 +499,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     });
     this.unselectUnit();
     this.myScene.removeUnitFromBattle(this);
-    // turn black before dying...
+    // turn black before dying
     this.tint = 0x000000;
     this.scene.time.delayedCall(
       this.deathDelay,
@@ -520,7 +520,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.destroy();
   }
 
-  // look at a position (change player direction)
+  /** Look at a position (changes player direction). */
   lookAtTile(targetVec: Phaser.Math.Vector2) {
     let direction = "";
     // upper right corner
@@ -555,7 +555,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.changeDirection(direction);
   }
 
-  // change player direction
   changeDirection(direction: string) {
     switch (direction) {
       case "left":
@@ -581,12 +580,12 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.direction = direction;
   }
 
-  // refresh UI infos like player stats
+  /** Refresh UI infos like player stats. */
   refreshUI() {
     this.myScene.uiScene.refreshUI();
   }
 
-  // create team identifier (circle under unit's feet)
+  /** Create team identifier (blue/red circle under unit's feet) */
   createTeamIdentifier(scale: number) {
     // identifier frame on the spritesheet (red circle or blue circle)
     let identifierFrame = this.isTeamA ? 34 : 33;
@@ -600,7 +599,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
   }
 
   setBarValue(bar: Phaser.GameObjects.Graphics, percentage: number) {
-    //scale the bar
     bar.scaleX = percentage / 100;
   }
 
@@ -627,7 +625,6 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.moveHealthBarToPlayerPosition();
   }
 
-  // add spells to a unit
   addSpells(...spells: Spell[]) {
     const copySpells = [];
     // each unit must have its own copy of each spell to manage cooldowns separately
@@ -637,7 +634,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
     this.spells = this.spells.concat(copySpells);
   }
 
-  // links unit to its timeline slot on the UI
+  /** Links unit to its timeline slot on the UI. */
   addTimelineSlot(slot: UITimelineSlot) {
     this.timelineSlot = slot;
   }
@@ -646,11 +643,11 @@ export class Unit extends Phaser.GameObjects.Sprite {
     if (effectOverTime) {
       this.effectOverTime = { ...effectOverTime };
       if (this.effectIcon) this.effectIcon.destroy();
-      this.makeEffectIcon(effectOverTime);
+      this.makeEffectOverTimeIcon(effectOverTime);
     }
   }
 
-  makeEffectIcon(effectOverTime: EffectOverTime) {
+  makeEffectOverTimeIcon(effectOverTime: EffectOverTime) {
     this.effectIcon = this.scene.add
       .image(0, 0, "player", effectOverTime.frame)
       .setScale(1)

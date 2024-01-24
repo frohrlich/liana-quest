@@ -63,7 +63,6 @@ export class ServerUnit {
     this.pa = this.maxPa;
   }
 
-  // add spells to a unit
   addSpells(...spells: Spell[]) {
     const copySpells = [];
     // each unit must have its own copy of each spell to manage cooldowns separately
@@ -73,7 +72,7 @@ export class ServerUnit {
     this.spells = this.spells.concat(copySpells);
   }
 
-  // transform a list of spell names in a string into an array of Spell objects
+  /** Transforms a list of spell names in a string into an array of Spell objects. */
   decodeSpellString(spellStr: string) {
     let spellArray: Spell[] = [];
     spellStr.split(", ").forEach((spellName) => {

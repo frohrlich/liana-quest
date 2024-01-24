@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { Unit } from "./Unit";
 
-// non-player characters in battle
+/** Non playable characters in battle. */
 export class Npc extends Unit {
   constructor(
     scene: Phaser.Scene,

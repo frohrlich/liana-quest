@@ -5,7 +5,6 @@ export abstract class UIElement {
   // which UI tab does this element belong to
   // starting from 0 (topmost)
   tab: number;
-  // vertical position in the tab (0-4)
   posX: number;
   myScene: UIScene;
   fontSize: number;

@@ -24,7 +24,8 @@ export class UISpell extends UIElement {
     super(scene, tab, posX);
     this.spell = spell;
     this.battleScene = this.myScene.battleScene;
-    this.addIcon();
+    this.addRegularIcon();
+    this.addHighlightIcon();
     this.addInfoText();
     this.createSpellCooldown();
     this.disabled = false;
@@ -37,48 +38,40 @@ export class UISpell extends UIElement {
     this.spellNameInfoText.visible = show;
   }
 
-  addIcon() {
+  addIcon(highlight: boolean) {
     const scale = this.myScene.uiScale;
+    const iconFrame = highlight ? this.spell.frame + 1 : this.spell.frame;
 
-    this.icon = this.myScene.add.image(
-      this.x,
-      this.y,
-      "player",
-      this.spell.frame
-    );
-    this.highlightIcon = this.myScene.add.image(
-      this.x,
-      this.y,
-      "player",
-      this.spell.frame + 1
-    );
-    this.icon.scale = this.highlightIcon.scale = scale * this.iconScale;
-    this.icon.depth = 50000;
-    this.icon.y += this.icon.displayHeight / 2 - 2;
-    this.icon.setInteractive();
-    this.highlightIcon.y += this.highlightIcon.displayHeight / 2 - 2;
-    this.highlightIcon.visible = false;
-    this.highlightIcon.depth = 50000;
-    this.highlightIcon.setInteractive();
+    const icon = this.myScene.add
+      .image(this.x, this.y, "player", iconFrame)
+      .setScale(scale * this.iconScale)
+      .setDepth(50000)
+      .setVisible(!highlight)
+      .setInteractive()
+      .on("pointerup", () => {
+        this.toggleSpellMode();
+      })
+      .on("pointerover", () => {
+        this.showInfo(true);
+      })
+      .on("pointerout", () => {
+        this.showInfo(false);
+      });
+    icon.y += icon.displayHeight / 2 - 2;
 
-    this.icon.on("pointerup", () => {
-      this.toggleSpellMode();
-    });
-    this.highlightIcon.on("pointerup", () => {
-      this.toggleSpellMode();
-    });
-    this.icon.on("pointerover", () => {
-      this.showInfo(true);
-    });
-    this.icon.on("pointerout", () => {
-      this.showInfo(false);
-    });
-    this.highlightIcon.on("pointerover", () => {
-      this.showInfo(true);
-    });
-    this.highlightIcon.on("pointerout", () => {
-      this.showInfo(false);
-    });
+    if (highlight) {
+      this.highlightIcon = icon;
+    } else {
+      this.icon = icon;
+    }
+  }
+
+  addRegularIcon() {
+    this.addIcon(false);
+  }
+
+  addHighlightIcon() {
+    this.addIcon(true);
   }
 
   private toggleSpellMode() {
@@ -95,11 +88,13 @@ export class UISpell extends UIElement {
   private activateSpell() {
     this.myScene.clearSpellsHighlight();
     this.isHighlighted = true;
+
     this.refresh();
     this.battleScene.clearSpellRange();
     this.battleScene.displaySpellRange(this.spell);
   }
 
+  /** Defines spell info text and draws it. */
   addInfoText() {
     const scale = this.myScene.uiScale;
     let height = 14 * scale;
@@ -108,72 +103,82 @@ export class UISpell extends UIElement {
     const fontSize = this.fontSize;
     let text = "";
 
-    // first, spell name text in bold
+    // spell name text in bold
     let spellNameText = `${this.spell.name}`;
     let maxLength = spellNameText.length;
-
+    // spell cost
     let addText = `\ncost: ${this.spell.cost} PA`;
     maxLength = Math.max(maxLength, addText.length);
     text += addText;
     height += lineHeight;
-
+    // spell range
     // addText = `\n${this.spell.minRange}-${this.spell.maxRange} range`;
     // maxLength = Math.max(maxLength, addText.length);
     // text += addText;
+    // spell max cooldown
     // if (this.spell.maxCooldown > 0) {
     //   addText = `\ncooldown: ${this.spell.maxCooldown}`;
     //   maxLength = Math.max(maxLength, addText.length);
     //   text += addText;
     //   height += lineHeight;
     // }
+    // spell damage
     if (this.spell.damage > 0) {
       addText = `\n-${this.spell.damage} HP`;
       maxLength = Math.max(maxLength, addText.length);
       text += addText;
       height += lineHeight;
     }
+    // spell heal
     if (this.spell.heal > 0) {
       addText = `\n+${this.spell.heal} HP`;
       maxLength = Math.max(maxLength, addText.length);
       text += addText;
       height += lineHeight;
     }
+    // spell malus PA
     if (this.spell.malusPA > 0) {
       addText = `\n-${this.spell.malusPA} PA`;
       maxLength = Math.max(maxLength, addText.length);
       text += addText;
       height += lineHeight;
     }
+    // spell bonus PA
     if (this.spell.bonusPA > 0) {
       addText = `\n+${this.spell.bonusPA} PA`;
       maxLength = Math.max(maxLength, addText.length);
       text += addText;
       height += lineHeight;
     }
+    // spell malus PM
     if (this.spell.malusPM > 0) {
       addText = `\n-${this.spell.malusPM} PM`;
       maxLength = Math.max(maxLength, addText.length);
       text += addText;
       height += lineHeight;
     }
+    // spell bonus PM
     if (this.spell.bonusPM > 0) {
       addText = `\n+${this.spell.bonusPM} PM`;
       maxLength = Math.max(maxLength, addText.length);
       text += addText;
       height += lineHeight;
     }
+    // spell effect over time
     if (this.spell.effectOverTime) {
       addText = `\neffect : ${this.spell.effectOverTime.name}(${this.spell.effectOverTime.duration})`;
       maxLength = Math.max(maxLength, addText.length);
       text += addText;
       height += lineHeight;
     }
+    // spell summoned unit
     if (this.spell.summons) {
       addText = `\nsummons : ${this.spell.summons.name}`;
       maxLength = Math.max(maxLength, addText.length);
       text += addText;
       height += lineHeight;
     }
+    // spell push/pull
     if (this.spell.moveTargetBy) {
       const pushOrPull = this.spell.moveTargetBy > 0 ? "push" : "pull";
       addText = `\n${pushOrPull} (${Math.abs(this.spell.moveTargetBy)})`;
@@ -182,33 +187,19 @@ export class UISpell extends UIElement {
       height += lineHeight;
     }
 
-    let width = 20 * scale + maxLength * (this.fontSize * 0.65);
+    let infoTextWidth = 20 * scale + maxLength * (this.fontSize * 0.65);
 
-    const xPos = this.x - width / 2 - infoOffset;
-    const yPos = this.y - height / 2 - infoOffset;
+    this.displayInfoTextOutline(infoTextWidth, infoOffset, height, scale);
 
-    this.infoRectangle = this.myScene.add.rectangle(
-      xPos,
-      yPos,
-      width,
-      height,
-      0x31593b
-    );
-    this.infoRectangle.depth = 20000;
-    this.infoRectangle.alpha = 0.9;
-    this.infoRectangle.visible = false;
+    this.displayInfoText(spellNameText, fontSize, lineHeight, text);
+  }
 
-    this.outlineRectangle = this.myScene.add.rectangle(
-      xPos,
-      yPos,
-      width + scale,
-      height + scale
-    );
-    // this.outlineRectangle.depth = 20000;
-    this.outlineRectangle.setStrokeStyle(scale + 0.5, 0xffffff);
-    this.outlineRectangle.alpha = 0.9;
-    this.outlineRectangle.visible = false;
-
+  private displayInfoText(
+    spellNameText: string,
+    fontSize: number,
+    lineHeight: number,
+    text: string
+  ) {
     this.spellNameInfoText = this.myScene.add.bitmapText(
       this.infoRectangle.x - this.infoRectangle.displayWidth / 2 + 2,
       this.infoRectangle.y - this.infoRectangle.displayHeight / 2 + 3,
@@ -234,7 +225,38 @@ export class UISpell extends UIElement {
     this.infoText.alpha = 0.9;
   }
 
-  // disable spell visually if player cannot launch it
+  private displayInfoTextOutline(
+    width: number,
+    infoOffset: number,
+    height: number,
+    scale: number
+  ) {
+    const xPos = this.x - width / 2 - infoOffset;
+    const yPos = this.y - height / 2 - infoOffset;
+
+    this.infoRectangle = this.myScene.add.rectangle(
+      xPos,
+      yPos,
+      width,
+      height,
+      0x31593b
+    );
+    this.infoRectangle.depth = 20000;
+    this.infoRectangle.alpha = 0.9;
+    this.infoRectangle.visible = false;
+
+    this.outlineRectangle = this.myScene.add.rectangle(
+      xPos,
+      yPos,
+      width + scale,
+      height + scale
+    );
+    this.outlineRectangle.setStrokeStyle(scale + 0.5, 0xffffff);
+    this.outlineRectangle.alpha = 0.9;
+    this.outlineRectangle.visible = false;
+  }
+
+  /** Disable spell visually if player cannot cast it. */
   hideIfInaccessible() {
     if (this.isInaccessible()) {
       this.icon.tint = 0x00a025;
@@ -243,7 +265,7 @@ export class UISpell extends UIElement {
     }
   }
 
-  // true if unit cannot currently launch this spell
+  /** True if unit cannot currently cast this spell. */
   isInaccessible() {
     return (
       this.disabled ||

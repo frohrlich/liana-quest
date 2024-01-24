@@ -255,7 +255,7 @@ export class ServerBattleScene {
     return false;
   }
 
-  // move function for push/pull spells
+  /** Move function for push/pull spells. */
   moveUnitBy(
     unit: ServerUnit,
     value: number,
@@ -331,7 +331,7 @@ export class ServerBattleScene {
     return summonedUnit;
   }
 
-  // add summoned unit after the summoner in the timeline
+  /** Adds summoned unit after the summoner in the timeline. */
   addSummonedUnitToTimeline(caster: ServerUnit, summonedUnit: ServerUnit) {
     const index = this.timeline.findIndex(
       (timelineUnit) => timelineUnit === caster
@@ -525,19 +525,19 @@ export class ServerBattleScene {
     return this.units.find((unit) => unit.id === id);
   }
 
-  /** Return true if there is a unit at the specified position */
+  /** Returns true if there is a unit at the specified position. */
   isUnitThere(x: number, y: number): boolean {
     return this.timeline.some((unit) => unit.indX == x && unit.indY == y);
   }
 
-  /** Return true if there is a unit at the specified position
-   *  To be used during preparation phase, when timeline is not defined yet
+  /** Returns true if there is a unit at the specified position.
+   *  To be used during preparation phase, when timeline is not defined yet.
    */
   isUnitThereOnStart(x: number, y: number): boolean {
     return this.units.some((unit) => unit.indX == x && unit.indY == y);
   }
 
-  // play order : alternate between allies and enemies
+  /** Play order : alternate between allies and enemies. */
   createTimeline() {
     const maxSize = Math.max(this.teamA.length, this.teamB.length);
     for (let i = 0; i < maxSize; i++) {
@@ -567,7 +567,7 @@ export class ServerBattleScene {
     this.checkIfBattleIsOver();
   }
 
-  // check if either team has no living unit left
+  /** Checks if either team has no living unit left. */
   private checkIfBattleIsOver() {
     if (!this.timeline.some((unit) => unit.isTeamA)) {
       this.endBattleAfterDelay(this.teamB, this.teamA, this.endBattleDelay);
@@ -576,7 +576,7 @@ export class ServerBattleScene {
     }
   }
 
-  // end battle after short delay to ensure current effects are properly displayed
+  /** Ends battle after short delay to ensure current effects are properly displayed. */
   private endBattleAfterDelay(
     winningTeam: ServerUnit[],
     losingTeam: ServerUnit[],
@@ -590,7 +590,7 @@ export class ServerBattleScene {
     }, delay);
   }
 
-  // use this when player disconnects during battle
+  /** Use this when player disconnects during battle. */
   removeCompletelyUnitFromBattle(id: string) {
     this.removeUnitFromArray(this.teamA, id);
     this.removeUnitFromArray(this.teamB, id);

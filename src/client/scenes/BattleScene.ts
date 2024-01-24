@@ -141,6 +141,7 @@ export class BattleScene extends Phaser.Scene {
               })
             ) {
               this.clearSpellRange();
+              this.uiScene.clearSpellsHighlight();
               this.highlightAccessibleTiles(this.accessibleTiles);
             }
           }
@@ -935,6 +936,7 @@ export class BattleScene extends Phaser.Scene {
     if (this.isPlayerTurn) {
       if (this.spellVisible) {
         this.clearSpellRange();
+        this.uiScene.clearSpellsHighlight();
         this.displaySpellRange(this.currentSpell);
       } else {
         this.clearAccessibleTiles();
@@ -1261,7 +1263,6 @@ export class BattleScene extends Phaser.Scene {
 
   clearSpellRange() {
     this.spellVisible = false;
-    this.uiScene.clearSpellsHighlight();
     this.clearOverlay();
     this.clearAoeZone();
     this.clearPointerEvents();
@@ -1297,6 +1298,7 @@ export class BattleScene extends Phaser.Scene {
 
   resetScene() {
     this.clearSpellRange();
+    this.uiScene.clearSpellsHighlight();
     this.clearAllUnits();
     this.map.destroy();
     this.grid.destroy();
