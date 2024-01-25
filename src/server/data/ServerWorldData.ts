@@ -13,7 +13,7 @@ export interface ServerWorldData {
 }
 
 const forest_1: ServerWorldData = {
-  enemyCount: 15,
+  enemyCount: 10,
   enemyType: "Dude",
   enemyMinPosition: 5,
   enemyMaxPosition: 99,

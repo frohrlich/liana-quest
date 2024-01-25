@@ -32,6 +32,9 @@ export interface ServerBattleIcon {
 }
 
 export class ServerWorldScene {
+  private readonly npcMovingDelay = 11000;
+  private readonly npcMovingRange = 3;
+
   enemyCount: number;
   enemyMinPosition: number; // min starter position for enemies (distance from upper left corner)
   enemyMaxPosition: number; // max starter position for enemies
@@ -316,17 +319,15 @@ export class ServerWorldScene {
       };
       this.npcs.push(npc);
 
-      const delay = 10000;
-      const range = 3;
       this.makeNpcMoveRandomly(
-        delay,
+        this.npcMovingDelay,
         npc,
         this.background,
         this.map,
         this.obstacles,
         this.transparentObstacles,
         randPosition.indX,
-        range,
+        this.npcMovingRange,
         randPosition.indY
       );
     }
