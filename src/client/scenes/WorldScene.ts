@@ -160,14 +160,17 @@ export class WorldScene extends Phaser.Scene {
       }
     });
 
-    this.socket.on("npcMoved", (npcInfo: ServerWorldUnit) => {
-      this.spawns.getChildren().forEach((npc) => {
-        let myNpc = npc as WorldNpc;
-        if (npcInfo.id === myNpc.id) {
-          myNpc.moveToPosition(npcInfo.indX, npcInfo.indY);
-        }
-      });
-    });
+    this.socket.on(
+      "npcMoved",
+      (npcInfo: ServerWorldUnit, path: Phaser.Math.Vector2[]) => {
+        this.spawns.getChildren().forEach((npc) => {
+          let myNpc = npc as WorldNpc;
+          if (npcInfo.id === myNpc.id) {
+            myNpc.moveAlong(path);
+          }
+        });
+      }
+    );
 
     this.socket.on("npcHidden", (npcId: string) => {
       this.spawns.getChildren().forEach((npc) => {
