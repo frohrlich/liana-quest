@@ -8,6 +8,9 @@ import screenfull from "screenfull";
 import { UAParser } from "ua-parser-js";
 import { DialogScene } from "./scenes/DialogScene";
 
+export const GAME_WIDTH = 930; // xiaomi mi a3 : 19.5:9 ratio
+export const GAME_HEIGHT = 416;
+
 const config = {
   type: Phaser.AUTO,
   pixelArt: true,
@@ -15,8 +18,8 @@ const config = {
   scale: {
     mode: Phaser.Scale.FIT,
     parent: "game",
-    width: 930, // xiaomi mi a3 : 19.5:9 ratio
-    height: 416,
+    width: GAME_WIDTH,
+    height: GAME_HEIGHT,
   },
   physics: {
     default: "arcade",

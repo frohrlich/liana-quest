@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { findWorldMapByName } from "../data/WorldData";
+import { GAME_HEIGHT, GAME_WIDTH } from "../app";
 
 export class BootScene extends Phaser.Scene {
   socket: any;
@@ -10,6 +11,37 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload(): void {
+    const progressBarHeight = 50;
+    const progressBarOffset = 10;
+    // progress bar
+    const progressBar = this.add.graphics();
+    const progressBox = this.add.graphics();
+    progressBox.fillStyle(0x222222, 0.8);
+    progressBox.fillRect(
+      GAME_WIDTH / 4,
+      GAME_HEIGHT / 2 - progressBarHeight / 2,
+      GAME_WIDTH / 2,
+      progressBarHeight
+    );
+
+    this.load.on("progress", function (value: number) {
+      progressBar.clear();
+      progressBar.fillStyle(0xffffff, 1);
+      progressBar.fillRect(
+        GAME_WIDTH / 4 + progressBarOffset,
+        GAME_HEIGHT / 2 - progressBarHeight / 2 + progressBarOffset,
+        (GAME_WIDTH / 2 - progressBarOffset * 2) * value,
+        30
+      );
+    });
+    this.load.on("fileprogress", function (file) {
+      // console.log(`Loading : ${file.src}`);
+    });
+    this.load.on("complete", function () {
+      progressBar.destroy();
+      progressBox.destroy();
+    });
+
     // map tiles
     this.load.image("forest_tiles", "public/assets/map/spritesheet.png");
     this.load.image(
