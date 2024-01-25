@@ -50,7 +50,11 @@ window.onload = () => {
 
   const gameDiv = document.getElementById("game");
   const fullscreenButton = document.getElementById("fullscreen-button");
+  const rotateScreenTip = document.getElementById("rotateScreenTip");
   const fullscreenButtonDiv = document.getElementById("fullscreenButton-div");
+
+  if (isNotDesktop) rotateScreenTip.hidden = false;
+
   fullscreenButton.addEventListener("click", () => {
     gameDiv.hidden = false;
     fullscreenButton.hidden = true;
