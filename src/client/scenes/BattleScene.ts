@@ -34,8 +34,8 @@ export class BattleScene extends Phaser.Scene {
   map: Phaser.Tilemaps.Tilemap;
   direction: string;
   tileset: Phaser.Tilemaps.Tileset | null;
-  obstacles: Phaser.Tilemaps.TilemapLayer | null;
-  background: Phaser.Tilemaps.TilemapLayer | null;
+  obstaclesLayer: Phaser.Tilemaps.TilemapLayer | null;
+  backgroundLayer: Phaser.Tilemaps.TilemapLayer | null;
   timelineIndex: number;
   timeline: Unit[] = [];
   isPlayerTurn: boolean;
@@ -54,6 +54,7 @@ export class BattleScene extends Phaser.Scene {
   socket: Socket;
   playerId: string;
   isInPreparationPhase: boolean;
+  transparentObstaclesLayer: Phaser.Tilemaps.TilemapLayer;
 
   constructor() {
     super({
@@ -130,7 +131,7 @@ export class BattleScene extends Phaser.Scene {
         if (!this.currentPlayer.isMoving && this.isPlayerTurn) {
           const { worldX, worldY } = pointer;
 
-          const targetVec = this.background!.worldToTileXY(worldX, worldY);
+          const targetVec = this.backgroundLayer!.worldToTileXY(worldX, worldY);
 
           if (this.spellVisible) {
             // if cliked outside spell range, unselect spell and go back to movement mode
@@ -314,7 +315,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   clearAllTilesTint() {
-    this.background.forEachTile((tile) => (tile.tint = 0xffffff));
+    this.backgroundLayer.forEachTile((tile) => (tile.tint = 0xffffff));
   }
 
   syncTimelineWithServer(timeline: ServerUnit[]) {
@@ -332,8 +333,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private calculatePlayerStarterTiles() {
-    this.teamAStarterTiles = this.background.filterTiles(
-      (tile: Phaser.Tilemaps.Tile) => !this.obstacles.getTileAt(tile.x, tile.y),
+    this.teamAStarterTiles = this.backgroundLayer.filterTiles(
+      (tile: Phaser.Tilemaps.Tile) => this.isWalkable(tile),
       this,
       0,
       0,
@@ -342,9 +343,16 @@ export class BattleScene extends Phaser.Scene {
     );
   }
 
+  private isWalkable(tile: Phaser.Tilemaps.Tile) {
+    return (
+      !this.obstaclesLayer.getTileAt(tile.x, tile.y) &&
+      !this.transparentObstaclesLayer.getTileAt(tile.x, tile.y)
+    );
+  }
+
   private calculateEnemyStarterTiles() {
-    this.teamBStarterTiles = this.background.filterTiles(
-      (tile: Phaser.Tilemaps.Tile) => !this.obstacles.getTileAt(tile.x, tile.y),
+    this.teamBStarterTiles = this.backgroundLayer.filterTiles(
+      (tile: Phaser.Tilemaps.Tile) => this.isWalkable(tile),
       this,
       Math.floor((this.map.width * 2) / 3),
       0,
@@ -550,29 +558,31 @@ export class BattleScene extends Phaser.Scene {
     );
 
     // create layers
-    this.background = this.map.createLayer(
-      "calque_background",
-      this.tileset!,
+    this.backgroundLayer = this.map.createLayer(
+      "background_layer",
+      this.tileset,
       0,
       0
     );
-    this.obstacles = this.map.createLayer(
-      "calque_obstacles",
-      this.tileset!,
+    this.obstaclesLayer = this.map.createLayer(
+      "obstacles_layer",
+      this.tileset,
+      0,
+      0
+    );
+    // layer for obstacles that do not block line of sight
+    this.transparentObstaclesLayer = this.map.createLayer(
+      "transparent_obstacles_layer",
+      this.tileset,
       0,
       0
     );
     // layer for tall items appearing on top of the player like trees
-    let overPlayer = this.map.createLayer(
-      "calque_devant_joueur",
-      this.tileset!,
-      0,
-      0
-    );
+    let topLayer = this.map.createLayer("top_layer", this.tileset, 0, 0);
     // always on top
-    overPlayer?.setDepth(9999);
+    topLayer.setDepth(9999);
     // transparent to see player beneath tall items
-    overPlayer?.setAlpha(0.5);
+    topLayer.setAlpha(0.5);
   }
 
   private startPlayerTurn(player: Player) {
@@ -603,8 +613,9 @@ export class BattleScene extends Phaser.Scene {
     const path = findPath(
       startVec,
       targetVec,
-      this.background!,
-      this.obstacles!
+      this.backgroundLayer,
+      this.obstaclesLayer,
+      this.transparentObstaclesLayer
     );
     if (path && path.length > 0 && path.length <= pm) {
       return path;
@@ -617,7 +628,7 @@ export class BattleScene extends Phaser.Scene {
   highlightAccessibleTiles = (positions: TilePath[]) => {
     let baseColor = 0xffffff;
     positions.forEach((tilePos) => {
-      let tile = this.background?.getTileAt(tilePos.pos.x, tilePos.pos.y);
+      let tile = this.backgroundLayer?.getTileAt(tilePos.pos.x, tilePos.pos.y);
       // overlay the tile with an interactive transparent rectangle
       let overlay = this.add.rectangle(
         tile.pixelX + 0.5 * tile.width,
@@ -651,7 +662,7 @@ export class BattleScene extends Phaser.Scene {
   highlightPath(path: Phaser.Math.Vector2[]) {
     let highlightColor = 0xffffff;
     path.forEach((position) => {
-      let pos = this.background!.tileToWorldXY(position.x, position.y);
+      let pos = this.backgroundLayer!.tileToWorldXY(position.x, position.y);
       this.pathOverlay.push(
         this.add.rectangle(
           pos.x + 0.5 * this.tileWidth,
@@ -680,7 +691,7 @@ export class BattleScene extends Phaser.Scene {
   ): TilePath[] => {
     const { x, y } = pos;
     let tablePos: TilePath[] = [];
-    const tilesAround = this.background?.getTilesWithin(
+    const tilesAround = this.backgroundLayer?.getTilesWithin(
       x - pm,
       y - pm,
       pm * 2 + 1,
@@ -921,7 +932,7 @@ export class BattleScene extends Phaser.Scene {
   };
 
   removeFromObstacleLayer(indX: number, indY: number) {
-    this.obstacles.removeTileAt(indX, indY);
+    this.obstaclesLayer.removeTileAt(indX, indY);
   }
 
   removeUnitFromBattle(unit: Unit) {
@@ -950,8 +961,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   addToObstacleLayer(target: Phaser.Math.Vector2) {
-    let targetTile = this.background?.getTileAt(target.x, target.y);
-    let newObstacle = this.obstacles?.putTileAt(
+    let targetTile = this.backgroundLayer?.getTileAt(target.x, target.y);
+    let newObstacle = this.obstaclesLayer?.putTileAt(
       targetTile!,
       target.x,
       target.y
@@ -1087,7 +1098,7 @@ export class BattleScene extends Phaser.Scene {
         break;
       case "star":
         // for the 'star' aoe, we iterate over the tiles within the 'aoeSize' distance from target
-        let target = this.background!.worldToTileXY(x, y);
+        let target = this.backgroundLayer!.worldToTileXY(x, y);
         let k = 0;
         for (
           let i = target.x - spell.aoeSize;
@@ -1101,7 +1112,7 @@ export class BattleScene extends Phaser.Scene {
           ) {
             let distance = Math.abs(target.x - i) + Math.abs(target.y - j);
             if (distance <= spell.aoeSize) {
-              let pos = this.background!.tileToWorldXY(i, j);
+              let pos = this.backgroundLayer!.tileToWorldXY(i, j);
               const overlay = this.spellAoeOverlay[k];
               overlay.x = pos.x + 0.5 * this.tileWidth;
               overlay.y = pos.y + 0.5 * this.tileWidth;
@@ -1113,7 +1124,7 @@ export class BattleScene extends Phaser.Scene {
         break;
       case "line":
         // this aoe should only be used with spells cast in a straight line
-        target = this.background!.worldToTileXY(x, y);
+        target = this.backgroundLayer!.worldToTileXY(x, y);
         // true if target is aligned horizontally with player (else we assume it's aligned vertically)
         let isAlignedX = target.y == this.currentPlayer.indY;
         const baseIndex = isAlignedX ? target.x : target.y;
@@ -1123,11 +1134,11 @@ export class BattleScene extends Phaser.Scene {
         for (let i = 0; i < spell.aoeSize; i++) {
           const overlay = this.spellAoeOverlay[i];
           let pos = isAlignedX
-            ? this.background!.tileToWorldXY(
+            ? this.backgroundLayer!.tileToWorldXY(
                 baseIndex + i * isForward,
                 target.y
               )
-            : this.background!.tileToWorldXY(
+            : this.backgroundLayer!.tileToWorldXY(
                 target.x,
                 baseIndex + i * isForward
               );
@@ -1201,7 +1212,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   calculateSpellRange(unit: Unit, spell: Spell) {
-    return this.background?.filterTiles(
+    return this.backgroundLayer?.filterTiles(
       (tile: Phaser.Tilemaps.Tile) =>
         this.isTileAccessibleToSpell(unit, spell, tile),
       this,
@@ -1225,7 +1236,7 @@ export class BattleScene extends Phaser.Scene {
     if (
       distance <= spell.maxRange &&
       distance >= spell.minRange &&
-      (!this.obstacles?.getTileAt(tile.x, tile.y) ||
+      (!this.obstaclesLayer?.getTileAt(tile.x, tile.y) ||
         this.isUnitThere(tile.x, tile.y))
     ) {
       // if spell doesn't need line of sight we just need to ensure tile isn't an obstacle
@@ -1239,7 +1250,13 @@ export class BattleScene extends Phaser.Scene {
         }
         return (
           isInStraightLine &&
-          isVisible(startVec, targetVec, this.obstacles!, this)
+          isVisible(
+            startVec,
+            targetVec,
+            this.obstaclesLayer,
+            this.transparentObstaclesLayer,
+            this
+          )
         );
       }
     }

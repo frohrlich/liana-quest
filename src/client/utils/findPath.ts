@@ -20,7 +20,8 @@ const findPath = (
   start: Phaser.Math.Vector2,
   target: Phaser.Math.Vector2,
   groundLayer: Phaser.Tilemaps.TilemapLayer,
-  wallsLayer: Phaser.Tilemaps.TilemapLayer
+  wallsLayer: Phaser.Tilemaps.TilemapLayer,
+  transparentWallsLayer: Phaser.Tilemaps.TilemapLayer
 ) => {
   // no path if select invalid tile
   if (!groundLayer.getTileAt(target.x, target.y)) {
@@ -28,7 +29,10 @@ const findPath = (
   }
 
   // no path if select a wall
-  if (wallsLayer.getTileAt(target.x, target.y)) {
+  if (
+    wallsLayer.getTileAt(target.x, target.y) ||
+    transparentWallsLayer.getTileAt(target.x, target.y)
+  ) {
     return [];
   }
 
@@ -72,7 +76,10 @@ const findPath = (
         continue;
       }
 
-      if (wallsLayer.getTileAt(neighbor.x, neighbor.y)) {
+      if (
+        wallsLayer.getTileAt(neighbor.x, neighbor.y) ||
+        transparentWallsLayer.getTileAt(neighbor.x, neighbor.y)
+      ) {
         continue;
       }
 

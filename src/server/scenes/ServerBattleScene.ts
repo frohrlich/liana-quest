@@ -30,9 +30,12 @@ export class ServerBattleScene {
   battleIsFinished: boolean = false;
 
   currentPlayer: ServerUnit;
+
   map: any;
   background: any;
   obstacles: any;
+  transparentObstacles: any;
+
   teamAStarterTiles: Position[] = [];
   teamBStarterTiles: Position[] = [];
   mapName: string;
@@ -89,6 +92,7 @@ export class ServerBattleScene {
             );
             if (
               !this.obstacles.tileAt(position.indX, position.indY) &&
+              !this.transparentObstacles.tileAt(position.indX, position.indY) &&
               !this.isUnitThere(position.indX, position.indY) &&
               ((myUnit.isTeamA && isPositionInTeamAStarterTiles) ||
                 (!myUnit.isTeamA && isPositionInTeamBStarterTiles))
@@ -158,7 +162,8 @@ export class ServerBattleScene {
             startVec,
             targetVec,
             this.background,
-            this.obstacles
+            this.obstacles,
+            this.transparentObstacles
           );
           // check if movement is actually possible
           if (path && path.length > 0 && path.length <= myUnit.pm) {
@@ -233,7 +238,8 @@ export class ServerBattleScene {
     if (
       distance >= spell.minRange &&
       distance <= spell.maxRange &&
-      (!this.obstacles.tileAt(targetVec.x, targetVec.y) ||
+      ((!this.obstacles.tileAt(targetVec.x, targetVec.y) &&
+        !this.transparentObstacles.tileAt(targetVec.x, targetVec.y)) ||
         this.isUnitThere(targetVec.x, targetVec.y))
     ) {
       // if spell doesn't need line of sight we just need to ensure tile isn't an obstacle
@@ -248,7 +254,13 @@ export class ServerBattleScene {
         }
         return (
           isInStraightLine &&
-          isVisible(playerPos, targetVec, this.obstacles, this)
+          isVisible(
+            playerPos,
+            targetVec,
+            this.obstacles,
+            this.transparentObstacles,
+            this
+          )
         );
       }
     }
@@ -271,6 +283,7 @@ export class ServerBattleScene {
         let nextTileX = unit.indX + i + direction;
         if (
           this.obstacles.tileAt(nextTileX, unit.indY) ||
+          this.transparentObstacles.tileAt(nextTileX, unit.indY) ||
           !this.background.tileAt(nextTileX, unit.indY) ||
           nextTileX >= this.map.width ||
           nextTileX < 0
@@ -288,6 +301,7 @@ export class ServerBattleScene {
         let nextTileY = unit.indY + i + direction;
         if (
           this.obstacles.tileAt(unit.indX, nextTileY) ||
+          this.transparentObstacles.tileAt(unit.indX, nextTileY) ||
           !this.background.tileAt(unit.indX, nextTileY) ||
           nextTileY < 0
         ) {
@@ -490,6 +504,7 @@ export class ServerBattleScene {
       this.map = map;
       this.background = map.layers[0];
       this.obstacles = map.layers[1];
+      this.transparentObstacles = map.layers[2];
 
       this.calculateStarterTiles();
       this.addUnitsOnStart(unitA, unitB);
@@ -509,7 +524,10 @@ export class ServerBattleScene {
     for (let i = 0; i < this.background.tiles.length; i++) {
       let tileX = i % this.map.width;
       let tileY = Math.floor(i / this.map.width);
-      if (this.obstacles.tileAt(tileX, tileY) === undefined) {
+      if (
+        !this.obstacles.tileAt(tileX, tileY) &&
+        !this.transparentObstacles.tileAt(tileX, tileY)
+      ) {
         // player starter tiles on left
         if (tileX <= this.map.width / 3) {
           this.teamAStarterTiles.push({ indX: tileX, indY: tileY });
@@ -662,10 +680,17 @@ export class ServerBattleScene {
       if (
         !isPlayerTile &&
         distance <= pm &&
-        this.obstacles.tileAt(tileX, tileY) === undefined
+        !this.obstacles.tileAt(tileX, tileY) &&
+        !this.transparentObstacles.tileAt(tileX, tileY)
       ) {
         const target = { x: tileX, y: tileY };
-        path = findPath(pos, target, this.background, this.obstacles);
+        path = findPath(
+          pos,
+          target,
+          this.background,
+          this.obstacles,
+          this.transparentObstacles
+        );
         if (path && path.length > 0 && path.length <= pm) {
           let myPos: ServerTilePath = {
             path: path,

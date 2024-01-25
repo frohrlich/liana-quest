@@ -254,7 +254,8 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
       startVec,
       targetVec,
       this.myScene.background,
-      this.myScene.obstacles
+      this.myScene.obstacles,
+      this.myScene.transparentObstacles
     );
     if (path && path.length > 0) {
       this.moveAlong(path);

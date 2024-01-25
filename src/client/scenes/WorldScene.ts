@@ -44,6 +44,7 @@ export class WorldScene extends Phaser.Scene {
   otherPlayers: WorldOnlinePlayer[] = [];
   npcs: NpcData[];
   devantJoueur: Phaser.Tilemaps.TilemapLayer;
+  transparentObstacles: Phaser.Tilemaps.TilemapLayer;
   selectedUnit: WorldUnit;
 
   constructor() {
@@ -68,6 +69,7 @@ export class WorldScene extends Phaser.Scene {
   showTileMapLayers() {
     this.background.setVisible(true);
     this.obstacles.setVisible(true);
+    this.transparentObstacles.setVisible(true);
     this.devantJoueur.setVisible(true);
   }
 
@@ -424,14 +426,17 @@ export class WorldScene extends Phaser.Scene {
       this.mapName + "_tiles"
     );
     this.background = this.map
-      .createLayer("calque_background", this.tileset!, 0, 0)
+      .createLayer("background_layer", this.tileset!, 0, 0)
       .setVisible(false);
     this.obstacles = this.map
-      .createLayer("calque_obstacles", this.tileset!, 0, 0)
+      .createLayer("obstacles_layer", this.tileset!, 0, 0)
+      .setVisible(false);
+    this.transparentObstacles = this.map
+      .createLayer("transparent_obstacles_layer", this.tileset!, 0, 0)
       .setVisible(false);
     // layer for tall items appearing on top of the player like trees
     this.devantJoueur = this.map
-      .createLayer("calque_devant_joueur", this.tileset!, 0, 0)
+      .createLayer("top_layer", this.tileset!, 0, 0)
       .setDepth(9999)
       .setVisible(false);
   }
@@ -513,6 +518,7 @@ export class WorldScene extends Phaser.Scene {
         if (
           this.background.getTileAt(targetVec.x, targetVec.y) &&
           !this.obstacles.getTileAt(targetVec.x, targetVec.y) &&
+          !this.transparentObstacles.getTileAt(targetVec.x, targetVec.y) &&
           !this.isPlayerThere(targetVec.x, targetVec.y) &&
           !this.isNpcThere(targetVec.x, targetVec.y) &&
           !this.isBattleIconThere(targetVec.x, targetVec.y)

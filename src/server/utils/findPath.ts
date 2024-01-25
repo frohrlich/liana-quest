@@ -24,7 +24,8 @@ const findPath = (
   start: Vector2,
   target: Vector2,
   groundLayer: any,
-  wallsLayer: any
+  wallsLayer: any,
+  transparentWallsLayer: any
 ) => {
   // no path if select invalid tile
   if (!groundLayer.tileAt(target.x, target.y)) {
@@ -32,7 +33,10 @@ const findPath = (
   }
 
   // no path if select a wall
-  if (wallsLayer.tileAt(target.x, target.y)) {
+  if (
+    wallsLayer.tileAt(target.x, target.y) ||
+    transparentWallsLayer.tileAt(target.x, target.y)
+  ) {
     return [];
   }
 
@@ -76,7 +80,10 @@ const findPath = (
         continue;
       }
 
-      if (wallsLayer.tileAt(neighbor.x, neighbor.y)) {
+      if (
+        wallsLayer.tileAt(neighbor.x, neighbor.y) ||
+        transparentWallsLayer.tileAt(neighbor.x, neighbor.y)
+      ) {
         continue;
       }
 

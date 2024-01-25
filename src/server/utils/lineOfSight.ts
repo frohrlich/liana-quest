@@ -7,7 +7,8 @@ import { Vector2 } from "./findPath";
 const isVisible = (
   startVec: Vector2,
   targetVec: Vector2,
-  obstacleLayer: any,
+  obstaclesLayer: any,
+  transparentObstaclesLayer: any,
   myScene: ServerBattleScene
 ) => {
   let { x: x0, y: y0 } = startVec;
@@ -18,11 +19,19 @@ const isVisible = (
   const sy = y0 < y1 ? 1 : -1;
   let error = dx + dy;
 
+  // regular obstacles (not units) are not targetable
+  if (
+    transparentObstaclesLayer.tileAt(x1, y1) ||
+    (obstaclesLayer.tileAt(x1, y1) && !myScene.isUnitThere(x1, y1))
+  ) {
+    return false;
+  }
+
   while (true) {
     // if not starter position and we encounter an obstacle : not visible, stop
     if (
       !(x0 == startVec.x && y0 == startVec.y) &&
-      obstacleLayer.tileAt(x0, y0)
+      obstaclesLayer.tileAt(x0, y0)
     ) {
       // if we reached destination and there is a unit there : it's visible
       // if it's a regular obstacle, it's not visible

@@ -76,7 +76,7 @@ export class Player extends Unit {
         mySummonedUnit,
         new Phaser.Math.Vector2(mySummonedUnit.indX, mySummonedUnit.indY),
         spell,
-        this.myScene.background.getTileAt(targetVec.x, targetVec.y)
+        this.myScene.backgroundLayer.getTileAt(targetVec.x, targetVec.y)
       );
     }
 

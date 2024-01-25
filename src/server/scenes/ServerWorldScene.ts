@@ -51,6 +51,7 @@ export class ServerWorldScene {
   playerStarterPosition: Position;
   roomId: string;
   mapName: string;
+  transparentObstacles: any;
 
   constructor(game: Game, worldData: ServerWorldData) {
     this.game = game;
@@ -190,7 +191,8 @@ export class ServerWorldScene {
           startVec,
           targetVec,
           this.background,
-          this.obstacles
+          this.obstacles,
+          this.transparentObstacles
         );
         if (path && path.length > 0) {
           currentPlayer.indX = movementData.indX;
@@ -276,6 +278,7 @@ export class ServerWorldScene {
         this.map = map;
         this.background = map.layers[0];
         this.obstacles = map.layers[1];
+        this.transparentObstacles = map.layers[2];
 
         // create npcs at random locations
         this.createRandomNpcs();
@@ -321,6 +324,7 @@ export class ServerWorldScene {
         this.background,
         this.map,
         this.obstacles,
+        this.transparentObstacles,
         randPosition.indX,
         range,
         randPosition.indY
@@ -335,7 +339,8 @@ export class ServerWorldScene {
       for (let indY = 0; indY < this.map.height; indY++) {
         if (
           this.background.tileAt(indX, indY) &&
-          !this.obstacles.tileAt(indX, indY)
+          !this.obstacles.tileAt(indX, indY) &&
+          !this.transparentObstacles.tileAt(indX, indY)
         ) {
           freePositions.push({ indX: indX, indY: indY });
         }
@@ -350,6 +355,7 @@ export class ServerWorldScene {
     background: any,
     map: any,
     obstacles: any,
+    transparentObstacles: any,
     indX: number,
     range: number,
     indY: number
@@ -367,7 +373,8 @@ export class ServerWorldScene {
             let tileX = i % map.width;
             let tileY = Math.floor(i / map.width);
             if (
-              obstacles.tileAt(tileX, tileY) === undefined &&
+              !obstacles.tileAt(tileX, tileY) &&
+              !transparentObstacles.tileAt(tileX, tileY) &&
               tileX >= indX - range &&
               tileY >= indY - range &&
               tileX <= indX + range &&
@@ -385,7 +392,13 @@ export class ServerWorldScene {
             y: nearbyTiles[randMove].indY,
           };
 
-          const path = findPath(startVec, targetVec, background, obstacles);
+          const path = findPath(
+            startVec,
+            targetVec,
+            background,
+            obstacles,
+            transparentObstacles
+          );
           // only move if there is actually a path to the destination
           if (path && path.length > 0) {
             npc.indX = nearbyTiles[randMove].indX;

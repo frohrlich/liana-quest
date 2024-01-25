@@ -7,7 +7,8 @@ import { BattleScene } from "../scenes/BattleScene";
 const isVisible = (
   startVec: Phaser.Math.Vector2,
   targetVec: Phaser.Math.Vector2,
-  obstacleLayer: Phaser.Tilemaps.TilemapLayer,
+  obstaclesLayer: Phaser.Tilemaps.TilemapLayer,
+  transparentObstaclesLayer: Phaser.Tilemaps.TilemapLayer,
   myScene: BattleScene
 ) => {
   let { x: x0, y: y0 } = startVec;
@@ -18,11 +19,19 @@ const isVisible = (
   const sy = y0 < y1 ? 1 : -1;
   let error = dx + dy;
 
+  // regular obstacles (not units) are not targetable
+  if (
+    transparentObstaclesLayer.getTileAt(x1, y1) ||
+    (obstaclesLayer.getTileAt(x1, y1) && !myScene.isUnitThere(x1, y1))
+  ) {
+    return false;
+  }
+
   while (true) {
     // if not starter position and we encounter an obstacle : not visible, stop
     if (
       !(x0 == startVec.x && y0 == startVec.y) &&
-      obstacleLayer.getTileAt(x0, y0)
+      obstaclesLayer.getTileAt(x0, y0)
     ) {
       // if we reached destination and there is a unit there : it's visible
       // if it's a regular obstacle, it's not visible
