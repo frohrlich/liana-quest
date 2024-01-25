@@ -18,6 +18,7 @@ export interface ServerTilePath {
 
 export class ServerBattleScene {
   endBattleDelay = 400;
+  private readonly mapCount = 3;
 
   worldScene: ServerWorldScene;
   io: Server;
@@ -493,11 +494,9 @@ export class ServerBattleScene {
   ) {
     let tmx = require("tmx-parser");
 
-    // choose map randomly among a set
-    // const mapCount = 3;
-    // const randomMapIndex = Math.floor(Math.random() * mapCount) + 1;
-    // this.mapName = `${this.worldScene.mapName}_battlemap${randomMapIndex}`;
-    this.mapName = `${this.worldScene.mapName}_battlemap_new`;
+    //  choose map randomly among a set
+    const randomMapIndex = Math.floor(Math.random() * this.mapCount) + 1;
+    this.mapName = `${this.worldScene.mapName}_battlemap${randomMapIndex}`;
 
     tmx.parseFile(`./public/assets/map/${this.mapName}.tmx`, (err, map) => {
       if (err) throw err;

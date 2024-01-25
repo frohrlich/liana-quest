@@ -11,9 +11,9 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload(): void {
+    // progress bar
     const progressBarHeight = 50;
     const progressBarOffset = 10;
-    // progress bar
     const progressBar = this.add.graphics();
     const progressBox = this.add.graphics();
     progressBox.fillStyle(0x222222, 0.8);
@@ -83,10 +83,6 @@ export class BootScene extends Phaser.Scene {
     this.load.tilemapTiledJSON(
       "dungeon_battlemap3",
       "public/assets/map/dungeon_battlemap3.json"
-    );
-    this.load.tilemapTiledJSON(
-      "forest_battlemap_new",
-      "public/assets/map/forest_battlemap_new.json"
     );
 
     // characters
