@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { UIElement } from "./UIElement";
-import { Unit } from "../battle/Unit";
+import { Unit } from "../Unit";
 
 /** For simple text on the UI (ie titles) */
 export class UIText extends UIElement {

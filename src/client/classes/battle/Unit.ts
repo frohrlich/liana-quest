@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { BattleScene } from "../../scenes/BattleScene";
 import { Spell } from "./Spell";
-import { UITimelineSlot } from "../UI/UITimelineSlot";
+import { UITimelineSlot } from "./UI/UITimelineSlot";
 import { EffectOverTime } from "./EffectOverTime";
 import { ServerUnit } from "../../../server/classes/ServerUnit";
 

@@ -4,7 +4,7 @@ import findPath from "../utils/findPath";
 import { Npc } from "../classes/battle/Npc";
 import { Player } from "../classes/battle/Player";
 import { Spell } from "../classes/battle/Spell";
-import { UIScene } from "./UIScene";
+import { BattleUIScene } from "./BattleUIScene";
 import isVisible from "../utils/lineOfSight";
 import { unitsAvailable } from "../data/UnitData";
 import { heal, javelin, punch, sting } from "../data/SpellData";
@@ -43,7 +43,7 @@ export class BattleScene extends Phaser.Scene {
   spellVisible: boolean;
   spellRange: Phaser.Tilemaps.Tile[] = [];
   currentSpell: Spell;
-  uiScene: UIScene;
+  uiScene: BattleUIScene;
   overlays: Phaser.GameObjects.Rectangle[] = [];
   spellAoeOverlay: Phaser.GameObjects.Rectangle[] = [];
   pathOverlay: Phaser.GameObjects.Rectangle[] = [];
@@ -101,8 +101,8 @@ export class BattleScene extends Phaser.Scene {
     });
 
     // start UI
-    this.scene.run("UIScene");
-    this.uiScene = this.scene.get("UIScene") as UIScene;
+    this.scene.run("BattleUIScene");
+    this.uiScene = this.scene.get("BattleUIScene") as BattleUIScene;
 
     // and finally, player gets to choose their starter position
     this.setupStartPosition();
@@ -1314,6 +1314,6 @@ export class BattleScene extends Phaser.Scene {
     this.clearAllUnits();
     this.map.destroy();
     this.grid.destroy();
-    this.scene.stop("UIScene");
+    this.scene.stop("BattleUIScene");
   }
 }

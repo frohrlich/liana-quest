@@ -105,6 +105,9 @@ export class BootScene extends Phaser.Scene {
       "public/assets/fonts/dogicapixelbold.png",
       "public/assets/fonts/dogicapixelbold.xml"
     );
+
+    // dom
+    this.load.html("chatform", "public/assets/text/chatform.html");
   }
 
   create(): void {

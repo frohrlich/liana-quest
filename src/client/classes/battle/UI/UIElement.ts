@@ -1,12 +1,12 @@
 import Phaser from "phaser";
-import { UIScene } from "../../scenes/UIScene";
+import { BattleUIScene } from "../../../scenes/BattleUIScene";
 
 export abstract class UIElement {
   // which UI tab does this element belong to
   // starting from 0 (topmost)
   tab: number;
   posX: number;
-  myScene: UIScene;
+  myScene: BattleUIScene;
   fontSize: number;
   textStyle: Phaser.Types.GameObjects.Text.TextStyle;
   x: number;
@@ -17,7 +17,7 @@ export abstract class UIElement {
   constructor(scene: Phaser.Scene, tab: number, posX: number) {
     this.tab = tab;
     this.posX = posX;
-    this.myScene = scene as UIScene;
+    this.myScene = scene as BattleUIScene;
     this.fontSize = this.myScene.battleScene.tileWidth;
 
     this.marginX = 2 * this.myScene.uiScale;

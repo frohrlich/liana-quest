@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { UIElement } from "./UIElement";
-import { Unit } from "../battle/Unit";
+import { Unit } from "../Unit";
 
 /** Display unit stats (pa, pm, hp etc) on the UI. */
 export class UnitStatDisplay extends UIElement {

@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { Unit } from "../battle/Unit";
+import { Unit } from "../Unit";
 
 /** Represents a unit in the timeline. */
 export class UITimelineSlot extends Phaser.GameObjects.Image {

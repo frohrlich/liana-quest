@@ -237,7 +237,7 @@ export class ServerUnit {
       this.endTurn();
       battleScene.io.to(battleScene.id).emit("endPlayerTurn", this);
       battleScene.nextTurn();
-    }, pathLength * movementDuration);
+    }, (pathLength + 0.5) * movementDuration);
   }
 
   /** Returns true on success. */

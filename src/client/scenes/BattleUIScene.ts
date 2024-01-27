@@ -1,14 +1,14 @@
 import Phaser from "phaser";
 import { BattleScene } from "./BattleScene";
 import { Spell } from "../classes/battle/Spell";
-import { UISpell } from "../classes/UI/UISpell";
+import { UISpell } from "../classes/battle/UI/UISpell";
 import { Unit } from "../classes/battle/Unit";
-import { UnitStatDisplay } from "../classes/UI/UnitStatDisplay";
-import { UITimelineSlot } from "../classes/UI/UITimelineSlot";
-import { UIText } from "../classes/UI/UIText";
+import { UnitStatDisplay } from "../classes/battle/UI/UnitStatDisplay";
+import { UITimelineSlot } from "../classes/battle/UI/UITimelineSlot";
+import { UIText } from "../classes/battle/UI/UIText";
 
 /** Battle UI. */
-export class UIScene extends Phaser.Scene {
+export class BattleUIScene extends Phaser.Scene {
   graphics: Phaser.GameObjects.Graphics;
   battleScene: BattleScene;
   uiTabWidth: number;
@@ -32,7 +32,7 @@ export class UIScene extends Phaser.Scene {
 
   constructor() {
     super({
-      key: "UIScene",
+      key: "BattleUIScene",
     });
   }
 

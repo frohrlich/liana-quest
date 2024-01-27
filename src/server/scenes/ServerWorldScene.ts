@@ -218,6 +218,15 @@ export class ServerWorldScene {
         this.sendPlayerToOtherWorldScene(socket, destination);
       }
     });
+
+    socket.on("newChatMessageSent", (message: string) => {
+      const currentPlayer = this.findCurrentPlayer(socket);
+      if (currentPlayer) {
+        socket.broadcast
+          .to(this.roomId)
+          .emit("newChatMessageWasSent", currentPlayer.type, message);
+      }
+    });
   }
 
   sendPlayerToOtherWorldScene(socket: Socket, destination: string) {

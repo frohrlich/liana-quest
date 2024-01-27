@@ -1,12 +1,13 @@
 import "phaser";
 import { BootScene } from "./scenes/BootScene";
 import { BattleScene } from "./scenes/BattleScene";
-import { UIScene } from "./scenes/UIScene";
+import { BattleUIScene } from "./scenes/BattleUIScene";
 import { GameOverScene } from "./scenes/GameOverScene";
 import { WorldScene } from "./scenes/WorldScene";
 import screenfull from "screenfull";
 import { UAParser } from "ua-parser-js";
 import { DialogScene } from "./scenes/DialogScene";
+import { WorldUIScene } from "./scenes/WorldUIScene";
 
 export const GAME_WIDTH = 930; // xiaomi mi a3 : 19.5:9 ratio
 export const GAME_HEIGHT = 416;
@@ -28,12 +29,16 @@ const config = {
       debug: false,
     },
   },
+  dom: {
+    createContainer: true,
+  },
   scene: [
     BootScene,
     WorldScene,
     DialogScene,
     BattleScene,
-    UIScene,
+    BattleUIScene,
+    WorldUIScene,
     GameOverScene,
   ],
 };

@@ -11,6 +11,8 @@ import { BattleIcon } from "../classes/world/BattleIcon";
 import { ServerUnit } from "../../server/classes/ServerUnit";
 import { WorldUnit } from "../classes/world/WorldUnit";
 import { NpcData, WorldData, findWorldMapByName } from "../data/WorldData";
+import { GAME_HEIGHT, GAME_WIDTH } from "../app";
+import { WorldUIScene } from "./WorldUIScene";
 
 interface UnitPosition {
   indX: number;
@@ -46,6 +48,9 @@ export class WorldScene extends Phaser.Scene {
   devantJoueur: Phaser.Tilemaps.TilemapLayer;
   transparentObstacles: Phaser.Tilemaps.TilemapLayer;
   selectedUnit: WorldUnit;
+  chatButtonOutline: Phaser.GameObjects.Rectangle;
+  chatButtonText: Phaser.GameObjects.BitmapText;
+  uiScene: WorldUIScene;
 
   constructor() {
     super({
@@ -64,6 +69,8 @@ export class WorldScene extends Phaser.Scene {
       this.setupWeb();
       this.socket.emit("worldSceneIsReady", this.mapName);
     });
+    this.scene.run("WorldUIScene");
+    this.uiScene = this.scene.get("WorldUIScene") as WorldUIScene;
   }
 
   showTileMapLayers() {
@@ -75,6 +82,8 @@ export class WorldScene extends Phaser.Scene {
 
   setupWeb() {
     this.socket.off();
+
+    this.uiScene.listenToNewMessages();
 
     this.socket.on("disconnect", () => {
       setTimeout(() => {
@@ -509,6 +518,7 @@ export class WorldScene extends Phaser.Scene {
       player.destroy(true);
     });
     this.otherPlayers = [];
+    this.scene.stop("WorldUIScene");
   }
 
   enableMovingOnClick() {
