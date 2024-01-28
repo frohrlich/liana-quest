@@ -49,7 +49,8 @@ export class WorldUIScene extends Phaser.Scene {
     this.chatForm = this.add
       .dom(this.chatBoxPositionX, this.chatBoxPositionY)
       .createFromCache("chatform")
-      .setVisible(false);
+      .setVisible(false)
+      .setOrigin(0, 0);
     this.chatForm.addListener("click");
 
     // enable chat on press enter
