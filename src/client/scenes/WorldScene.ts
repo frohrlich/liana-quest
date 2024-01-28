@@ -518,7 +518,6 @@ export class WorldScene extends Phaser.Scene {
       player.destroy(true);
     });
     this.otherPlayers = [];
-    this.uiScene.clearChat();
     this.scene.stop("WorldUIScene");
   }
 

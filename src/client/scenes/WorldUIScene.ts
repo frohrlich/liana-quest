@@ -45,12 +45,6 @@ export class WorldUIScene extends Phaser.Scene {
     );
   }
 
-  clearChat() {
-    this.chatLines = [];
-    const chatBox = this.chatForm.node.querySelector("#chatBox") as HTMLElement;
-    chatBox.innerText = "";
-  }
-
   createChatForm() {
     this.chatForm = this.add
       .dom(this.chatBoxPositionX, this.chatBoxPositionY)
