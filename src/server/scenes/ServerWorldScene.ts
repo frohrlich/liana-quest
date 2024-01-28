@@ -222,7 +222,7 @@ export class ServerWorldScene {
     socket.on("newChatMessageSent", (message: string) => {
       const currentPlayer = this.findCurrentPlayer(socket);
       if (currentPlayer) {
-        socket.broadcast
+        this.io
           .to(this.roomId)
           .emit("newChatMessageWasSent", currentPlayer.type, message);
       }
