@@ -11,7 +11,6 @@ import { BattleIcon } from "../classes/world/BattleIcon";
 import { ServerUnit } from "../../server/classes/ServerUnit";
 import { WorldUnit } from "../classes/world/WorldUnit";
 import { NpcData, WorldData, findWorldMapByName } from "../data/WorldData";
-import { GAME_HEIGHT, GAME_WIDTH } from "../app";
 import { WorldUIScene } from "./WorldUIScene";
 
 interface UnitPosition {
@@ -69,8 +68,10 @@ export class WorldScene extends Phaser.Scene {
       this.setupWeb();
       this.socket.emit("worldSceneIsReady", this.mapName);
     });
-    this.scene.run("WorldUIScene");
-    this.uiScene = this.scene.get("WorldUIScene") as WorldUIScene;
+    if (!this.uiScene || !this.scene.isActive("WorldUIScene")) {
+      this.scene.run("WorldUIScene");
+      this.uiScene = this.scene.get("WorldUIScene") as WorldUIScene;
+    }
   }
 
   showTileMapLayers() {
@@ -518,7 +519,6 @@ export class WorldScene extends Phaser.Scene {
       player.destroy(true);
     });
     this.otherPlayers = [];
-    this.scene.stop("WorldUIScene");
   }
 
   enableMovingOnClick() {
