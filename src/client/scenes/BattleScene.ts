@@ -13,6 +13,7 @@ import { ServerUnit } from "../../server/classes/ServerUnit";
 import { Socket } from "socket.io-client";
 import { Position } from "../../server/scenes/ServerWorldScene";
 import { EffectOverTime } from "../classes/battle/EffectOverTime";
+import { ChatScene } from "./ChatScene";
 
 /** Store a tile and the path to it (for movement). */
 export interface TilePath {
@@ -55,6 +56,7 @@ export class BattleScene extends Phaser.Scene {
   playerId: string;
   isInPreparationPhase: boolean;
   transparentObstaclesLayer: Phaser.Tilemaps.TilemapLayer;
+  chatScene: ChatScene;
 
   constructor() {
     super({
@@ -103,6 +105,9 @@ export class BattleScene extends Phaser.Scene {
     // start UI
     this.scene.run("BattleUIScene");
     this.uiScene = this.scene.get("BattleUIScene") as BattleUIScene;
+
+    this.chatScene = this.worldScene.chatScene;
+    this.chatScene.listenToNewMessages(this.socket);
 
     // and finally, player gets to choose their starter position
     this.setupStartPosition();
@@ -362,17 +367,11 @@ export class BattleScene extends Phaser.Scene {
   }
 
   displayBattleStartScreen() {
-    const screenCenterX = this.cameras.main.displayWidth / 2;
-    const screenCenterY = this.cameras.main.displayHeight / 2;
+    const posX = this.cameras.main.displayWidth * 0.4;
+    const posY = this.cameras.main.displayHeight / 2;
     const battleStartText = "The battle begins !";
     const battleStart = this.add
-      .bitmapText(
-        screenCenterX,
-        screenCenterY,
-        "dogicapixel",
-        battleStartText,
-        this.fontSize * 8
-      )
+      .bitmapText(posX, posY, "dogicapixel", battleStartText, this.fontSize * 8)
       .setOrigin(0.5)
       .setScale(3)
       .setDepth(99999);
@@ -1236,10 +1235,11 @@ export class BattleScene extends Phaser.Scene {
     if (
       distance <= spell.maxRange &&
       distance >= spell.minRange &&
-      (!this.obstaclesLayer?.getTileAt(tile.x, tile.y) ||
+      !this.transparentObstaclesLayer.getTileAt(tile.x, tile.y) &&
+      (!this.obstaclesLayer.getTileAt(tile.x, tile.y) ||
         this.isUnitThere(tile.x, tile.y))
     ) {
-      // if spell doesn't need line of sight we just need to ensure tile isn't an obstacle
+      // if spell doesn't need line of sight we just needed to ensure tile is in range and not an obstacle
       if (!spell.lineOfSight) return true;
       // else we use the line of sight algorithm
       else {

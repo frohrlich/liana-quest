@@ -11,7 +11,7 @@ import { BattleIcon } from "../classes/world/BattleIcon";
 import { ServerUnit } from "../../server/classes/ServerUnit";
 import { WorldUnit } from "../classes/world/WorldUnit";
 import { NpcData, WorldData, findWorldMapByName } from "../data/WorldData";
-import { WorldUIScene } from "./WorldUIScene";
+import { ChatScene } from "./ChatScene";
 
 interface UnitPosition {
   indX: number;
@@ -49,7 +49,7 @@ export class WorldScene extends Phaser.Scene {
   selectedUnit: WorldUnit;
   chatButtonOutline: Phaser.GameObjects.Rectangle;
   chatButtonText: Phaser.GameObjects.BitmapText;
-  uiScene: WorldUIScene;
+  chatScene: ChatScene;
 
   constructor() {
     super({
@@ -68,9 +68,9 @@ export class WorldScene extends Phaser.Scene {
       this.setupWeb();
       this.socket.emit("worldSceneIsReady", this.mapName);
     });
-    if (!this.uiScene || !this.scene.isActive("WorldUIScene")) {
-      this.scene.run("WorldUIScene");
-      this.uiScene = this.scene.get("WorldUIScene") as WorldUIScene;
+    if (!this.chatScene || !this.scene.isActive("ChatScene")) {
+      this.scene.run("ChatScene");
+      this.chatScene = this.scene.get("ChatScene") as ChatScene;
     }
   }
 
@@ -84,7 +84,7 @@ export class WorldScene extends Phaser.Scene {
   setupWeb() {
     this.socket.off();
 
-    this.uiScene.listenToNewMessages();
+    this.chatScene.listenToNewMessages(this.socket);
 
     this.socket.on("disconnect", () => {
       setTimeout(() => {

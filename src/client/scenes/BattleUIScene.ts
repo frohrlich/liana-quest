@@ -70,11 +70,11 @@ export class BattleUIScene extends Phaser.Scene {
 
   createStartButton() {
     const textTopMargin = 2;
-    const yPos = this.uiTabHeight * 2.5;
+    const yPos = this.uiTabHeight * 2.33 + 1;
     const xPos = this.leftX + this.uiTabWidth * 0.5;
 
     this.button = this.add
-      .rectangle(xPos, yPos, this.uiTabWidth * 0.85, this.uiTabHeight * 0.65)
+      .rectangle(xPos, yPos, this.uiTabWidth * 0.85, this.uiTabHeight * 0.56)
       .setStrokeStyle(2, 0xcccccc)
       .setFillStyle(0x293154)
       .setInteractive()

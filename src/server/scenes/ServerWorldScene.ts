@@ -137,13 +137,13 @@ export class ServerWorldScene {
       const myBattleIcon = this.findBattleIconById(id);
       if (myBattleIcon) {
         const myBattle = this.ongoingBattles.find(
-          (battle) => battle.id === myBattleIcon.battleId
+          (battle) => battle.roomId === myBattleIcon.battleId
         );
         if (myBattle && myBattle.isInPreparationMode) {
           const myPlayer = this.findCurrentPlayer(socket);
           this.movePlayerToBattle(socket);
           socket.leave(this.roomId);
-          socket.join(myBattle.id);
+          socket.join(myBattle.roomId);
           myBattle.addPlayerAfterBattleStart(myPlayer, myBattleIcon.isTeamA);
         }
       }
@@ -371,7 +371,7 @@ export class ServerWorldScene {
     indY: number
   ) {
     // random offset before first movement so that all npcs don't move simultaneously
-    const movingOffset = Math.floor(Math.random() * delay);
+    const movingOffset = Math.floor(Math.random() * 2 * delay);
     setTimeout(() => {
       setInterval(() => {
         // hidden npcs (in a fight) don't move
@@ -469,7 +469,7 @@ export class ServerWorldScene {
   removePlayerFromBattles(socket: Socket) {
     this.ongoingBattles.forEach((battle) => {
       battle.removeCompletelyUnitFromBattle(socket.id);
-      socket.leave(battle.id);
+      socket.leave(battle.roomId);
     });
     const index = this.playersCurrentlyInBattle.findIndex(
       (player) => player.id === socket.id
@@ -481,7 +481,7 @@ export class ServerWorldScene {
 
   removeBattle(battleId: string) {
     const index = this.ongoingBattles.findIndex(
-      (battle) => battle.id === battleId
+      (battle) => battle.roomId === battleId
     );
     if (index !== -1) {
       this.ongoingBattles.splice(index, 1);

@@ -200,7 +200,7 @@ export class ServerUnit {
       }
 
       battleScene.io
-        .to(battleScene.id)
+        .to(battleScene.roomId)
         .emit(
           "unitHasCastSpell",
           this,
@@ -235,7 +235,7 @@ export class ServerUnit {
 
     setTimeout(() => {
       this.endTurn();
-      battleScene.io.to(battleScene.id).emit("endPlayerTurn", this);
+      battleScene.io.to(battleScene.roomId).emit("endPlayerTurn", this);
       battleScene.nextTurn();
     }, (pathLength + 0.5) * movementDuration);
   }
@@ -275,7 +275,7 @@ export class ServerUnit {
         battleScene.addToObstacleLayer(pos.x, pos.y);
         this.pm -= path.length;
         // emit a message to all players about the unit that moved
-        battleScene.io.to(battleScene.id).emit("unitMoved", this, path);
+        battleScene.io.to(battleScene.roomId).emit("unitMoved", this, path);
 
         return path.length;
       }

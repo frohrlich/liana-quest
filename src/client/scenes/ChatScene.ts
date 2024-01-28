@@ -1,9 +1,9 @@
 import Phaser from "phaser";
-import { WorldScene } from "./WorldScene";
 import { GAME_WIDTH, GAME_HEIGHT } from "../app";
+import { Socket } from "socket.io-client";
 
-/** World UI. */
-export class WorldUIScene extends Phaser.Scene {
+/** Chat UI Scene. Contains the chat button, chat input and chat box. */
+export class ChatScene extends Phaser.Scene {
   chatBoxPositionX = 20;
   chatBoxPositionY = 20;
   chatBoxLinesDisplayed = 10;
@@ -11,7 +11,7 @@ export class WorldUIScene extends Phaser.Scene {
   chatFormHeight = 35;
   fontSize = 16;
 
-  worldScene: WorldScene;
+  socket: Socket;
   chatButtonText: Phaser.GameObjects.BitmapText;
   chatButton: Phaser.GameObjects.Graphics;
   offset = 0;
@@ -21,28 +21,25 @@ export class WorldUIScene extends Phaser.Scene {
 
   constructor() {
     super({
-      key: "WorldUIScene",
+      key: "ChatScene",
     });
   }
 
   create(): void {
-    this.worldScene = this.scene.get("WorldScene") as WorldScene;
     this.createChatButton();
     this.createChatForm();
   }
 
-  listenToNewMessages() {
-    this.worldScene.socket.on(
-      "newChatMessageWasSent",
-      (playerName, message) => {
-        this.chatLines.push(`${playerName}: ${message}`);
-        const chatBox = this.chatForm.node.querySelector(
-          "#chatBox"
-        ) as HTMLElement;
-        chatBox.innerText = this.chatLines.join("\n");
-        chatBox.scrollTop = chatBox.scrollHeight; // hack to always have chat scrolled to bottom
-      }
-    );
+  listenToNewMessages(socket: Socket) {
+    this.socket = socket;
+    socket.on("newChatMessageWasSent", (playerName, message) => {
+      this.chatLines.push(`${playerName}: ${message}`);
+      const chatBox = this.chatForm.node.querySelector(
+        "#chatBox"
+      ) as HTMLElement;
+      chatBox.innerText = this.chatLines.join("\n");
+      chatBox.scrollTop = chatBox.scrollHeight; // hack to always have chat scrolled to bottom
+    });
   }
 
   createChatForm() {
@@ -67,8 +64,8 @@ export class WorldUIScene extends Phaser.Scene {
       if (event.target.name === "sayButton") {
         const input = event.target.previousElementSibling;
         // const chatBox = event.target.nextElementSibling;
-        if (input.value !== "") {
-          this.worldScene.socket.emit("newChatMessageSent", input.value);
+        if (input.value !== "" && this.socket) {
+          this.socket.emit("newChatMessageSent", input.value);
           // this.chatLines.push(`${this.worldScene.player.type}: ${input.value}`);
           // chatBox.innerText = this.chatLines.join("\n");
           // chatBox.scrollTop = chatBox.scrollHeight; // hack to always have chat scrolled to bottom
@@ -79,9 +76,9 @@ export class WorldUIScene extends Phaser.Scene {
   }
 
   createChatButton() {
-    const chatButtonWidth = 75;
-    const chatButtonHeight = 50;
-    const margin = 10;
+    const chatButtonWidth = 70;
+    const chatButtonHeight = 40;
+    const margin = 9;
 
     this.chatButton = this.add.graphics();
     this.chatButton.fillStyle(0x1f301d, 0.9);

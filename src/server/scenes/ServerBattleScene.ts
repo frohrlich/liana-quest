@@ -22,7 +22,7 @@ export class ServerBattleScene {
 
   worldScene: ServerWorldScene;
   io: Server;
-  id: string;
+  roomId: string;
   worldPlayers: ServerWorldUnit[] = [];
   teamA: ServerUnit[] = [];
   teamB: ServerUnit[] = [];
@@ -55,7 +55,7 @@ export class ServerBattleScene {
     this.io = io;
     if (unitA.isPlayable) this.worldPlayers.push(unitA);
     if (unitB.isPlayable) this.worldPlayers.push(unitB);
-    this.id = id;
+    this.roomId = id;
 
     this.createTilemapAndStartUpBattle(unitA, unitB);
   }
@@ -104,7 +104,7 @@ export class ServerBattleScene {
               this.addToObstacleLayer(position.indX, position.indY);
               // send info to all participants in battle that someone changed starter position
               this.io
-                .to(this.id)
+                .to(this.roomId)
                 .emit("playerHasChangedStartPosition", playerId, position);
             }
           }
@@ -120,16 +120,25 @@ export class ServerBattleScene {
           if (!myPlayer.isReady) {
             myPlayer.isReady = true;
             socket.emit("readyIsConfirmed");
-            this.io.to(this.id).emit("playerIsReady", myPlayer);
+            this.io.to(this.roomId).emit("playerIsReady", myPlayer);
           } else {
             myPlayer.isReady = false;
             socket.emit("notReadyIsConfirmed");
-            this.io.to(this.id).emit("playerIsNotReady", myPlayer);
+            this.io.to(this.roomId).emit("playerIsNotReady", myPlayer);
           }
         }
         if (this.everyoneIsReady()) {
           this.startBattleMainPhase(socket);
         }
+      }
+    });
+
+    socket.on("newChatMessageSent", (message: string) => {
+      const currentPlayer = this.findUnitById(socket.id);
+      if (currentPlayer) {
+        this.io
+          .to(this.roomId)
+          .emit("newChatMessageWasSent", currentPlayer.type, message);
       }
     });
 
@@ -142,7 +151,7 @@ export class ServerBattleScene {
         const myUnit = this.findUnitById(socket.id);
         if (myUnit && myUnit.isUnitTurn) {
           myUnit.endTurn();
-          this.io.to(this.id).emit("endPlayerTurn", myUnit);
+          this.io.to(this.roomId).emit("endPlayerTurn", myUnit);
           this.nextTurn();
         }
       }
@@ -174,7 +183,7 @@ export class ServerBattleScene {
             this.addToObstacleLayer(movementData.x, movementData.y);
             myUnit.pm -= path.length;
             // emit a message to all players about the unit that moved
-            this.io.to(this.id).emit("unitMoved", myUnit, path);
+            this.io.to(this.roomId).emit("unitMoved", myUnit, path);
           }
         }
       }
@@ -194,14 +203,14 @@ export class ServerBattleScene {
   private startBattleMainPhase(socket: Socket) {
     this.isInPreparationMode = false;
     // tell all battle participants that the battle begins
-    this.io.to(this.id).emit("startMainBattlePhase");
+    this.io.to(this.roomId).emit("startMainBattlePhase");
 
     // then start first player turn
     this.nextTurn();
 
     // tell world map you can't join battle anymore
-    this.io.to(this.worldScene.roomId).emit("removeBattleIcons", this.id);
-    this.worldScene.removeBattleIcons(this.id);
+    this.io.to(this.worldScene.roomId).emit("removeBattleIcons", this.roomId);
+    this.worldScene.removeBattleIcons(this.roomId);
   }
 
   nextTurn() {
@@ -215,7 +224,7 @@ export class ServerBattleScene {
     currentUnit.undergoEffectOverTime();
     this.checkDead(currentUnit);
     this.io
-      .to(this.id)
+      .to(this.roomId)
       .emit("unitTurnBegins", currentUnit, effectOverTime, this.timelineIndex);
 
     if (!this.battleIsFinished) {
@@ -239,11 +248,11 @@ export class ServerBattleScene {
     if (
       distance >= spell.minRange &&
       distance <= spell.maxRange &&
-      ((!this.obstacles.tileAt(targetVec.x, targetVec.y) &&
-        !this.transparentObstacles.tileAt(targetVec.x, targetVec.y)) ||
+      !this.transparentObstacles.tileAt(targetVec.x, targetVec.y) &&
+      (!this.obstacles.tileAt(targetVec.x, targetVec.y) ||
         this.isUnitThere(targetVec.x, targetVec.y))
     ) {
-      // if spell doesn't need line of sight we just need to ensure tile isn't an obstacle
+      // if spell doesn't need line of sight we just needed to ensure tile is in range and not an obstacle
       if (!spell.lineOfSight) return true;
       // else we use the line of sight algorithm
       else {
@@ -319,7 +328,7 @@ export class ServerBattleScene {
     if (unit.isDead()) {
       this.removeUnitFromBattle(unit.id);
       if (!this.battleIsFinished && unit.isUnitTurn) {
-        this.io.to(this.id).emit("endPlayerTurn", unit);
+        this.io.to(this.roomId).emit("endPlayerTurn", unit);
         this.nextTurn();
       }
     }
@@ -484,7 +493,7 @@ export class ServerBattleScene {
     this.tellPlayerBattleHasStarted(playerSocket);
     // update all other players of the new player
     playerSocket.broadcast
-      .to(this.id)
+      .to(this.roomId)
       .emit("playerJoinedBattle", newPlayer, this.timeline);
   }
 
@@ -578,7 +587,7 @@ export class ServerBattleScene {
       this.timeline.splice(index, 1);
       if (this.timelineIndex > index) this.timelineIndex--;
 
-      this.io.to(this.id).emit("playerLeft", id, this.timeline);
+      this.io.to(this.roomId).emit("playerLeft", id, this.timeline);
     }
 
     this.checkIfBattleIsOver();
@@ -646,14 +655,14 @@ export class ServerBattleScene {
       this.worldScene.makeNpcVisibleAgain(this.teamB[0].id);
     }
     this.makeSocketsLeaveBattleRoom();
-    this.worldScene.removeBattle(this.id);
-    this.worldScene.removeBattleIcons(this.id);
+    this.worldScene.removeBattle(this.roomId);
+    this.worldScene.removeBattleIcons(this.roomId);
   }
 
   private makeSocketsLeaveBattleRoom() {
     this.worldPlayers.forEach((worldPlayer) => {
       const playerSocket = this.worldScene.findSocketById(worldPlayer.id);
-      if (playerSocket) playerSocket.leave(this.id);
+      if (playerSocket) playerSocket.leave(this.roomId);
     });
   }
 
