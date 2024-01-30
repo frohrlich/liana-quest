@@ -284,6 +284,7 @@ export class BattleUIScene extends Phaser.Scene {
   }
 
   endPlayerTurn() {
+    this.refreshSpells();
     this.disableSpells(true);
     this.deactivateEndTurnButtonVisually();
   }
@@ -309,7 +310,6 @@ export class BattleUIScene extends Phaser.Scene {
       if (uiSpell.spell.name === spell.name) uiSpell.spell = spell;
       uiSpell.refresh();
     });
-    this.unitStats.refresh();
   }
 
   /** Displays unit spells on the spell slots of the UI. */

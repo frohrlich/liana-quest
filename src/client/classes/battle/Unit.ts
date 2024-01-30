@@ -292,7 +292,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
       this.addSummonedUnit(serverSummonedUnit);
     }
     this.myScene.refreshAccessibleTiles();
-    this.myScene.uiScene.refreshUIAfterSpell(spell);
+    this.myScene.uiScene.unitStats.refresh();
 
     this.myScene.syncTimelineWithServer(timeline);
     this.myScene.uiScene.updateTimeline(this.myScene.timeline);

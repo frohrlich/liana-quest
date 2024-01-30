@@ -80,6 +80,8 @@ export class Player extends Unit {
       );
     }
 
+    this.myScene.uiScene.refreshUIAfterSpell(spell);
+
     // if spell not available anymore : quit spell mode
     if (this.pa < spell.cost || spell.cooldown > 0) {
       this.myScene.clearSpellRange();
