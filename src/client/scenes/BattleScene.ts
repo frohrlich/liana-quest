@@ -47,6 +47,7 @@ export class BattleScene extends Phaser.Scene {
   uiScene: BattleUIScene;
   overlays: Phaser.GameObjects.Rectangle[] = [];
   spellAoeOverlay: Phaser.GameObjects.Rectangle[] = [];
+  spellAoeOverlayBasePositions: Phaser.Math.Vector2[] = [];
   pathOverlay: Phaser.GameObjects.Rectangle[] = [];
   grid: Phaser.GameObjects.Grid;
   teamAStarterTiles: Phaser.Tilemaps.Tile[];
@@ -1053,8 +1054,8 @@ export class BattleScene extends Phaser.Scene {
             let distance = Math.abs(i) + Math.abs(j);
             if (distance <= spell.aoeSize) {
               const overlay = this.add.rectangle(
-                0,
-                0,
+                (i + 0.5) * this.tileWidth,
+                (j + 0.5) * this.tileHeight,
                 this.tileWidth,
                 this.tileHeight,
                 highlightColor,
@@ -1062,6 +1063,9 @@ export class BattleScene extends Phaser.Scene {
               );
               overlay.setVisible(false);
               this.spellAoeOverlay.push(overlay);
+              this.spellAoeOverlayBasePositions.push(
+                new Phaser.Math.Vector2(overlay.x, overlay.y)
+              );
             }
           }
         }
@@ -1096,34 +1100,17 @@ export class BattleScene extends Phaser.Scene {
         overlay.setVisible(true);
         break;
       case "star":
-        // for the 'star' aoe, we iterate over the tiles within the 'aoeSize' distance from target
-        let target = this.backgroundLayer!.worldToTileXY(x, y);
-        let k = 0;
-        for (
-          let i = target.x - spell.aoeSize;
-          i <= target.x + spell.aoeSize;
-          i++
-        ) {
-          for (
-            let j = target.y - spell.aoeSize;
-            j <= target.y + spell.aoeSize;
-            j++
-          ) {
-            let distance = Math.abs(target.x - i) + Math.abs(target.y - j);
-            if (distance <= spell.aoeSize) {
-              let pos = this.backgroundLayer!.tileToWorldXY(i, j);
-              const overlay = this.spellAoeOverlay[k];
-              overlay.x = pos.x + 0.5 * this.tileWidth;
-              overlay.y = pos.y + 0.5 * this.tileWidth;
-              overlay.setVisible(true);
-              k++;
-            }
-          }
+        for (let i = 0; i < this.spellAoeOverlay.length; i++) {
+          const overlay = this.spellAoeOverlay[i];
+          const basePosition = this.spellAoeOverlayBasePositions[i];
+          overlay.x = basePosition.x + x;
+          overlay.y = basePosition.y + y;
+          overlay.setVisible(true);
         }
         break;
       case "line":
         // this aoe should only be used with spells cast in a straight line
-        target = this.backgroundLayer!.worldToTileXY(x, y);
+        const target = this.backgroundLayer!.worldToTileXY(x, y);
         // true if target is aligned horizontally with player (else we assume it's aligned vertically)
         let isAlignedX = target.y == this.currentPlayer.indY;
         const baseIndex = isAlignedX ? target.x : target.y;
@@ -1157,6 +1144,7 @@ export class BattleScene extends Phaser.Scene {
       spellAoe.destroy(true);
     });
     this.spellAoeOverlay = [];
+    this.spellAoeOverlayBasePositions = [];
   }
 
   getUnitsInsideAoe(caster: Unit, indX: number, indY: number, spell: Spell) {
