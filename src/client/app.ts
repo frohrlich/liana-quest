@@ -8,6 +8,7 @@ import screenfull from "screenfull";
 import { UAParser } from "ua-parser-js";
 import { DialogScene } from "./scenes/DialogScene";
 import { ChatScene } from "./scenes/ChatScene";
+import { LoginScene } from "./scenes/LoginScene";
 
 export const GAME_WIDTH = 930; // xiaomi mi a3 : 19.5:9 ratio
 export const GAME_HEIGHT = 416;
@@ -34,6 +35,7 @@ const config = {
   },
   scene: [
     BootScene,
+    LoginScene,
     WorldScene,
     DialogScene,
     BattleScene,

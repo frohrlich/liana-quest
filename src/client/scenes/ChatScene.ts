@@ -63,12 +63,8 @@ export class ChatScene extends Phaser.Scene {
     this.chatForm.on("click", (event) => {
       if (event.target.name === "sayButton") {
         const input = event.target.previousElementSibling;
-        // const chatBox = event.target.nextElementSibling;
         if (input.value !== "" && this.socket) {
           this.socket.emit("newChatMessageSent", input.value);
-          // this.chatLines.push(`${this.worldScene.player.type}: ${input.value}`);
-          // chatBox.innerText = this.chatLines.join("\n");
-          // chatBox.scrollTop = chatBox.scrollHeight; // hack to always have chat scrolled to bottom
           input.value = "";
         }
       }

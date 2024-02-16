@@ -93,6 +93,10 @@ export class BootScene extends Phaser.Scene {
 
     // illustrations
     this.load.image("princess", "public/assets/images/princess.png");
+    this.load.image(
+      "loginBackground",
+      "public/assets/images/loginBackground.png"
+    );
 
     // fonts
     this.load.bitmapFont(
@@ -107,10 +111,13 @@ export class BootScene extends Phaser.Scene {
     );
 
     // dom
+    this.load.html("loginform", "public/assets/text/loginform.html");
+    this.load.html("registerform", "public/assets/text/registerform.html");
     this.load.html("chatform", "public/assets/text/chatform.html");
   }
 
   create(): void {
-    this.scene.start("WorldScene", findWorldMapByName("forest"));
+    // this.scene.start("WorldScene", findWorldMapByName("forest"));
+    this.scene.start("LoginScene");
   }
 }

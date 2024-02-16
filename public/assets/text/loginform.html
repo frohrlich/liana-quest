@@ -1,0 +1,97 @@
+<style>
+  .login {
+    background-color: #ffffffdd;
+    border: 1px solid #42464b;
+    border-radius: 5px;
+    height: 310px;
+    margin: 0 auto 0;
+    padding: 10px 0;
+    width: 298px;
+  }
+  .login > div {
+    margin-top: 10px;
+  }
+  input[type="password"],
+  input[type="email"] {
+    border: 1px solid #a1a3a3;
+    font-size: 16px;
+    box-sizing: border-box;
+    height: 39px;
+    margin: 5px 0 10px 29px;
+    padding-left: 10px;
+    width: 240px;
+  }
+  input[type="password"]:focus,
+  input[type="email"]:focus {
+    outline: 1px solid green;
+  }
+  .forgot {
+    color: #7f7f7f;
+    display: inline-block;
+    float: right;
+    font: 12px/1 sans-serif;
+    left: -19px;
+    position: relative;
+    text-decoration: none;
+    top: 5px;
+    transition: color 0.4s;
+  }
+  .forgot:hover {
+    color: #3b3b3b;
+  }
+  .button {
+    width: 240px;
+    height: 35px;
+    display: block;
+    font-family: dogicapixel, sans-serif;
+    font-size: 16px;
+    color: #fff;
+    text-decoration: none;
+    text-transform: uppercase;
+    text-align: center;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    margin: 31px 0 0 29px;
+    position: relative;
+    cursor: pointer;
+    border: none;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+  }
+  input[type="submit"].button {
+    background-color: #294700;
+  }
+  button.button {
+    background-color: #0d0b62;
+    margin-top: 0;
+  }
+  label {
+    display: block;
+    font-family: dogicapixel, sans-serif;
+    font-size: 16px;
+    text-align: center;
+  }
+  .login > p {
+    text-align: center;
+    font-family: dogicapixel, sans-serif;
+    margin: 5px 0;
+    font-size: 16px;
+  }
+</style>
+
+<div class="login">
+  <div>
+    <label for="email">Email</label>
+    <input type="email" id="email" name="email" />
+  </div>
+  <div>
+    <label for="password">Password</label>
+    <input type="password" id="password" name="password" />
+  </div>
+  <a href="#" class="forgot">Forgot your password ?</a>
+  <input class="button" type="submit" value="Sign In" name="loginButton" />
+  <p>Or</p>
+  <button class="button" name="registerButton">Register</button>
+</div>
