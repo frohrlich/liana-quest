@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { findWorldMapByName } from "../data/WorldData";
 import { GAME_HEIGHT, GAME_WIDTH } from "../app";
+import $ from "jquery";
 
 export class LoginScene extends Phaser.Scene {
   loginFormHeight = 320;
@@ -63,15 +64,12 @@ export class LoginScene extends Phaser.Scene {
 
     this.loginForm.on("click", function (event) {
       if (event.target.name === "loginButton") {
-        const inputUsername = this.getChildByName("email");
+        const inputEmail = this.getChildByName("email");
         const inputPassword = this.getChildByName("password");
 
         //  Have they entered anything?
-        if (inputUsername.value !== "" && inputPassword.value !== "") {
-          //  Turn off the click events
-          this.removeListener("click");
-          // Start world scene
-          that.scene.start("WorldScene", findWorldMapByName("forest"));
+        if (inputEmail.value !== "" && inputPassword.value !== "") {
+          that.signIn(inputEmail.value, inputPassword.value);
         }
       } else if (event.target.name === "registerButton") {
         that.loginForm.destroy();
@@ -110,5 +108,30 @@ export class LoginScene extends Phaser.Scene {
     });
 
     this.registerForm.setVisible(true);
+  }
+
+  signIn(email: string, password: string) {
+    var data = {
+      email: email,
+      password: password,
+    };
+    $.ajax({
+      type: "POST",
+      url: "/login",
+      data,
+      success: (data) => {
+        // Start world scene
+        this.scene.start("WorldScene", findWorldMapByName("forest"));
+      },
+      error: (xhr, status, error) => {
+        const errorMessage = this.loginForm.getChildByID("errorMessage");
+        if (xhr.responseJSON) {
+          errorMessage.innerHTML = xhr.responseJSON;
+        } else {
+          errorMessage.innerHTML = error;
+        }
+        errorMessage.removeAttribute("hidden");
+      },
+    });
   }
 }

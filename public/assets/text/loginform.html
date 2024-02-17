@@ -79,6 +79,10 @@
     margin: 5px 0;
     font-size: 16px;
   }
+  #errorMessage {
+    font: bold 12px/1 sans-serif;
+    color: red;
+  }
 </style>
 
 <div class="login">
@@ -90,6 +94,7 @@
     <label for="password">Password</label>
     <input type="password" id="password" name="password" />
   </div>
+  <p id="errorMessage" hidden></p>
   <a href="#" class="forgot">Forgot your password ?</a>
   <input class="button" type="submit" value="Sign In" name="loginButton" />
   <p>Or</p>

@@ -5,6 +5,13 @@ import { ServerWorldUnit, Position } from "./scenes/ServerWorldScene";
 import { ServerUnit } from "./classes/ServerUnit";
 import { Vector2 } from "./utils/findPath";
 import { Game } from "./Game";
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+import routes from "./routes/main";
+import bodyParser from "body-parser";
+import cookieParser from "cookie-parser";
+import passport from "passport";
+dotenv.config(); // Load environment variables from .env file
 
 const port = 8081;
 
@@ -49,13 +56,33 @@ interface ClientToServerEvents {
   playerChangedStartPosition: (playerId: string, position: Position) => void;
 }
 
+// setup mongo connection
+const uri = process.env.MONGO_CONNECTION_URL;
+mongoose.connect(uri);
+mongoose.connection.on("error", (error) => {
+  console.log(error);
+  process.exit(1);
+});
+mongoose.connection.on("connected", () => {
+  console.log("connected to mongo");
+});
+
 const app: Application = express();
 const server = new http.Server(app);
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(server);
 
+// update express settings
+app.use(bodyParser.urlencoded({ extended: false })); // parse application/x-www-form-urlencoded
+app.use(bodyParser.json()); // parse application/json
+app.use(cookieParser());
+// require passport auth
+require("./auth/auth");
+
 app.use(express.static("./"));
 
-app.get("/", function (req, res) {
+app.use("/", routes);
+
+app.get("/game", function (req, res) {
   res.sendFile("/public/index.html", { root: "./" });
 });
 
