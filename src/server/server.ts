@@ -8,9 +8,9 @@ import { Game } from "./Game";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import routes from "./routes/main";
+import passwordRoutes from "./routes/password";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
-import passport from "passport";
 dotenv.config(); // Load environment variables from .env file
 
 const port = 8081;
@@ -81,9 +81,14 @@ require("./auth/auth");
 app.use(express.static("./"));
 
 app.use("/", routes);
+app.use("/", passwordRoutes);
 
 app.get("/game", function (req, res) {
   res.sendFile("/public/index.html", { root: "./" });
+});
+
+app.get("/reset-password", function (req, res) {
+  res.sendFile("/public/reset-password.html", { root: "./" });
 });
 
 server.listen(process.env.PORT || port, function () {

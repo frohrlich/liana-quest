@@ -77,6 +77,14 @@
     margin: 5px 0;
     font-size: 16px;
   }
+  #errorMessage {
+    font: bold 12px/1 sans-serif;
+    color: red;
+  }
+  #successMessage {
+    font: bold 12px/1 sans-serif;
+    color: green;
+  }
 </style>
 
 <div class="login">
@@ -92,6 +100,8 @@
     <label for="password">Password</label>
     <input type="password" id="password" name="password" />
   </div>
+  <p id="errorMessage" hidden></p>
+  <p id="successMessage" hidden></p>
   <a href="#" class="loginLink" name="loginLink">Already registered ?</a>
   <input class="button" type="submit" value="Register" name="registerButton" />
 </div>

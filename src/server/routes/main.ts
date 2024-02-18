@@ -9,21 +9,28 @@ router.get("/status", (req, res, next) => {
   res.status(200).json({ status: "ok" });
 });
 
-router.post(
-  "/signup",
-  passport.authenticate("signup", { session: false }),
-  async (req, res, next) => {
+router.post("/signup", async (req, res, next) => {
+  passport.authenticate("signup", async (err, user, info) => {
+    if (err || !user) {
+      let error: Error;
+      if (info.message) {
+        return res.status(401).json(info.message);
+      } else {
+        error = new Error("An Error occured");
+      }
+      return next(error);
+    }
     res.status(200).json({ message: "Signup successful" });
-  }
-);
+  })(req, res, next);
+});
 
 router.post("/login", async (req, res, next) => {
   passport.authenticate("login", async (err, user, info) => {
     try {
       if (err || !user) {
         let error: Error;
-        if (info["message"]) {
-          return res.status(401).json(info["message"]);
+        if (info.message) {
+          return res.status(401).json(info.message);
         } else {
           error = new Error("An Error occured");
         }
@@ -65,9 +72,12 @@ router.post("/login", async (req, res, next) => {
 });
 
 router.post("/token", (req, res) => {
-  const { email, refreshToken } = req.body;
-  if (refreshToken in tokenList && tokenList[refreshToken].email === email) {
-    const body = { email, _id: tokenList[refreshToken]._id };
+  const { refreshToken } = req.body;
+  if (refreshToken in tokenList) {
+    const body = {
+      email: tokenList[refreshToken].email,
+      _id: tokenList[refreshToken]._id,
+    };
     const token = jwt.sign({ user: body }, process.env.TOKEN_SECRET, {
       expiresIn: 300,
     });

@@ -15,6 +15,13 @@ passport.use(
     },
     async (req, email, password, done) => {
       try {
+        if (!validateEmail(email)) {
+          return done(null, false, { message: "Invalid email format" });
+        }
+        const userAlreadyThere = await UserModel.findOne({ email });
+        if (userAlreadyThere) {
+          return done(null, false, { message: "Email already in use" });
+        }
         const { username } = req.body;
         const user = await UserModel.create({ email, password, username });
         return done(null, user);
@@ -35,13 +42,16 @@ passport.use(
     },
     async (email, password, done) => {
       try {
+        if (!validateEmail(email)) {
+          return done(null, false, { message: "Invalid email format" });
+        }
         const user = await UserModel.findOne({ email });
         if (!user) {
-          return done(null, false, { message: "User not found" });
+          return done(null, false, { message: "Wrong email or password" });
         }
         const validate = await user.isValidPassword(password);
         if (!validate) {
-          return done(null, false, { message: "Wrong Password" });
+          return done(null, false, { message: "Wrong email or password" });
         }
         return done(null, user, { message: "Logged in Successfully" });
       } catch (error) {
@@ -71,3 +81,9 @@ passport.use(
     }
   )
 );
+
+const validateEmail = (email: string) => {
+  return email.match(
+    /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+  );
+};

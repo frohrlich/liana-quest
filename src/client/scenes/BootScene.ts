@@ -113,6 +113,10 @@ export class BootScene extends Phaser.Scene {
     // dom
     this.load.html("loginform", "public/assets/text/loginform.html");
     this.load.html("registerform", "public/assets/text/registerform.html");
+    this.load.html(
+      "forgotpasswordform",
+      "public/assets/text/forgotpasswordform.html"
+    );
     this.load.html("chatform", "public/assets/text/chatform.html");
   }
 
