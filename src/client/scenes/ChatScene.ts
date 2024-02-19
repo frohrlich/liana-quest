@@ -32,8 +32,8 @@ export class ChatScene extends Phaser.Scene {
 
   listenToNewMessages(socket: Socket) {
     this.socket = socket;
-    socket.on("newChatMessageWasSent", (playerName, message) => {
-      this.chatLines.push(`${playerName}: ${message}`);
+    socket.on("newChatMessageWasSent", (username, message) => {
+      this.chatLines.push(`${username}: ${message}`);
       const chatBox = this.chatForm.node.querySelector(
         "#chatBox"
       ) as HTMLElement;

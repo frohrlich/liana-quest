@@ -173,7 +173,7 @@ export class UISpell extends UIElement {
     }
     // spell summoned unit
     if (this.spell.summons) {
-      addText = `\nsummons : ${this.spell.summons.name}`;
+      addText = `\nsummons : ${this.spell.summons.type}`;
       maxLength = Math.max(maxLength, addText.length);
       text += addText;
       height += lineHeight;

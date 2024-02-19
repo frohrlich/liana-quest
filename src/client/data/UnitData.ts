@@ -6,7 +6,7 @@ export interface UnitData {
   PA: number;
   spells: string;
   frame: number;
-  name: string;
+  type: string;
 }
 
 export const amazon: UnitData = {
@@ -15,7 +15,7 @@ export const amazon: UnitData = {
   PA: 6,
   spells: "deadly javelin, herbal medicine, sting",
   frame: 6,
-  name: "Amazon",
+  type: "Amazon",
 };
 
 export const snowman: UnitData = {
@@ -24,7 +24,7 @@ export const snowman: UnitData = {
   PA: 6,
   spells: "sting",
   frame: 30,
-  name: "Snowman",
+  type: "Snowman",
 };
 
 export const dude: UnitData = {
@@ -33,7 +33,7 @@ export const dude: UnitData = {
   PA: 6,
   spells: "deadly javelin",
   frame: 0,
-  name: "Dude",
+  type: "Dude",
 };
 
 export const princess: UnitData = {
@@ -42,7 +42,7 @@ export const princess: UnitData = {
   PA: 6,
   spells: "sting",
   frame: 3,
-  name: "Princess",
+  type: "Princess",
 };
 
 export const unitsAvailable = [amazon, snowman, dude, princess];

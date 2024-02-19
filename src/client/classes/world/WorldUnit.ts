@@ -42,6 +42,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     indY: number,
     texture: string,
     frame: number,
+    type: string,
     name: string,
     baseTint: number
   ) {
@@ -54,7 +55,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     this.x = this.tilePosToPixelsX(indX);
     this.y = this.tilePosToPixelsY(indY);
     this.depth = this.y;
-    this.type = name;
+    this.type = type;
     this.name = name;
     this.baseTint = baseTint;
 
@@ -317,7 +318,7 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   }
 
   makeUnitName() {
-    return this.makeInteractionMenuItem(this.type, 0xcccccc, true);
+    return this.makeInteractionMenuItem(this.name, 0xcccccc, true);
   }
 
   makeInteractionMenuItem(

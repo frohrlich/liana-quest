@@ -5,12 +5,12 @@ import { ServerWorldUnit, Position } from "./scenes/ServerWorldScene";
 import { ServerUnit } from "./classes/ServerUnit";
 import { Vector2 } from "./utils/findPath";
 import { Game } from "./Game";
-import dotenv from "dotenv";
 import mongoose from "mongoose";
 import routes from "./routes/main";
 import passwordRoutes from "./routes/password";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
+import dotenv from "dotenv";
 dotenv.config(); // Load environment variables from .env file
 
 const port = 8081;
@@ -56,6 +56,15 @@ interface ClientToServerEvents {
   playerChangedStartPosition: (playerId: string, position: Position) => void;
 }
 
+interface SocketData {
+  user: { _id: string; email: string };
+  email: string;
+}
+
+interface InterServerEvents {
+  ping: () => void;
+}
+
 // setup mongo connection
 const uri = process.env.MONGO_CONNECTION_URL;
 mongoose.connect(uri);
@@ -69,7 +78,12 @@ mongoose.connection.on("connected", () => {
 
 const app: Application = express();
 const server = new http.Server(app);
-const io = new Server<ClientToServerEvents, ServerToClientEvents>(server);
+const io = new Server<
+  ClientToServerEvents,
+  ServerToClientEvents,
+  InterServerEvents,
+  SocketData
+>(server);
 
 // update express settings
 app.use(bodyParser.urlencoded({ extended: false })); // parse application/x-www-form-urlencoded

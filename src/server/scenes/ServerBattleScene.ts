@@ -342,7 +342,7 @@ export class ServerBattleScene {
       caster.isTeamA,
       targetVec.x,
       targetVec.y,
-      spell.summons.name,
+      spell.summons.type,
       0xffffff
     );
     this.addToObstacleLayer(summonedUnit.indX, summonedUnit.indY);
@@ -455,7 +455,7 @@ export class ServerBattleScene {
     isPlayable: boolean
   ) {
     const playerData = unitsAvailable.find(
-      (unitData) => unitData.name === unit.type
+      (unitData) => unitData.type === unit.type
     );
     if (playerData) {
       let starterTiles: Position[];

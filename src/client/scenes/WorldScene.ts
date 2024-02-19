@@ -62,11 +62,17 @@ export class WorldScene extends Phaser.Scene {
     this.mapName = worldData.mapName;
     this.battleHasStarted = false;
     this.createTilemap();
-    // tells server scene we're ready to receive info
+
+    // once the scene is ready to receive server info,
+    // we establish the connection with the server
+    // when the connection is established, we tell the server we're ready
     this.events.once("preupdate", () => {
       this.initSocket();
-      this.setupWeb();
-      this.socket.emit("worldSceneIsReady", this.mapName);
+
+      this.socket.on("serverIsReady", () => {
+        this.setupWeb();
+        this.socket.emit("worldSceneIsReady", this.mapName);
+      });
     });
     if (!this.chatScene || !this.scene.isActive("ChatScene")) {
       this.scene.run("ChatScene");
@@ -286,6 +292,7 @@ export class WorldScene extends Phaser.Scene {
             "player",
             npcData.frame,
             npcData.name,
+            npcData.name,
             0xffffff,
             npcData.dialog,
             npcData.imageKey
@@ -348,12 +355,16 @@ export class WorldScene extends Phaser.Scene {
 
   initSocket() {
     if (!this.socket) {
-      this.socket = io();
+      const token = getCookie("jwt");
+
+      this.socket = io("http://localhost:8081", {
+        query: { token },
+      });
     }
   }
 
   addOtherPlayer(serverWorldUnit: ServerWorldUnit) {
-    const playerData = this.findUnitDataByName(serverWorldUnit.type);
+    const playerData = this.findUnitDataByType(serverWorldUnit.type);
     const otherPlayer = new WorldOnlinePlayer(
       this,
       serverWorldUnit.id,
@@ -362,6 +373,7 @@ export class WorldScene extends Phaser.Scene {
       "player",
       playerData.frame,
       serverWorldUnit.type,
+      serverWorldUnit.username,
       serverWorldUnit.tint
     );
     this.add
@@ -402,7 +414,7 @@ export class WorldScene extends Phaser.Scene {
     let playerPosX = playerInfo.indX;
     let playerPosY = playerInfo.indY;
     // find unit data from its name given by server
-    const playerData = this.findUnitDataByName(playerInfo.type);
+    const playerData = this.findUnitDataByType(playerInfo.type);
     this.player = new WorldOnlinePlayer(
       this,
       playerInfo.id,
@@ -410,7 +422,8 @@ export class WorldScene extends Phaser.Scene {
       playerPosY,
       "player",
       playerData.frame,
-      playerData.name,
+      playerData.type,
+      playerInfo.username,
       playerInfo.tint
     );
     this.player.tint = playerInfo.tint;
@@ -426,8 +439,8 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  private findUnitDataByName(playerName: string) {
-    return unitsAvailable.find((unitData) => unitData.name === playerName);
+  private findUnitDataByType(type: string) {
+    return unitsAvailable.find((unitData) => unitData.type === type);
   }
 
   private createTilemap() {
@@ -467,13 +480,13 @@ export class WorldScene extends Phaser.Scene {
       const id = myEnemyData.id;
 
       // find enemy data from its type
-      const enemyData = this.findUnitDataByName(enemyType);
+      const enemyData = this.findUnitDataByType(enemyType);
 
-      if (!this.anims.exists("left" + enemyData.name)) {
+      if (!this.anims.exists("left" + enemyData.type)) {
         this.createAnimations(
           enemyData.frame,
           this.animFramerate,
-          enemyData.name
+          enemyData.type
         );
       }
 
@@ -484,6 +497,7 @@ export class WorldScene extends Phaser.Scene {
         indY,
         "player",
         enemyData.frame,
+        enemyType,
         enemyType,
         myEnemyData.tint
       );
@@ -683,4 +697,19 @@ export class WorldScene extends Phaser.Scene {
       });
     }
   }
+}
+
+function getCookie(name: string): string {
+  const nameLenPlus = name.length + 1;
+  return (
+    document.cookie
+      .split(";")
+      .map((c) => c.trim())
+      .filter((cookie) => {
+        return cookie.substring(0, nameLenPlus) === `${name}=`;
+      })
+      .map((cookie) => {
+        return decodeURIComponent(cookie.substring(nameLenPlus));
+      })[0] || null
+  );
 }

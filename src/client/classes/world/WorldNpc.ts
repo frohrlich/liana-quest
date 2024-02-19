@@ -17,12 +17,13 @@ export class WorldNpc extends WorldUnit {
     indY: number,
     texture: string,
     frame: number,
+    type: string,
     name: string,
     baseTint: number,
     dialogData: DialogData = null,
     illustrationKey: string = null
   ) {
-    super(scene, id, indX, indY, texture, frame, name, baseTint);
+    super(scene, id, indX, indY, texture, frame, type, name, baseTint);
     this.dialogData = dialogData;
     this.illustrationKey = illustrationKey;
   }

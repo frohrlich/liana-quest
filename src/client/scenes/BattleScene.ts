@@ -734,7 +734,7 @@ export class BattleScene extends Phaser.Scene {
     // see if we find a unit with the name given by the world scene in the array
     // of all available units
     const unitData = unitsAvailable.find(
-      (unitData) => unitData.name === serverUnit.type
+      (unitData) => unitData.type === serverUnit.type
     );
     if (unitData) {
       const isPlayable = serverUnit.id === this.socket.id;
@@ -771,17 +771,17 @@ export class BattleScene extends Phaser.Scene {
           isTeamA
         );
       }
-      unit.type = unitData.name;
+      unit.type = unitData.type;
       unit.id = serverUnit.id;
       unit.tint = serverUnit.tint;
       this.add.existing(unit);
 
       // create unit animations with base sprite and framerate
-      if (!this.anims.exists("left" + unitData.name)) {
+      if (!this.anims.exists("left" + unitData.type)) {
         this.createAnimations(
           unitData.frame,
           this.animFramerate,
-          unitData.name
+          unitData.type
         );
       }
 

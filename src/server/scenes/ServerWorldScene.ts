@@ -12,6 +12,7 @@ export interface ServerWorldUnit {
   indY: number;
   direction: string;
   type: string;
+  username: string;
   isVisible: boolean;
   tint: integer;
   isPlayable: boolean;
@@ -70,12 +71,18 @@ export class ServerWorldScene {
     this.createMap();
   }
 
-  addNewPlayerToScene(socket: Socket, color: number, type: string) {
+  addNewPlayerToScene(
+    socket: Socket,
+    color: number,
+    type: string,
+    username: string
+  ) {
     const newPlayer = {
       indX: this.playerStarterPosition.indX,
       indY: this.playerStarterPosition.indY,
       id: socket.id,
       type: type,
+      username: username,
       direction: "down",
       isVisible: true,
       tint: color,
@@ -224,9 +231,12 @@ export class ServerWorldScene {
       if (currentPlayer) {
         this.io
           .to(this.roomId)
-          .emit("newChatMessageWasSent", currentPlayer.type, message);
+          .emit("newChatMessageWasSent", currentPlayer.username, message);
       }
     });
+
+    // we tell client that the server is ready to receive incoming messages
+    socket.emit("serverIsReady");
   }
 
   sendPlayerToOtherWorldScene(socket: Socket, destination: string) {
@@ -239,7 +249,8 @@ export class ServerWorldScene {
       worldSceneDestination.addNewPlayerToScene(
         socket,
         currentPlayer.tint,
-        currentPlayer.type
+        currentPlayer.type,
+        currentPlayer.username
       );
       socket.emit("playerGoToMap", worldSceneDestination.mapName);
     }
@@ -320,6 +331,7 @@ export class ServerWorldScene {
         indX: randPosition.indX,
         indY: randPosition.indY,
         type: this.enemyType,
+        username: this.enemyType,
         id: id,
         direction: "down",
         isVisible: true,

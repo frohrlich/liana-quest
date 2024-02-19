@@ -46,7 +46,7 @@ export class ServerUnit {
 
     // retrieve unit characteristics
     const playerData = unitsAvailable.find(
-      (unitData) => unitData.name === type
+      (unitData) => unitData.type === type
     );
     this.maxHp = playerData.HP;
     this.hp = this.maxHp;

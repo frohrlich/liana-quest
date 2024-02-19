@@ -208,7 +208,8 @@ export class LoginScene extends Phaser.Scene {
         successMessage.innerHTML = "Register successful !";
         successMessage.removeAttribute("hidden");
         setTimeout(() => {
-          this.signIn(this.registerForm, email, password);
+          this.registerForm.destroy();
+          this.displayLoginForm();
         }, 1500);
       },
       error: (xhr, status, error) => {

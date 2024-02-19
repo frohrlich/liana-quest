@@ -1,7 +1,8 @@
 import passport from "passport";
 const localStrategy = require("passport-local").Strategy;
 const JWTstrategy = require("passport-jwt").Strategy;
-
+import dotenv from "dotenv";
+dotenv.config(); // Load environment variables from .env file
 import UserModel from "../models/userModel";
 
 // handle user registration
