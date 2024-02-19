@@ -67,12 +67,17 @@ export class WorldScene extends Phaser.Scene {
     // we establish the connection with the server
     // when the connection is established, we tell the server we're ready
     this.events.once("preupdate", () => {
-      this.initSocket();
-
-      this.socket.on("serverIsReady", () => {
+      // if first connection, we init socket and then wait for server to be ready
+      if (!this.socket) {
+        this.initSocket();
+        this.socket.on("serverIsReady", () => {
+          this.setupWeb();
+          this.socket.emit("worldSceneIsReady", this.mapName);
+        });
+      } else {
         this.setupWeb();
         this.socket.emit("worldSceneIsReady", this.mapName);
-      });
+      }
     });
     if (!this.chatScene || !this.scene.isActive("ChatScene")) {
       this.scene.run("ChatScene");
@@ -354,13 +359,10 @@ export class WorldScene extends Phaser.Scene {
   }
 
   initSocket() {
-    if (!this.socket) {
-      const token = getCookie("jwt");
-
-      this.socket = io("http://localhost:8081", {
-        query: { token },
-      });
-    }
+    const token = getCookie("jwt");
+    this.socket = io("http://localhost:8081", {
+      query: { token },
+    });
   }
 
   addOtherPlayer(serverWorldUnit: ServerWorldUnit) {

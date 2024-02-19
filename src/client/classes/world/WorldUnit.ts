@@ -7,16 +7,18 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   // time for moving by 1 tile (in ms)
   moveDuration = 150;
 
-  // use these to adjust interaction menu on click on unit
-  interactionMenuWidth = 62;
+  // use these to adjust interaction menu position on click on unit
+  minInteractionMenuWidth = 64;
   interactionMenuHeight = 12;
-  interactionMenuOffsetX = 2;
+  interactionMenuOffsetX = 7;
   interactionMenuOffsetY = 5;
   interactionMenuOnTopOffsetY = 0;
   interactionMenuOnRightOffsetX = 9;
 
   fontSize = 8;
 
+  // actual menu width depends on player username length
+  interactionMenuWidth: number;
   id: string;
   myScene: WorldScene;
   // position on the grid
@@ -274,13 +276,16 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   }
 
   hideInteractionMenu() {
-    this.interactionMenuOutlines.forEach((outline) => {
-      outline.setVisible(false);
-      outline.disableInteractive();
-    });
-    this.interactionMenuTexts.forEach((text) => {
-      text.setVisible(false);
-    });
+    // added condition to avoid error when unit leaves scene while selected
+    if (this.scene) {
+      this.interactionMenuOutlines.forEach((outline) => {
+        outline.setVisible(false);
+        outline.disableInteractive();
+      });
+      this.interactionMenuTexts.forEach((text) => {
+        text.setVisible(false);
+      });
+    }
   }
 
   makeChallengeOption() {
@@ -294,7 +299,10 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   }
 
   private isOnRightSide() {
-    return this.x > this.myScene.map.widthInPixels - this.myScene.tileWidth * 4;
+    return (
+      this.x + this.interactionMenuOffsetX + this.interactionMenuWidth >
+      this.myScene.map.widthInPixels
+    );
   }
 
   activateSelectEvents() {
@@ -317,16 +325,35 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
     this.myScene.selectedUnit = null;
   }
 
+  /** When building interaction menu, always add the name first
+   *  because it sets the menu width.
+   */
   makeUnitName() {
-    return this.makeInteractionMenuItem(this.name, 0xcccccc, true);
+    return this.makeInteractionMenuItem(this.name, 0xcccccc, true, null, true);
   }
 
   makeInteractionMenuItem(
     text: string,
     backgroundColor: number,
     bold: boolean,
-    onClickFunction: Function = null
+    onClickFunction: Function = null,
+    setMenuWidth: boolean = false
   ) {
+    const font = bold ? "dogicapixelbold" : "dogicapixel";
+    const textObject = this.myScene.add
+      .bitmapText(0, 0, font, text, this.fontSize)
+      .setVisible(false)
+      .setTint(0x000000)
+      .setDepth(10002);
+    this.interactionMenuTexts.push(textObject);
+
+    if (setMenuWidth) {
+      this.interactionMenuWidth = Math.max(
+        this.minInteractionMenuWidth,
+        textObject.displayWidth + 5
+      );
+    }
+
     const outline = this.myScene.add
       .rectangle(
         0,
@@ -338,20 +365,12 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
       )
       .setStrokeStyle(1, 0x000000, 0.9)
       .setVisible(false)
-      .setOrigin(0.3, 0.5)
+      .setOrigin(0, 0.5)
       .setDepth(10001);
     if (onClickFunction) {
       outline.on("pointerup", onClickFunction);
     }
     this.interactionMenuOutlines.push(outline);
-
-    const font = bold ? "dogicapixelbold" : "dogicapixel";
-    const textObject = this.myScene.add
-      .bitmapText(0, 0, font, text, this.fontSize)
-      .setVisible(false)
-      .setTint(0x000000)
-      .setDepth(10002);
-    this.interactionMenuTexts.push(textObject);
 
     this.moveInteractionMenuToPlayerPosition();
 
@@ -375,11 +394,12 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
             (this.interactionMenuOutlines.length - 1) +
           i * this.interactionMenuHeight +
           this.interactionMenuOffsetY;
+
       const rectanglePosX = this.isOnRightSide()
         ? this.x -
-          this.interactionMenuWidth +
+          this.interactionMenuWidth -
           this.interactionMenuOnRightOffsetX
-        : this.x + this.displayWidth + this.interactionMenuOffsetX;
+        : this.x + this.interactionMenuOffsetX;
       outline.setPosition(rectanglePosX, rectanglePosY);
 
       const textPosY = this.isOnTop()
@@ -395,12 +415,13 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
           i * this.interactionMenuHeight +
           this.interactionMenuOffsetY -
           3;
+
       const textPosX = this.isOnRightSide()
         ? this.x -
           this.interactionMenuWidth -
           this.displayWidth +
           this.interactionMenuOnRightOffsetX +
-          7
+          8
         : this.x + this.displayWidth / 3 + 1;
       text.setPosition(textPosX, textPosY);
     }
