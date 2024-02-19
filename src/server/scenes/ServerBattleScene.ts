@@ -3,6 +3,7 @@ import {
   ServerWorldUnit,
   Position,
   ServerWorldScene,
+  escapeHtml,
 } from "./ServerWorldScene";
 import { unitsAvailable } from "../../client/data/UnitData";
 import { ServerUnit } from "../classes/ServerUnit";
@@ -138,7 +139,11 @@ export class ServerBattleScene {
       if (currentPlayer) {
         this.io
           .to(this.roomId)
-          .emit("newChatMessageWasSent", currentPlayer.type, message);
+          .emit(
+            "newChatMessageWasSent",
+            currentPlayer.type,
+            escapeHtml(message)
+          );
       }
     });
 

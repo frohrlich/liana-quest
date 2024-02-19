@@ -145,11 +145,25 @@ export class LoginScene extends Phaser.Scene {
           inputPassword.value !== ""
         ) {
           if (validateEmail(inputEmail.value)) {
-            that.signUp(
-              inputEmail.value,
-              inputUsername.value,
-              inputPassword.value
-            );
+            if (validateUsername(inputUsername.value)) {
+              if (validatePassword(inputPassword.value)) {
+                that.signUp(
+                  inputEmail.value,
+                  inputUsername.value,
+                  inputPassword.value
+                );
+              } else {
+                const errorMessage = this.getChildByID("errorMessage");
+                errorMessage.innerHTML =
+                  "Please enter a valid password (8-30 characters)";
+                errorMessage.removeAttribute("hidden");
+              }
+            } else {
+              const errorMessage = this.getChildByID("errorMessage");
+              errorMessage.innerHTML =
+                "Please enter a valid username<br>2-20 characters, alphanumeric and '._-' allowed";
+              errorMessage.removeAttribute("hidden");
+            }
           } else {
             const errorMessage = this.getChildByID("errorMessage");
             errorMessage.innerHTML = "Please enter a valid email";
@@ -210,7 +224,7 @@ export class LoginScene extends Phaser.Scene {
         setTimeout(() => {
           this.registerForm.destroy();
           this.displayLoginForm();
-        }, 1500);
+        }, 1000);
       },
       error: (xhr, status, error) => {
         const errorMessage = this.registerForm.getChildByID("errorMessage");
@@ -259,4 +273,14 @@ const validateEmail = (email: string) => {
   return email.match(
     /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
   );
+};
+
+const validateUsername = (username: string) => {
+  return username.match(
+    /^(?=.{2,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])$/
+  );
+};
+
+const validatePassword = (password: string) => {
+  return password.match(/^.{8,30}$/);
 };

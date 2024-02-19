@@ -231,7 +231,11 @@ export class ServerWorldScene {
       if (currentPlayer) {
         this.io
           .to(this.roomId)
-          .emit("newChatMessageWasSent", currentPlayer.username, message);
+          .emit(
+            "newChatMessageWasSent",
+            currentPlayer.username,
+            escapeHtml(message)
+          );
       }
     });
 
@@ -577,3 +581,20 @@ export class ServerWorldScene {
     return this.sockets.find((socket) => socket.id === id);
   }
 }
+
+const entityMap = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+  "/": "&#x2F;",
+  "`": "&#x60;",
+  "=": "&#x3D;",
+};
+
+export const escapeHtml = (str: string) => {
+  return String(str).replace(/[&<>"'`=\/]/g, (s) => {
+    return entityMap[s];
+  });
+};

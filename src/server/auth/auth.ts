@@ -19,11 +19,17 @@ passport.use(
         if (!validateEmail(email)) {
           return done(null, false, { message: "Invalid email format" });
         }
+        if (!validatePassword(password)) {
+          return done(null, false, { message: "Invalid password format" });
+        }
         const userAlreadyThere = await UserModel.findOne({ email });
         if (userAlreadyThere) {
           return done(null, false, { message: "Email already in use" });
         }
         const { username } = req.body;
+        if (!validateUsername(username)) {
+          return done(null, false, { message: "Invalid username format" });
+        }
         const user = await UserModel.create({ email, password, username });
         return done(null, user);
       } catch (error) {
@@ -87,4 +93,14 @@ const validateEmail = (email: string) => {
   return email.match(
     /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
   );
+};
+
+const validateUsername = (username: string) => {
+  return username.match(
+    /^(?=.{2,20}$)(?![_.])(?!.*[_.]{2})[a-zA-Z0-9._]+(?<![_.])$/
+  );
+};
+
+const validatePassword = (password: string) => {
+  return password.match(/^.{8,30}$/);
 };
