@@ -1,6 +1,6 @@
 import { ServerWorldScene } from "./scenes/ServerWorldScene";
 import { availableServerWorldMaps } from "./data/ServerWorldData";
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import UserModel from "./models/userModel";
@@ -32,14 +32,23 @@ export class Game {
     // 4) Upon receiving the 'worldSceneIsReady' message, the server sends all game info
     //    to the client.
     this.io
-      .use((socket, next) => {
+      .use(async (socket, next) => {
         // authentication
         if (socket.handshake.query && socket.handshake.query.token) {
           jwt.verify(
             socket.handshake.query.token as string,
             process.env.TOKEN_SECRET,
-            (err, decoded) => {
+            async (err, decoded) => {
               if (err) {
+                return next(new Error("Authentication error"));
+              }
+              // verify that user is not already connected
+              const sockets = await this.io.fetchSockets();
+              if (
+                sockets.find((mySocket) => {
+                  return mySocket.data.user._id === decoded["user"]._id;
+                })
+              ) {
                 return next(new Error("Authentication error"));
               }
               socket.data.user = decoded["user"];
