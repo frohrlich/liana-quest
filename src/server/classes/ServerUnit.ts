@@ -13,6 +13,7 @@ export class ServerUnit {
   indX: number;
   indY: number;
   type: string;
+  name: string;
   tint: number;
   maxPm: number;
   maxPa: number;
@@ -33,6 +34,7 @@ export class ServerUnit {
     indX: number,
     indY: number,
     type: string,
+    name: string,
     tint: number
   ) {
     this.isReady = isReady;
@@ -43,6 +45,7 @@ export class ServerUnit {
     this.indX = indX;
     this.indY = indY;
     this.type = type;
+    this.name = name;
 
     // retrieve unit characteristics
     const playerData = unitsAvailable.find(

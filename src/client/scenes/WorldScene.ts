@@ -375,7 +375,7 @@ export class WorldScene extends Phaser.Scene {
       "player",
       playerData.frame,
       serverWorldUnit.type,
-      serverWorldUnit.username,
+      serverWorldUnit.name,
       serverWorldUnit.tint
     );
     this.add
@@ -425,7 +425,7 @@ export class WorldScene extends Phaser.Scene {
       "player",
       playerData.frame,
       playerData.type,
-      playerInfo.username,
+      playerInfo.name,
       playerInfo.tint
     );
     this.player.tint = playerInfo.tint;

@@ -12,7 +12,7 @@ export interface ServerWorldUnit {
   indY: number;
   direction: string;
   type: string;
-  username: string;
+  name: string;
   isVisible: boolean;
   tint: integer;
   isPlayable: boolean;
@@ -77,12 +77,12 @@ export class ServerWorldScene {
     type: string,
     username: string
   ) {
-    const newPlayer = {
+    const newPlayer: ServerWorldUnit = {
       indX: this.playerStarterPosition.indX,
       indY: this.playerStarterPosition.indY,
       id: socket.id,
       type: type,
-      username: username,
+      name: username,
       direction: "down",
       isVisible: true,
       tint: color,
@@ -233,7 +233,7 @@ export class ServerWorldScene {
           .to(this.roomId)
           .emit(
             "newChatMessageWasSent",
-            currentPlayer.username,
+            currentPlayer.name,
             escapeHtml(message)
           );
       }
@@ -254,7 +254,7 @@ export class ServerWorldScene {
         socket,
         currentPlayer.tint,
         currentPlayer.type,
-        currentPlayer.username
+        currentPlayer.name
       );
       socket.emit("playerGoToMap", worldSceneDestination.mapName);
     }
@@ -335,7 +335,7 @@ export class ServerWorldScene {
         indX: randPosition.indX,
         indY: randPosition.indY,
         type: this.enemyType,
-        username: this.enemyType,
+        name: this.enemyType,
         id: id,
         direction: "down",
         isVisible: true,

@@ -745,6 +745,9 @@ export class BattleScene extends Phaser.Scene {
           this,
           0,
           0,
+          serverUnit.id,
+          unitData.type,
+          serverUnit.name,
           key,
           serverUnit.tint,
           unitData.frame,
@@ -760,6 +763,9 @@ export class BattleScene extends Phaser.Scene {
           this,
           0,
           0,
+          serverUnit.id,
+          unitData.type,
+          serverUnit.name,
           key,
           serverUnit.tint,
           unitData.frame,
@@ -771,9 +777,6 @@ export class BattleScene extends Phaser.Scene {
           isTeamA
         );
       }
-      unit.type = unitData.type;
-      unit.id = serverUnit.id;
-      unit.tint = serverUnit.tint;
       this.add.existing(unit);
 
       // create unit animations with base sprite and framerate

@@ -33,11 +33,11 @@ export class ChatScene extends Phaser.Scene {
   listenToNewMessages(socket: Socket) {
     this.socket = socket;
     socket.on("newChatMessageWasSent", (username, message) => {
-      this.chatLines.push(`${username}: ${message}`);
+      this.chatLines.push(`<strong>${username}:</strong> ${message}`);
       const chatBox = this.chatForm.node.querySelector(
         "#chatBox"
       ) as HTMLElement;
-      chatBox.innerText = this.chatLines.join("\n");
+      chatBox.innerHTML = this.chatLines.join("<br>");
       chatBox.scrollTop = chatBox.scrollHeight; // hack to always have chat scrolled to bottom
     });
   }

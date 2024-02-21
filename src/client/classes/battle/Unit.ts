@@ -58,6 +58,9 @@ export class Unit extends Phaser.GameObjects.Sprite {
     scene: Phaser.Scene,
     x: number,
     y: number,
+    id: string,
+    type: string,
+    name: string,
     texture: string,
     baseTint: number,
     frame: number,
@@ -70,9 +73,13 @@ export class Unit extends Phaser.GameObjects.Sprite {
   ) {
     super(scene, x, y, texture, frame);
     this.baseTint = baseTint;
+    this.tint = baseTint;
     this.myScene = this.scene as BattleScene;
     this.indX = indX;
     this.indY = indY;
+    this.id = id;
+    this.type = type;
+    this.name = name;
     this.textureStr = texture;
     this.maxPm = maxPm;
     this.maxPa = maxPa;

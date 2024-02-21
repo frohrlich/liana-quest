@@ -141,7 +141,7 @@ export class ServerBattleScene {
           .to(this.roomId)
           .emit(
             "newChatMessageWasSent",
-            currentPlayer.type,
+            currentPlayer.name,
             escapeHtml(message)
           );
       }
@@ -348,6 +348,7 @@ export class ServerBattleScene {
       targetVec.x,
       targetVec.y,
       spell.summons.type,
+      spell.summons.type,
       0xffffff
     );
     this.addToObstacleLayer(summonedUnit.indX, summonedUnit.indY);
@@ -479,6 +480,7 @@ export class ServerBattleScene {
         indX,
         indY,
         unit.type,
+        unit.name,
         unit.tint
       );
       this.addToObstacleLayer(myUnit.indX, myUnit.indY);
