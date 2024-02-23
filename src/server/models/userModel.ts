@@ -7,6 +7,8 @@ export interface IUser {
   username: string;
   resetToken: string;
   resetTokenExp: Date;
+  type: string;
+  color: number;
   indX: number;
   indY: number;
   mapName: string;
@@ -37,6 +39,12 @@ const UserSchema = new Schema<IUser, {}, IUserMethods>({
   },
   resetTokenExp: {
     type: Date,
+  },
+  type: {
+    type: String,
+  },
+  color: {
+    type: Number,
   },
   indX: {
     type: Number,

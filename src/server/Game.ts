@@ -65,13 +65,7 @@ export class Game {
         // on connection, add player to first world scene of the array (our starter scene)
         if (user) {
           socket.data.user = user;
-          const randomColor = Math.floor(Math.random() * 16777215);
-          this.sendPlayerToWorldScene(
-            socket,
-            user.mapName,
-            randomColor,
-            "Amazon"
-          );
+          this.sendPlayerToWorldScene(socket, user.mapName);
         }
       });
   }
@@ -94,15 +88,10 @@ export class Game {
     );
   }
 
-  sendPlayerToWorldScene(
-    socket: Socket,
-    destination: string,
-    tint: number,
-    type: string
-  ) {
+  sendPlayerToWorldScene(socket: Socket, destination: string) {
     const worldSceneDestination = this.findServerWorldSceneByName(destination);
     if (worldSceneDestination) {
-      worldSceneDestination.addNewPlayerToScene(socket, tint, type);
+      worldSceneDestination.addNewPlayerToScene(socket);
       socket.emit("playerGoToMap", worldSceneDestination.mapName);
     }
   }

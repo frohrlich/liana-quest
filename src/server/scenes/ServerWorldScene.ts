@@ -71,16 +71,16 @@ export class ServerWorldScene {
     this.createMap();
   }
 
-  addNewPlayerToScene(socket: Socket, color: number, type: string) {
+  addNewPlayerToScene(socket: Socket) {
     const newPlayer: ServerWorldUnit = {
       indX: socket.data.user.indX ?? this.playerStarterPosition.indX,
       indY: socket.data.user.indY ?? this.playerStarterPosition.indY,
       id: socket.id,
-      type: type,
+      type: socket.data.user.type,
       name: socket.data.user.username,
       direction: "down",
       isVisible: true,
-      tint: color,
+      tint: socket.data.user.color,
       isPlayable: true,
     };
 
@@ -273,11 +273,7 @@ export class ServerWorldScene {
       this.removePlayer(socket);
       socket.leave(this.roomId);
       this.changeSocketUserMap(socket, destination);
-      worldSceneDestination.addNewPlayerToScene(
-        socket,
-        currentPlayer.tint,
-        currentPlayer.type
-      );
+      worldSceneDestination.addNewPlayerToScene(socket);
       socket.emit("playerGoToMap", worldSceneDestination.mapName);
     }
   }

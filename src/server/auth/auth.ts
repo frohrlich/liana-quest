@@ -30,11 +30,15 @@ passport.use(
         if (!validateUsername(username)) {
           return done(null, false, { message: "Invalid username format" });
         }
+        // user gets assigned a random color at character creation
+        const randomColor = Math.floor(Math.random() * 16777215);
         const user = await UserModel.create({
           email,
           password,
           username,
           mapName: "forest",
+          type: "Amazon",
+          color: randomColor,
         });
         return done(null, user);
       } catch (error) {
