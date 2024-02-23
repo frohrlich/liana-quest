@@ -14,7 +14,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   healthBarScale = 1.2;
 
   selectedTint = 0x777777;
-  readyIconFrame = 57;
+  readyIconFrame = 75;
   deathDelay = 200;
 
   myScene: BattleScene;
@@ -251,14 +251,11 @@ export class Unit extends Phaser.GameObjects.Sprite {
   }
 
   startMovingAnim = (direction: string) => {
-    // if direction is left, just flip the image for right
-    this.setFlipX(direction.startsWith("left"));
     // i.e. if unit has type 'Amazon', animation for left has key 'leftAmazon'
     this.play(direction + this.type, true);
   };
 
   startSpellCastAnimation = (direction: string) => {
-    this.setFlipX(direction.startsWith("left"));
     this.play(direction + "Attack" + this.type, true);
   };
 
@@ -565,20 +562,15 @@ export class Unit extends Phaser.GameObjects.Sprite {
   changeDirection(direction: string) {
     switch (direction) {
       case "left":
-        // if direction is left, just flip the image for right
-        this.setFlipX(true);
-        this.setTexture("player", this.frameNumber + 1);
+        this.setTexture("player", this.frameNumber + 2);
         break;
       case "right":
-        this.setFlipX(false);
         this.setTexture("player", this.frameNumber + 1);
         break;
       case "up":
-        this.setFlipX(false);
-        this.setTexture("player", this.frameNumber + 2);
+        this.setTexture("player", this.frameNumber + 3);
         break;
       case "down":
-        this.setFlipX(false);
         this.setTexture("player", this.frameNumber);
         break;
       default:
@@ -595,7 +587,7 @@ export class Unit extends Phaser.GameObjects.Sprite {
   /** Create team identifier (blue/red circle under unit's feet) */
   createTeamIdentifier(scale: number) {
     // identifier frame on the spritesheet (red circle or blue circle)
-    let identifierFrame = this.isTeamA ? 34 : 33;
+    let identifierFrame = this.isTeamA ? 45 : 44;
     this.identifier = this.scene.add.image(
       this.x,
       this.y,

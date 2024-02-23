@@ -153,8 +153,6 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
 
   startMovingAnim = (direction: string) => {
     if (this.anims) {
-      // if direction is left, just flip the image for right
-      this.setFlipX(direction.startsWith("left"));
       // if unit has type 'Amazon', animation for left is 'leftAmazon'
       this.play(direction + this.type, true);
     }
@@ -163,20 +161,15 @@ export class WorldUnit extends Phaser.Physics.Arcade.Sprite {
   changeDirection(direction: string) {
     switch (direction) {
       case "left":
-        // if direction is left, just flip the image for right
-        this.setFlipX(true);
-        this.setTexture("player", this.frameNumber + 1);
+        this.setTexture("player", this.frameNumber + 2);
         break;
       case "right":
-        this.setFlipX(false);
         this.setTexture("player", this.frameNumber + 1);
         break;
       case "up":
-        this.setFlipX(false);
-        this.setTexture("player", this.frameNumber + 2);
+        this.setTexture("player", this.frameNumber + 3);
         break;
       case "down":
-        this.setFlipX(false);
         this.setTexture("player", this.frameNumber);
         break;
       default:

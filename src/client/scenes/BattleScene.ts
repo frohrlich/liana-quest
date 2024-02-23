@@ -844,16 +844,15 @@ export class BattleScene extends Phaser.Scene {
 
   /** Creates a set of animations from a framerate and a base sprite. */
   createAnimations = (baseSprite: number, framerate: number, name: string) => {
-    // animation for 'left' move, we don't need left and right
-    // as we will use one and flip the sprite
+    // animation for 'left'
     this.anims.create({
       key: "left" + name,
       frames: this.anims.generateFrameNumbers("player", {
         frames: [
-          baseSprite + 1,
-          baseSprite + 10,
-          baseSprite + 1,
-          baseSprite + 19,
+          baseSprite + 2,
+          baseSprite + 14,
+          baseSprite + 2,
+          baseSprite + 26,
         ],
       }),
       frameRate: framerate,
@@ -863,7 +862,7 @@ export class BattleScene extends Phaser.Scene {
     this.anims.create({
       key: "leftAttack" + name,
       frames: this.anims.generateFrameNumbers("player", {
-        frames: [baseSprite + 10, baseSprite + 1],
+        frames: [baseSprite + 14, baseSprite + 2],
       }),
       frameRate: framerate,
       repeat: 0,
@@ -874,9 +873,9 @@ export class BattleScene extends Phaser.Scene {
       frames: this.anims.generateFrameNumbers("player", {
         frames: [
           baseSprite + 1,
-          baseSprite + 10,
+          baseSprite + 13,
           baseSprite + 1,
-          baseSprite + 19,
+          baseSprite + 25,
         ],
       }),
       frameRate: framerate,
@@ -886,7 +885,7 @@ export class BattleScene extends Phaser.Scene {
     this.anims.create({
       key: "rightAttack" + name,
       frames: this.anims.generateFrameNumbers("player", {
-        frames: [baseSprite + 10, baseSprite + 1],
+        frames: [baseSprite + 13, baseSprite + 1],
       }),
       frameRate: framerate,
       repeat: 0,
@@ -896,10 +895,10 @@ export class BattleScene extends Phaser.Scene {
       key: "up" + name,
       frames: this.anims.generateFrameNumbers("player", {
         frames: [
-          baseSprite + 2,
-          baseSprite + 11,
-          baseSprite + 2,
-          baseSprite + 20,
+          baseSprite + 3,
+          baseSprite + 15,
+          baseSprite + 3,
+          baseSprite + 27,
         ],
       }),
       frameRate: framerate,
@@ -909,7 +908,7 @@ export class BattleScene extends Phaser.Scene {
     this.anims.create({
       key: "upAttack" + name,
       frames: this.anims.generateFrameNumbers("player", {
-        frames: [baseSprite + 11, baseSprite + 2],
+        frames: [baseSprite + 15, baseSprite + 3],
       }),
       frameRate: framerate,
       repeat: 0,
@@ -918,7 +917,7 @@ export class BattleScene extends Phaser.Scene {
     this.anims.create({
       key: "down" + name,
       frames: this.anims.generateFrameNumbers("player", {
-        frames: [baseSprite, baseSprite + 9, baseSprite, baseSprite + 18],
+        frames: [baseSprite, baseSprite + 12, baseSprite, baseSprite + 24],
       }),
       frameRate: framerate,
       repeat: -1,
@@ -927,7 +926,7 @@ export class BattleScene extends Phaser.Scene {
     this.anims.create({
       key: "downAttack" + name,
       frames: this.anims.generateFrameNumbers("player", {
-        frames: [baseSprite + 9, baseSprite],
+        frames: [baseSprite + 12, baseSprite],
       }),
       frameRate: framerate,
       repeat: 0,

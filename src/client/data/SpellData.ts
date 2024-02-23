@@ -5,11 +5,11 @@ import { princess } from "./UnitData";
 // this file contains the data for all available spells in the game
 
 // create effects over time
-const poison = new EffectOverTime("Poison", 44, 2, 10, 1, 1, 0, 0, 0);
+const poison = new EffectOverTime("Poison", 58, 2, 10, 1, 1, 0, 0, 0);
 
 // create spells
 export const javelin = new Spell(
-  42,
+  56,
   1,
   5,
   4,
@@ -30,11 +30,11 @@ export const javelin = new Spell(
   3
 );
 
-export const punch = new Spell(51, 1, 1, 4, "Punch", true, false, 50);
+export const punch = new Spell(68, 1, 1, 4, "Punch", true, false, 50);
 
 // DEV
 // export const sting = new Spell(
-//   60,
+//   80,
 //   0,
 //   30,
 //   0,
@@ -55,7 +55,7 @@ export const punch = new Spell(51, 1, 1, 4, "Punch", true, false, 50);
 
 // PROD
 export const sting = new Spell(
-  60,
+  80,
   0,
   12,
   2,
@@ -75,7 +75,7 @@ export const sting = new Spell(
 );
 
 export const heal = new Spell(
-  69,
+  92,
   0,
   4,
   4,

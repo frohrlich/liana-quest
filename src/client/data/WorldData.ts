@@ -26,7 +26,7 @@ export interface DialogData {
 const olivia_forest: NpcData = {
   indX: 54,
   indY: 5,
-  frame: 3,
+  frame: 4,
   name: "Olivia",
   imageKey: "princess",
   dialog: {
@@ -40,7 +40,7 @@ const olivia_forest: NpcData = {
 const olivia_dungeon: NpcData = {
   indX: 54,
   indY: 5,
-  frame: 3,
+  frame: 4,
   name: "Olivia",
   imageKey: "princess",
   dialog: {

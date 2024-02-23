@@ -14,8 +14,17 @@ export const amazon: UnitData = {
   PM: 6,
   PA: 6,
   spells: "deadly javelin, herbal medicine, sting",
-  frame: 6,
+  frame: 8,
   type: "Amazon",
+};
+
+export const renegade: UnitData = {
+  HP: 120,
+  PM: 4,
+  PA: 6,
+  spells: "punch",
+  frame: 84,
+  type: "Renegade",
 };
 
 export const snowman: UnitData = {
@@ -23,7 +32,7 @@ export const snowman: UnitData = {
   PM: 6,
   PA: 6,
   spells: "sting",
-  frame: 30,
+  frame: 40,
   type: "Snowman",
 };
 
@@ -41,8 +50,8 @@ export const princess: UnitData = {
   PM: 3,
   PA: 6,
   spells: "sting",
-  frame: 3,
+  frame: 4,
   type: "Princess",
 };
 
-export const unitsAvailable = [amazon, snowman, dude, princess];
+export const unitsAvailable = [amazon, renegade, snowman, dude, princess];
