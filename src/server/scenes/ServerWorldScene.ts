@@ -71,18 +71,13 @@ export class ServerWorldScene {
     this.createMap();
   }
 
-  addNewPlayerToScene(
-    socket: Socket,
-    color: number,
-    type: string,
-    username: string
-  ) {
+  addNewPlayerToScene(socket: Socket, color: number, type: string) {
     const newPlayer: ServerWorldUnit = {
-      indX: this.playerStarterPosition.indX,
-      indY: this.playerStarterPosition.indY,
+      indX: socket.data.user.indX ?? this.playerStarterPosition.indX,
+      indY: socket.data.user.indY ?? this.playerStarterPosition.indY,
       id: socket.id,
       type: type,
-      name: username,
+      name: socket.data.user.username,
       direction: "down",
       isVisible: true,
       tint: color,
@@ -102,6 +97,12 @@ export class ServerWorldScene {
       const myPlayer = this.findCurrentPlayer(socket);
       const myNpc = this.findNpcById(enemyId);
       if (myNpc && myNpc.isVisible && myPlayer) {
+        this.game.savePlayerPosition(
+          socket,
+          myPlayer.indX,
+          myPlayer.indY,
+          this.mapName
+        );
         socket.leave(this.roomId);
         this.movePlayerToBattle(socket);
         const battleId = uuidv4();
@@ -118,6 +119,18 @@ export class ServerWorldScene {
       const challengedPlayer = this.findPlayerById(challengedPlayerId);
       if (challengedPlayer && myPlayer) {
         const challengedPlayerSocket = this.findSocketById(challengedPlayer.id);
+        this.game.savePlayerPosition(
+          socket,
+          myPlayer.indX,
+          myPlayer.indY,
+          this.mapName
+        );
+        this.game.savePlayerPosition(
+          challengedPlayerSocket,
+          challengedPlayer.indX,
+          challengedPlayer.indY,
+          this.mapName
+        );
 
         socket.leave(this.roomId);
         challengedPlayerSocket.leave(this.roomId);
@@ -157,6 +170,15 @@ export class ServerWorldScene {
     });
 
     socket.on("disconnect", () => {
+      const currentPlayer = this.findCurrentPlayer(socket);
+      if (currentPlayer) {
+        this.game.savePlayerPosition(
+          socket,
+          currentPlayer.indX,
+          currentPlayer.indY,
+          this.mapName
+        );
+      }
       this.removePlayer(socket);
       this.removePlayerFromBattles(socket);
     });
@@ -250,14 +272,20 @@ export class ServerWorldScene {
     if (worldSceneDestination && currentPlayer) {
       this.removePlayer(socket);
       socket.leave(this.roomId);
+      this.changeSocketUserMap(socket, destination);
       worldSceneDestination.addNewPlayerToScene(
         socket,
         currentPlayer.tint,
-        currentPlayer.type,
-        currentPlayer.name
+        currentPlayer.type
       );
       socket.emit("playerGoToMap", worldSceneDestination.mapName);
     }
+  }
+
+  private changeSocketUserMap(socket: Socket, mapName: string) {
+    socket.data.user.indX = null;
+    socket.data.user.indY = null;
+    socket.data.user.mapName = mapName;
   }
 
   private canAnyNpcInCurrentMapSendPlayersToThisDestination(

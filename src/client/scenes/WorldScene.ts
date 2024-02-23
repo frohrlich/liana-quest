@@ -61,7 +61,10 @@ export class WorldScene extends Phaser.Scene {
     this.npcs = worldData.npcs;
     this.mapName = worldData.mapName;
     this.battleHasStarted = false;
-    this.createTilemap();
+    // When the WorldScene is first initialized, the map name is not defined yet
+    // We we receive it later via the "playerGoToMap" event
+    // And then the WorldScene will restart with it
+    if (this.mapName) this.createTilemap();
 
     // once the scene is ready to receive server info,
     // we establish the connection with the server
@@ -72,11 +75,11 @@ export class WorldScene extends Phaser.Scene {
         this.initSocket();
         this.socket.on("serverIsReady", () => {
           this.setupWeb();
-          this.socket.emit("worldSceneIsReady", this.mapName);
+          if (this.mapName) this.socket.emit("worldSceneIsReady", this.mapName);
         });
       } else {
         this.setupWeb();
-        this.socket.emit("worldSceneIsReady", this.mapName);
+        if (this.mapName) this.socket.emit("worldSceneIsReady", this.mapName);
       }
     });
     if (!this.chatScene || !this.scene.isActive("ChatScene")) {
@@ -530,7 +533,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   resetScene() {
-    this.spawns.clear(true, true);
+    if (this.spawns) this.spawns.clear(true, true);
     this.otherPlayers.forEach((player) => {
       player.destroy(true);
     });

@@ -7,6 +7,9 @@ export interface IUser {
   username: string;
   resetToken: string;
   resetTokenExp: Date;
+  indX: number;
+  indY: number;
+  mapName: string;
 }
 
 interface IUserMethods {
@@ -34,6 +37,15 @@ const UserSchema = new Schema<IUser, {}, IUserMethods>({
   },
   resetTokenExp: {
     type: Date,
+  },
+  indX: {
+    type: Number,
+  },
+  indY: {
+    type: Number,
+  },
+  mapName: {
+    type: String,
   },
 });
 

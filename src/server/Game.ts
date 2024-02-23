@@ -64,12 +64,13 @@ export class Game {
         const user = await UserModel.findById(socket.data.user._id);
         // on connection, add player to first world scene of the array (our starter scene)
         if (user) {
+          socket.data.user = user;
           const randomColor = Math.floor(Math.random() * 16777215);
-          this.serverWorldScenes[0].addNewPlayerToScene(
+          this.sendPlayerToWorldScene(
             socket,
+            user.mapName,
             randomColor,
-            "Amazon",
-            user.username
+            "Amazon"
           );
         }
       });
@@ -80,4 +81,29 @@ export class Game {
       (worldScene) => worldScene.mapName === name
     );
   };
+
+  async savePlayerPosition(
+    socket: Socket,
+    indX: number,
+    indY: number,
+    mapName: string
+  ) {
+    await UserModel.findByIdAndUpdate(
+      { _id: socket.data.user._id },
+      { indX: indX, indY: indY, mapName: mapName }
+    );
+  }
+
+  sendPlayerToWorldScene(
+    socket: Socket,
+    destination: string,
+    tint: number,
+    type: string
+  ) {
+    const worldSceneDestination = this.findServerWorldSceneByName(destination);
+    if (worldSceneDestination) {
+      worldSceneDestination.addNewPlayerToScene(socket, tint, type);
+      socket.emit("playerGoToMap", worldSceneDestination.mapName);
+    }
+  }
 }

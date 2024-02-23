@@ -30,7 +30,12 @@ passport.use(
         if (!validateUsername(username)) {
           return done(null, false, { message: "Invalid username format" });
         }
-        const user = await UserModel.create({ email, password, username });
+        const user = await UserModel.create({
+          email,
+          password,
+          username,
+          mapName: "forest",
+        });
         return done(null, user);
       } catch (error) {
         done(error);

@@ -190,7 +190,7 @@ export class LoginScene extends Phaser.Scene {
       data,
       success: (data) => {
         // Start world scene
-        this.scene.start("WorldScene", findWorldMapByName("forest"));
+        this.scene.start("WorldScene");
         refreshToken();
       },
       error: (xhr, status, error) => {
