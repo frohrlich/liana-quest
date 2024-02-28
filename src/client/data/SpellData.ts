@@ -30,6 +30,46 @@ export const javelin = new Spell(
   3
 );
 
+export const net = new Spell(
+  104,
+  3,
+  8,
+  4,
+  "Weighted net",
+  true,
+  false,
+  15,
+  2,
+  0,
+  0,
+  0,
+  0,
+  "star",
+  1
+);
+
+export const trident = new Spell(
+  116,
+  2,
+  3,
+  2,
+  "Trident",
+  true,
+  true,
+  20,
+  0,
+  0,
+  0,
+  0,
+  0,
+  "line",
+  1,
+  1,
+  null,
+  null,
+  -2
+);
+
 export const punch = new Spell(68, 1, 1, 4, "Punch", true, false, 50);
 
 // DEV

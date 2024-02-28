@@ -11,7 +11,7 @@ export interface UnitData {
 
 export const amazon: UnitData = {
   HP: 100,
-  PM: 6,
+  PM: 4,
   PA: 6,
   spells: "deadly javelin, herbal medicine, sting",
   frame: 8,
@@ -22,7 +22,7 @@ export const renegade: UnitData = {
   HP: 120,
   PM: 4,
   PA: 6,
-  spells: "punch",
+  spells: "net, trident, punch",
   frame: 84,
   type: "Renegade",
 };
