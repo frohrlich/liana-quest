@@ -37,7 +37,7 @@ passport.use(
           password,
           username,
           mapName: "forest",
-          type: "Renegade",
+          type: "Stranger",
           color: randomColor,
         });
         return done(null, user);

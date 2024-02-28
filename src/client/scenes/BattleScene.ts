@@ -7,7 +7,17 @@ import { Spell } from "../classes/battle/Spell";
 import { BattleUIScene } from "./BattleUIScene";
 import isVisible from "../utils/lineOfSight";
 import { unitsAvailable } from "../data/UnitData";
-import { heal, javelin, net, punch, sting, trident } from "../data/SpellData";
+import {
+  heal,
+  javelin,
+  net,
+  plague,
+  punch,
+  stargazing,
+  sting,
+  trident,
+  understanding,
+} from "../data/SpellData";
 import { WorldScene } from "./WorldScene";
 import { ServerUnit } from "../../server/classes/ServerUnit";
 import { Socket } from "socket.io-client";
@@ -840,6 +850,15 @@ export class BattleScene extends Phaser.Scene {
           break;
         case "trident":
           spellArray.push(trident);
+          break;
+        case "stargazing":
+          spellArray.push(stargazing);
+          break;
+        case "understanding":
+          spellArray.push(understanding);
+          break;
+        case "plague":
+          spellArray.push(plague);
           break;
         default:
           break;

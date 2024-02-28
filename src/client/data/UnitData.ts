@@ -27,6 +27,15 @@ export const renegade: UnitData = {
   type: "Renegade",
 };
 
+export const stranger: UnitData = {
+  HP: 80,
+  PM: 4,
+  PA: 6,
+  spells: "stargazing, understanding, plague",
+  frame: 88,
+  type: "Stranger",
+};
+
 export const snowman: UnitData = {
   HP: 100,
   PM: 6,
@@ -54,4 +63,11 @@ export const princess: UnitData = {
   type: "Princess",
 };
 
-export const unitsAvailable = [amazon, renegade, snowman, dude, princess];
+export const unitsAvailable = [
+  amazon,
+  renegade,
+  stranger,
+  snowman,
+  dude,
+  princess,
+];

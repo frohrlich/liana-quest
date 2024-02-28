@@ -7,6 +7,9 @@ import {
   heal,
   net,
   trident,
+  stargazing,
+  understanding,
+  plague,
 } from "../../client/data/SpellData";
 import { unitsAvailable } from "../../client/data/UnitData";
 import { Vector2 } from "../utils/findPath";
@@ -104,6 +107,15 @@ export class ServerUnit {
           break;
         case "trident":
           spellArray.push(trident);
+          break;
+        case "stargazing":
+          spellArray.push(stargazing);
+          break;
+        case "understanding":
+          spellArray.push(understanding);
+          break;
+        case "plague":
+          spellArray.push(plague);
           break;
         default:
           break;

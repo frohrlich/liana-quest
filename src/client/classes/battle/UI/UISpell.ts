@@ -97,7 +97,6 @@ export class UISpell extends UIElement {
   /** Defines spell info text and draws it. */
   addInfoText() {
     const scale = this.myScene.uiScale;
-    let height = 14 * scale;
     const infoOffset = this.icon.displayWidth / 2;
     const lineHeight = this.fontSize + 1;
     const fontSize = this.fontSize;
@@ -105,104 +104,76 @@ export class UISpell extends UIElement {
 
     // spell name text in bold
     let spellNameText = `${this.spell.name}`;
-    let maxLength = spellNameText.length;
     // spell cost
     let addText = `\ncost: ${this.spell.cost} PA`;
-    maxLength = Math.max(maxLength, addText.length);
     text += addText;
-    height += lineHeight;
     // spell range
     // addText = `\n${this.spell.minRange}-${this.spell.maxRange} range`;
-    // maxLength = Math.max(maxLength, addText.length);
     // text += addText;
     // spell max cooldown
     // if (this.spell.maxCooldown > 0) {
     //   addText = `\ncooldown: ${this.spell.maxCooldown}`;
-    //   maxLength = Math.max(maxLength, addText.length);
     //   text += addText;
-    //   height += lineHeight;
     // }
     // spell damage
     if (this.spell.damage > 0) {
       addText = `\n-${this.spell.damage} HP`;
-      maxLength = Math.max(maxLength, addText.length);
       text += addText;
-      height += lineHeight;
     }
     // spell heal
     if (this.spell.heal > 0) {
       addText = `\n+${this.spell.heal} HP`;
-      maxLength = Math.max(maxLength, addText.length);
       text += addText;
-      height += lineHeight;
     }
     // spell malus PA
     if (this.spell.malusPA > 0) {
       addText = `\n-${this.spell.malusPA} PA`;
-      maxLength = Math.max(maxLength, addText.length);
       text += addText;
-      height += lineHeight;
     }
     // spell bonus PA
     if (this.spell.bonusPA > 0) {
       addText = `\n+${this.spell.bonusPA} PA`;
-      maxLength = Math.max(maxLength, addText.length);
       text += addText;
-      height += lineHeight;
     }
     // spell malus PM
     if (this.spell.malusPM > 0) {
       addText = `\n-${this.spell.malusPM} PM`;
-      maxLength = Math.max(maxLength, addText.length);
       text += addText;
-      height += lineHeight;
     }
     // spell bonus PM
     if (this.spell.bonusPM > 0) {
       addText = `\n+${this.spell.bonusPM} PM`;
-      maxLength = Math.max(maxLength, addText.length);
       text += addText;
-      height += lineHeight;
     }
     // spell effect over time
     if (this.spell.effectOverTime) {
       addText = `\neffect : ${this.spell.effectOverTime.name}(${this.spell.effectOverTime.duration})`;
-      maxLength = Math.max(maxLength, addText.length);
       text += addText;
-      height += lineHeight;
     }
     // spell summoned unit
     if (this.spell.summons) {
       addText = `\nsummons : ${this.spell.summons.type}`;
-      maxLength = Math.max(maxLength, addText.length);
       text += addText;
-      height += lineHeight;
     }
     // spell push/pull
     if (this.spell.moveTargetBy) {
       const pushOrPull = this.spell.moveTargetBy > 0 ? "push" : "pull";
       addText = `\n${pushOrPull} (${Math.abs(this.spell.moveTargetBy)})`;
-      maxLength = Math.max(maxLength, addText.length);
       text += addText;
-      height += lineHeight;
     }
 
-    let infoTextWidth = 20 * scale + maxLength * (this.fontSize * 0.65);
-
-    this.displayInfoTextOutline(infoTextWidth, infoOffset, height, scale);
-
-    this.displayInfoText(spellNameText, fontSize, lineHeight, text);
+    this.displayInfoText(spellNameText, fontSize, text);
+    this.displayInfoTextOutline(infoOffset, scale, lineHeight);
   }
 
   private displayInfoText(
     spellNameText: string,
     fontSize: number,
-    lineHeight: number,
     text: string
   ) {
     this.spellNameInfoText = this.myScene.add.bitmapText(
-      this.infoRectangle.x - this.infoRectangle.displayWidth / 2 + 2,
-      this.infoRectangle.y - this.infoRectangle.displayHeight / 2 + 3,
+      0,
+      0,
       "dogicapixelbold",
       spellNameText,
       fontSize
@@ -212,10 +183,8 @@ export class UISpell extends UIElement {
     this.spellNameInfoText.alpha = 0.9;
 
     this.infoText = this.myScene.add.bitmapText(
-      this.infoRectangle.x - this.infoRectangle.displayWidth / 2 + 4,
-      this.infoRectangle.y -
-        this.infoRectangle.displayHeight / 2 +
-        lineHeight / 2,
+      0,
+      0,
       "dogicapixel",
       text,
       fontSize
@@ -226,18 +195,29 @@ export class UISpell extends UIElement {
   }
 
   private displayInfoTextOutline(
-    width: number,
     infoOffset: number,
-    height: number,
-    scale: number
+    lineWidth: number,
+    lineHeight: number
   ) {
+    const spellTitleLeftMargin = 2;
+    const spellTitleTopMargin = 3;
+    const infoTextLeftMargin = 4;
+    const infoTextTopMargin = lineHeight / 2;
+
+    const width = Math.max(
+      this.infoText.displayWidth,
+      this.spellNameInfoText.displayWidth
+    );
+    const height =
+      this.infoText.displayHeight + this.spellNameInfoText.displayHeight;
+
     const xPos = this.x - width / 2 - infoOffset;
     const yPos = this.y - height / 2 - infoOffset;
 
     this.infoRectangle = this.myScene.add.rectangle(
       xPos,
       yPos,
-      width,
+      width + infoTextLeftMargin * 2,
       height,
       0x31593b
     );
@@ -248,12 +228,29 @@ export class UISpell extends UIElement {
     this.outlineRectangle = this.myScene.add.rectangle(
       xPos,
       yPos,
-      width + scale,
-      height + scale
+      width + infoTextLeftMargin * 2 + lineWidth,
+      height + lineWidth
     );
-    this.outlineRectangle.setStrokeStyle(scale + 0.5, 0xffffff);
+    this.outlineRectangle.setStrokeStyle(lineWidth + 0.5, 0xffffff);
     this.outlineRectangle.alpha = 0.9;
     this.outlineRectangle.visible = false;
+
+    this.spellNameInfoText.setPosition(
+      this.infoRectangle.x -
+        this.infoRectangle.displayWidth / 2 +
+        spellTitleLeftMargin,
+      this.infoRectangle.y -
+        this.infoRectangle.displayHeight / 2 +
+        spellTitleTopMargin
+    );
+    this.infoText.setPosition(
+      this.infoRectangle.x -
+        this.infoRectangle.displayWidth / 2 +
+        infoTextLeftMargin,
+      this.infoRectangle.y -
+        this.infoRectangle.displayHeight / 2 +
+        infoTextTopMargin
+    );
   }
 
   /** Disable spell visually if player cannot cast it. */
