@@ -6,6 +6,7 @@ import { princess } from "./UnitData";
 
 // create effects over time
 const poison = new EffectOverTime("Poison", 58, 2, 10, 1, 1, 0, 0, 0);
+const plagueEot = new EffectOverTime("Plague", 59, 2, 25, 2, 2, 0, 0, 0);
 
 // create spells
 export const javelin = new Spell(
@@ -68,6 +69,66 @@ export const trident = new Spell(
   null,
   null,
   -2
+);
+
+export const stargazing = new Spell(
+  128,
+  0,
+  0,
+  0,
+  "Stargazing",
+  true,
+  false,
+  0,
+  0,
+  0,
+  0,
+  3,
+  3,
+  "monoTarget",
+  0,
+  2
+);
+
+export const understanding = new Spell(
+  140,
+  0,
+  6,
+  4,
+  "Understanding",
+  false,
+  false,
+  0,
+  4,
+  4,
+  25,
+  0,
+  0,
+  "monoTarget",
+  0,
+  1
+);
+
+export const plague = new Spell(
+  152,
+  0,
+  5,
+  3,
+  "Plague",
+  true,
+  false,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  "monoTarget",
+  0,
+  0,
+  plagueEot,
+  null,
+  0
 );
 
 export const punch = new Spell(68, 1, 1, 4, "Punch", true, false, 50);
