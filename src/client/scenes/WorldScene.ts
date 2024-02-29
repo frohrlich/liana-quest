@@ -12,6 +12,7 @@ import { ServerUnit } from "../../server/classes/ServerUnit";
 import { WorldUnit } from "../classes/world/WorldUnit";
 import { NpcData, WorldData, findWorldMapByName } from "../data/WorldData";
 import { ChatScene } from "./ChatScene";
+import { Card } from "../classes/world/Card";
 
 interface UnitPosition {
   indX: number;
@@ -58,6 +59,9 @@ export class WorldScene extends Phaser.Scene {
   }
 
   create(worldData: WorldData): void {
+    const myCard = new Card(this, 200, 200, this.findUnitDataByType("Amazon"));
+    this.add.existing(myCard).setDepth(10000);
+
     this.npcs = worldData.npcs;
     this.mapName = worldData.mapName;
     this.battleHasStarted = false;

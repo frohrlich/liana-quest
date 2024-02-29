@@ -93,6 +93,7 @@ export class BootScene extends Phaser.Scene {
 
     // illustrations
     this.load.image("princess", "public/assets/images/princess.png");
+    this.load.image("AmazonIllus", "public/assets/images/amazon.png");
     this.load.image(
       "loginBackground",
       "public/assets/images/loginBackground.png"
