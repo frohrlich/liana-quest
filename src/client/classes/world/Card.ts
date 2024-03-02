@@ -4,12 +4,14 @@ import { decodeSpellString } from "../../data/SpellData";
 import { CardUISpell } from "./CardUISpell";
 
 export class Card extends Phaser.GameObjects.Container {
-  cardWidth = 100;
-  cardHeight = 150;
-  outlineWidth = 4;
+  cardWidth = 200;
+  cardHeight = 300;
+  outlineWidth = 8;
   outlineColor = 0xffffff;
   fillColor = 0x191430;
   illustrationTint = 0x555555;
+  fontSize = 16;
+  caracFontSize = 32;
 
   unitData: UnitData;
 
@@ -53,7 +55,7 @@ export class Card extends Phaser.GameObjects.Container {
       0,
       "dogicapixel",
       this.unitData.description,
-      8
+      this.fontSize
     )
       .setVisible(false)
       .setName("toggle");
@@ -101,7 +103,7 @@ export class Card extends Phaser.GameObjects.Container {
         "player",
         this.unitData.frame
       )
-        .setScale(2)
+        .setScale(4)
         .setAlpha(0.7)
         .setName("toggle")
     );
@@ -115,7 +117,7 @@ export class Card extends Phaser.GameObjects.Container {
         -this.cardHeight / 2 + 10,
         "dogicapixelbold",
         this.unitData.type,
-        8
+        this.fontSize
       )
         .setScale(1.2)
         .setOrigin(0.5, 0)
@@ -124,28 +126,27 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   makeCharacteristics() {
-    const caracFontSize = 16;
-    const margin = 5;
+    const margin = 10;
     // PM
     this.add(
       new Phaser.GameObjects.BitmapText(
         this.scene,
         -this.cardWidth / 2 + margin,
-        this.cardHeight / 2 - caracFontSize - margin,
+        this.cardHeight / 2 - this.caracFontSize - margin,
         "dogicapixel",
         this.unitData.PM.toString(),
-        caracFontSize
+        this.caracFontSize
       ).setName("toggle")
     );
     // PA
     this.add(
       new Phaser.GameObjects.BitmapText(
         this.scene,
-        this.cardWidth / 2 - caracFontSize - margin,
-        this.cardHeight / 2 - caracFontSize - margin,
+        this.cardWidth / 2 - this.caracFontSize - margin,
+        this.cardHeight / 2 - this.caracFontSize - margin,
         "dogicapixel",
         this.unitData.PA.toString(),
-        caracFontSize
+        this.caracFontSize
       )
         .setTint(0x33c6f7)
         .setName("toggle")
@@ -155,10 +156,10 @@ export class Card extends Phaser.GameObjects.Container {
       new Phaser.GameObjects.BitmapText(
         this.scene,
         0,
-        this.cardHeight / 2 - caracFontSize - margin,
+        this.cardHeight / 2 - this.caracFontSize - margin,
         "dogicapixel",
         this.unitData.HP.toString(),
-        caracFontSize
+        this.caracFontSize
       )
         .setTint(0xff0000)
         .setOrigin(0.5, 0)

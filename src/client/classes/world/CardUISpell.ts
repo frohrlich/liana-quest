@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { Spell } from "../battle/Spell";
 
 export class CardUISpell extends Phaser.GameObjects.Container {
-  scale = 1.2;
+  scale = 1.65;
   fontSize = 8;
   iconAlpha = 0.7;
 
@@ -57,7 +57,6 @@ export class CardUISpell extends Phaser.GameObjects.Container {
   addInfoText() {
     const infoOffset = this.icon.displayWidth / 2 + 5;
     const lineHeight = this.fontSize + 1;
-    const fontSize = this.fontSize;
     let text = "";
 
     // spell name text in bold
@@ -120,7 +119,7 @@ export class CardUISpell extends Phaser.GameObjects.Container {
       text += addText;
     }
 
-    this.displayInfoText(spellNameText, fontSize, text);
+    this.displayInfoText(spellNameText, this.fontSize, text);
     this.displayInfoTextOutline(infoOffset, this.scale, lineHeight);
   }
 

@@ -78,3 +78,7 @@ export const availableUnits = [
   dude,
   princess,
 ];
+
+export const findUnitDataByType = (type: string) => {
+  return availableUnits.find((unitData) => unitData.type === type);
+};

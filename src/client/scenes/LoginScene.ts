@@ -1,5 +1,4 @@
 import Phaser from "phaser";
-import { findWorldMapByName } from "../data/WorldData";
 import { GAME_HEIGHT, GAME_WIDTH } from "../app";
 import $ from "jquery";
 import { refreshToken } from "../refreshToken";
@@ -190,7 +189,7 @@ export class LoginScene extends Phaser.Scene {
       data,
       success: (data) => {
         // Start world scene
-        this.scene.start("WorldScene");
+        this.scene.start("ChooseCardScene");
         refreshToken();
       },
       error: (xhr, status, error) => {

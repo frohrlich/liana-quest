@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { WorldNpc } from "../classes/world/WorldNpc";
-import { availableUnits } from "../data/UnitData";
+import { availableUnits, findUnitDataByType } from "../data/UnitData";
 import { Socket, io } from "socket.io-client";
 import {
   ServerBattleIcon,
@@ -59,9 +59,6 @@ export class WorldScene extends Phaser.Scene {
   }
 
   create(worldData: WorldData): void {
-    const myCard = new Card(this, 200, 200, this.findUnitDataByType("Amazon"));
-    this.add.existing(myCard).setDepth(10000);
-
     this.npcs = worldData.npcs;
     this.mapName = worldData.mapName;
     this.battleHasStarted = false;
@@ -373,7 +370,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   addOtherPlayer(serverWorldUnit: ServerWorldUnit) {
-    const playerData = this.findUnitDataByType(serverWorldUnit.type);
+    const playerData = findUnitDataByType(serverWorldUnit.type);
     const otherPlayer = new WorldOnlinePlayer(
       this,
       serverWorldUnit.id,
@@ -423,7 +420,7 @@ export class WorldScene extends Phaser.Scene {
     let playerPosX = playerInfo.indX;
     let playerPosY = playerInfo.indY;
     // find unit data from its name given by server
-    const playerData = this.findUnitDataByType(playerInfo.type);
+    const playerData = findUnitDataByType(playerInfo.type);
     this.player = new WorldOnlinePlayer(
       this,
       playerInfo.id,
@@ -446,10 +443,6 @@ export class WorldScene extends Phaser.Scene {
         this.player.type
       );
     }
-  }
-
-  private findUnitDataByType(type: string) {
-    return availableUnits.find((unitData) => unitData.type === type);
   }
 
   private createTilemap() {
@@ -489,7 +482,7 @@ export class WorldScene extends Phaser.Scene {
       const id = myEnemyData.id;
 
       // find enemy data from its type
-      const enemyData = this.findUnitDataByType(enemyType);
+      const enemyData = findUnitDataByType(enemyType);
 
       if (!this.anims.exists("left" + enemyData.type)) {
         this.createAnimations(
