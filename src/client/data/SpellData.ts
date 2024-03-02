@@ -9,12 +9,12 @@ const poison = new EffectOverTime("Poison", 58, 2, 10, 1, 1, 0, 0, 0);
 const plagueEot = new EffectOverTime("Plague", 59, 2, 25, 2, 2, 0, 0, 0);
 
 // create spells
-export const javelin = new Spell(
+const javelin = new Spell(
   56,
   1,
   5,
   4,
-  "Deadly Javelin",
+  "Deadly javelin",
   true,
   true,
   25,
@@ -31,7 +31,7 @@ export const javelin = new Spell(
   3
 );
 
-export const net = new Spell(
+const net = new Spell(
   104,
   3,
   8,
@@ -49,7 +49,7 @@ export const net = new Spell(
   1
 );
 
-export const trident = new Spell(
+const trident = new Spell(
   116,
   2,
   3,
@@ -71,7 +71,7 @@ export const trident = new Spell(
   -2
 );
 
-export const stargazing = new Spell(
+const stargazing = new Spell(
   128,
   0,
   0,
@@ -90,7 +90,7 @@ export const stargazing = new Spell(
   2
 );
 
-export const understanding = new Spell(
+const understanding = new Spell(
   140,
   0,
   6,
@@ -109,7 +109,7 @@ export const understanding = new Spell(
   1
 );
 
-export const plague = new Spell(
+const plague = new Spell(
   152,
   0,
   5,
@@ -131,10 +131,10 @@ export const plague = new Spell(
   0
 );
 
-export const punch = new Spell(68, 1, 1, 4, "Punch", true, false, 50);
+const punch = new Spell(68, 1, 1, 4, "Punch", true, false, 50);
 
 // DEV
-// export const sting = new Spell(
+// const sting = new Spell(
 //   80,
 //   0,
 //   30,
@@ -155,7 +155,7 @@ export const punch = new Spell(68, 1, 1, 4, "Punch", true, false, 50);
 // );
 
 // PROD
-export const sting = new Spell(
+const sting = new Spell(
   80,
   0,
   12,
@@ -175,7 +175,7 @@ export const sting = new Spell(
   null
 );
 
-export const heal = new Spell(
+const heal = new Spell(
   92,
   0,
   4,
@@ -195,3 +195,24 @@ export const heal = new Spell(
   null,
   princess
 );
+
+const availableSpells = [
+  javelin,
+  net,
+  trident,
+  stargazing,
+  understanding,
+  plague,
+  punch,
+  sting,
+  heal,
+];
+
+/** Transforms a list of spell names in a string into an array of Spell objects. */
+export const decodeSpellString = (spellStr: string) => {
+  let spellArray: Spell[] = [];
+  spellStr.split(", ").forEach((spellName) => {
+    spellArray.push(availableSpells.find((spell) => spell.name === spellName));
+  });
+  return spellArray;
+};

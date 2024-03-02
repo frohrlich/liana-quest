@@ -85,7 +85,7 @@ export class BootScene extends Phaser.Scene {
       "public/assets/map/dungeon_battlemap3.json"
     );
 
-    // characters
+    // characters and 16x16 icons
     this.load.spritesheet("player", "public/assets/RPG_assets.png", {
       frameWidth: 16,
       frameHeight: 16,

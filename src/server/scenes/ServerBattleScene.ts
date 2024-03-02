@@ -5,7 +5,7 @@ import {
   ServerWorldScene,
   escapeHtml,
 } from "./ServerWorldScene";
-import { unitsAvailable } from "../../client/data/UnitData";
+import { availableUnits } from "../../client/data/UnitData";
 import { ServerUnit } from "../classes/ServerUnit";
 import findPath, { Vector2 } from "../utils/findPath";
 import { Spell } from "../../client/classes/battle/Spell";
@@ -460,7 +460,7 @@ export class ServerBattleScene {
     isTeamA: boolean,
     isPlayable: boolean
   ) {
-    const playerData = unitsAvailable.find(
+    const playerData = availableUnits.find(
       (unitData) => unitData.type === unit.type
     );
     if (playerData) {

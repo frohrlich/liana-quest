@@ -1,5 +1,7 @@
 import Phaser from "phaser";
 import { UnitData } from "../../data/UnitData";
+import { decodeSpellString } from "../../data/SpellData";
+import { CardUISpell } from "./CardUISpell";
 
 export class Card extends Phaser.GameObjects.Container {
   cardWidth = 100;
@@ -7,6 +9,7 @@ export class Card extends Phaser.GameObjects.Container {
   outlineWidth = 4;
   outlineColor = 0xffffff;
   fillColor = 0x191430;
+  illustrationTint = 0x555555;
 
   unitData: UnitData;
 
@@ -17,18 +20,89 @@ export class Card extends Phaser.GameObjects.Container {
     this.makeCardOutline();
     this.makeName();
     this.makeCharacteristics();
+    this.makeCharacterIcon();
+    this.makeSpellIcons();
+    this.makeDescription();
+    this.setSize(this.cardWidth, this.cardHeight);
+    this.setInteractive();
+    this.on("pointerup", () => {
+      this.toggleCardView();
+    });
+  }
+
+  private toggleCardView() {
+    this.getAll("name", "toggle").forEach((child) => {
+      const myChild = child as Phaser.GameObjects.Image;
+      myChild.setVisible(!myChild.visible);
+    });
+    const illustration = this.getByName(
+      "illustration"
+    ) as Phaser.GameObjects.Image;
+    illustration.setTint(
+      illustration.tint === this.illustrationTint
+        ? 0xffffff
+        : this.illustrationTint
+    );
+  }
+
+  makeDescription() {
+    this.add(
+      new Phaser.GameObjects.BitmapText(
+        this.scene,
+        this.cardWidth / 2 + 5,
+        0,
+        "dogicapixel",
+        this.unitData.description,
+        8
+      )
+        .setVisible(false)
+        .setName("toggle")
+    );
+  }
+
+  makeSpellIcons() {
+    const spells = decodeSpellString(this.unitData.spells);
+    for (let i = 0; i < spells.length; i++) {
+      const spell = spells[i];
+      this.add(
+        new CardUISpell(
+          this.scene,
+          (this.cardWidth * (i - 1)) / 3.2,
+          this.cardHeight / 6,
+          spell
+        ).setName("toggle")
+      );
+    }
+  }
+
+  makeCharacterIcon() {
+    this.add(
+      new Phaser.GameObjects.Image(
+        this.scene,
+        0,
+        -this.cardHeight / 8,
+        "player",
+        this.unitData.frame
+      )
+        .setScale(2)
+        .setAlpha(0.7)
+        .setName("toggle")
+    );
   }
 
   makeName() {
     this.add(
       new Phaser.GameObjects.BitmapText(
         this.scene,
-        -this.cardWidth / 4,
+        0,
         -this.cardHeight / 2 + 10,
         "dogicapixelbold",
         this.unitData.type,
         8
       )
+        .setScale(1.2)
+        .setOrigin(0.5, 0)
+        .setName("toggle")
     );
   }
 
@@ -44,7 +118,7 @@ export class Card extends Phaser.GameObjects.Container {
         "dogicapixel",
         this.unitData.PM.toString(),
         caracFontSize
-      )
+      ).setName("toggle")
     );
     // PA
     this.add(
@@ -55,7 +129,9 @@ export class Card extends Phaser.GameObjects.Container {
         "dogicapixel",
         this.unitData.PA.toString(),
         caracFontSize
-      ).setTint(0x33c6f7)
+      )
+        .setTint(0x33c6f7)
+        .setName("toggle")
     );
     // HP
     this.add(
@@ -69,6 +145,7 @@ export class Card extends Phaser.GameObjects.Container {
       )
         .setTint(0xff0000)
         .setOrigin(0.5, 0)
+        .setName("toggle")
     );
   }
 
@@ -79,7 +156,9 @@ export class Card extends Phaser.GameObjects.Container {
         0,
         0,
         this.unitData.type + "Illus"
-      ).setTint(0x555555)
+      )
+        .setTint(this.illustrationTint)
+        .setName("illustration")
     );
   }
 

@@ -1,19 +1,9 @@
 import { EffectOverTime } from "../../client/classes/battle/EffectOverTime";
 import { Spell } from "../../client/classes/battle/Spell";
-import {
-  javelin,
-  punch,
-  sting,
-  heal,
-  net,
-  trident,
-  stargazing,
-  understanding,
-  plague,
-} from "../../client/data/SpellData";
-import { unitsAvailable } from "../../client/data/UnitData";
+import { availableUnits } from "../../client/data/UnitData";
 import { Vector2 } from "../utils/findPath";
 import { ServerBattleScene } from "../scenes/ServerBattleScene";
+import { decodeSpellString } from "../../client/data/SpellData";
 
 export class ServerUnit {
   isReady: boolean;
@@ -58,7 +48,7 @@ export class ServerUnit {
     this.name = name;
 
     // retrieve unit characteristics
-    const playerData = unitsAvailable.find(
+    const playerData = availableUnits.find(
       (unitData) => unitData.type === type
     );
     this.maxHp = playerData.HP;
@@ -68,7 +58,7 @@ export class ServerUnit {
     this.maxPm = playerData.PM;
     this.pm = this.maxPm;
 
-    this.addSpells.apply(this, this.decodeSpellString(playerData.spells));
+    this.addSpells.apply(this, decodeSpellString(playerData.spells));
   }
 
   refillPoints() {
@@ -83,45 +73,6 @@ export class ServerUnit {
       copySpells.push({ ...spell });
     });
     this.spells = this.spells.concat(copySpells);
-  }
-
-  /** Transforms a list of spell names in a string into an array of Spell objects. */
-  decodeSpellString(spellStr: string) {
-    let spellArray: Spell[] = [];
-    spellStr.split(", ").forEach((spellName) => {
-      switch (spellName) {
-        case "deadly javelin":
-          spellArray.push(javelin);
-          break;
-        case "punch":
-          spellArray.push(punch);
-          break;
-        case "sting":
-          spellArray.push(sting);
-          break;
-        case "herbal medicine":
-          spellArray.push(heal);
-          break;
-        case "net":
-          spellArray.push(net);
-          break;
-        case "trident":
-          spellArray.push(trident);
-          break;
-        case "stargazing":
-          spellArray.push(stargazing);
-          break;
-        case "understanding":
-          spellArray.push(understanding);
-          break;
-        case "plague":
-          spellArray.push(plague);
-          break;
-        default:
-          break;
-      }
-    });
-    return spellArray;
   }
 
   private decrementSpellCooldowns() {

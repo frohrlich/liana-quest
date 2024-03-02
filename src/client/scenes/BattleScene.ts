@@ -6,24 +6,14 @@ import { Player } from "../classes/battle/Player";
 import { Spell } from "../classes/battle/Spell";
 import { BattleUIScene } from "./BattleUIScene";
 import isVisible from "../utils/lineOfSight";
-import { unitsAvailable } from "../data/UnitData";
-import {
-  heal,
-  javelin,
-  net,
-  plague,
-  punch,
-  stargazing,
-  sting,
-  trident,
-  understanding,
-} from "../data/SpellData";
+import { availableUnits } from "../data/UnitData";
 import { WorldScene } from "./WorldScene";
 import { ServerUnit } from "../../server/classes/ServerUnit";
 import { Socket } from "socket.io-client";
 import { Position } from "../../server/scenes/ServerWorldScene";
 import { EffectOverTime } from "../classes/battle/EffectOverTime";
 import { ChatScene } from "./ChatScene";
+import { decodeSpellString } from "../data/SpellData";
 
 /** Store a tile and the path to it (for movement). */
 export interface TilePath {
@@ -743,7 +733,7 @@ export class BattleScene extends Phaser.Scene {
   addUnit(serverUnit: ServerUnit, isTeamA: boolean) {
     // see if we find a unit with the name given by the world scene in the array
     // of all available units
-    const unitData = unitsAvailable.find(
+    const unitData = availableUnits.find(
       (unitData) => unitData.type === serverUnit.type
     );
     if (unitData) {
@@ -811,7 +801,7 @@ export class BattleScene extends Phaser.Scene {
       }
       this.units.push(unit);
       // add spells
-      unit.addSpells.apply(unit, this.decodeSpellString(unitData.spells));
+      unit.addSpells.apply(unit, decodeSpellString(unitData.spells));
       // unit is now considered as an obstacle for other units
       this.addToObstacleLayer(new Phaser.Math.Vector2(unit.indX, unit.indY));
       // initialize health bar
@@ -826,45 +816,6 @@ export class BattleScene extends Phaser.Scene {
     } else {
       throw new Error("Error : unit not found");
     }
-  }
-
-  /** Transforms a list of spell names in a string into an array of Spell objects. */
-  decodeSpellString(spellStr: string) {
-    let spellArray: Spell[] = [];
-    spellStr.split(", ").forEach((spellName) => {
-      switch (spellName) {
-        case "deadly javelin":
-          spellArray.push(javelin);
-          break;
-        case "punch":
-          spellArray.push(punch);
-          break;
-        case "sting":
-          spellArray.push(sting);
-          break;
-        case "herbal medicine":
-          spellArray.push(heal);
-          break;
-        case "net":
-          spellArray.push(net);
-          break;
-        case "trident":
-          spellArray.push(trident);
-          break;
-        case "stargazing":
-          spellArray.push(stargazing);
-          break;
-        case "understanding":
-          spellArray.push(understanding);
-          break;
-        case "plague":
-          spellArray.push(plague);
-          break;
-        default:
-          break;
-      }
-    });
-    return spellArray;
   }
 
   /** Creates a set of animations from a framerate and a base sprite. */

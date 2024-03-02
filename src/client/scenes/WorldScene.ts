@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { WorldNpc } from "../classes/world/WorldNpc";
-import { unitsAvailable } from "../data/UnitData";
+import { availableUnits } from "../data/UnitData";
 import { Socket, io } from "socket.io-client";
 import {
   ServerBattleIcon,
@@ -27,7 +27,7 @@ export class WorldScene extends Phaser.Scene {
   npcBattleIconFrame = 72;
   teamABattleIconFrame = 74;
   teamBBattleIconFrame = 73;
-  isBattleActivated = true;
+  isBattleActivated = false;
 
   player: WorldOnlinePlayer;
   spawns: Phaser.Physics.Arcade.Group;
@@ -449,7 +449,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private findUnitDataByType(type: string) {
-    return unitsAvailable.find((unitData) => unitData.type === type);
+    return availableUnits.find((unitData) => unitData.type === type);
   }
 
   private createTilemap() {

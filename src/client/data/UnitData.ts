@@ -7,63 +7,70 @@ export interface UnitData {
   spells: string;
   frame: number;
   type: string;
+  description: string;
 }
 
 export const amazon: UnitData = {
   HP: 100,
   PM: 4,
   PA: 6,
-  spells: "deadly javelin, herbal medicine, sting",
+  spells: "Deadly javelin, Royal medicine, Sting",
   frame: 8,
   type: "Amazon",
+  description: "A fearsome warrior. \nAlways angry about something.",
 };
 
 export const renegade: UnitData = {
   HP: 120,
   PM: 4,
   PA: 6,
-  spells: "net, trident, punch",
+  spells: "Weighted net, Trident, Punch",
   frame: 84,
   type: "Renegade",
+  description: "Finally free ?",
 };
 
 export const stranger: UnitData = {
   HP: 80,
   PM: 4,
   PA: 6,
-  spells: "stargazing, understanding, plague",
+  spells: "Stargazing, Understanding, Plague",
   frame: 88,
   type: "Stranger",
+  description: "...",
 };
 
 export const snowman: UnitData = {
   HP: 100,
   PM: 6,
   PA: 6,
-  spells: "sting",
+  spells: "Sting",
   frame: 40,
   type: "Snowman",
+  description: "Snow !",
 };
 
 export const dude: UnitData = {
   HP: 100,
   PM: 6,
   PA: 6,
-  spells: "deadly javelin",
+  spells: "Deadly javelin",
   frame: 0,
   type: "Dude",
+  description: "Just some dude.",
 };
 
 export const princess: UnitData = {
   HP: 15,
   PM: 3,
   PA: 6,
-  spells: "sting",
+  spells: "Sting",
   frame: 4,
   type: "Princess",
+  description: "A typical princess.",
 };
 
-export const unitsAvailable = [
+export const availableUnits = [
   amazon,
   renegade,
   stranger,
