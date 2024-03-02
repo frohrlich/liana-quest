@@ -46,18 +46,35 @@ export class Card extends Phaser.GameObjects.Container {
   }
 
   makeDescription() {
-    this.add(
-      new Phaser.GameObjects.BitmapText(
-        this.scene,
-        this.cardWidth / 2 + 5,
-        0,
-        "dogicapixel",
-        this.unitData.description,
-        8
-      )
-        .setVisible(false)
-        .setName("toggle")
-    );
+    const descriptionMargin = 2;
+    const descriptionText = new Phaser.GameObjects.BitmapText(
+      this.scene,
+      this.cardWidth / 2 + this.outlineWidth + descriptionMargin,
+      0,
+      "dogicapixel",
+      this.unitData.description,
+      8
+    )
+      .setVisible(false)
+      .setName("toggle");
+    // text
+    this.add(descriptionText);
+    const descriptionOutline = new Phaser.GameObjects.Rectangle(
+      this.scene,
+      descriptionText.x - descriptionMargin,
+      descriptionText.y - descriptionMargin,
+      descriptionText.displayWidth + descriptionMargin * 2,
+      descriptionText.displayHeight + descriptionMargin * 2,
+      0,
+      0.7
+    )
+      .setStrokeStyle(1, this.outlineColor)
+      .setOrigin(0, 0)
+      .setVisible(false)
+      .setName("toggle");
+    // outline
+    this.add(descriptionOutline);
+    this.sendToBack(descriptionOutline);
   }
 
   makeSpellIcons() {
