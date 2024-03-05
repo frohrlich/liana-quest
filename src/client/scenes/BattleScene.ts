@@ -6,7 +6,7 @@ import { Player } from "../classes/battle/Player";
 import { Spell } from "../classes/battle/Spell";
 import { BattleUIScene } from "./BattleUIScene";
 import isVisible from "../utils/lineOfSight";
-import { availableUnits } from "../data/UnitData";
+import { findUnitDataByType } from "../data/UnitData";
 import { WorldScene } from "./WorldScene";
 import { ServerUnit } from "../../server/classes/ServerUnit";
 import { Socket } from "socket.io-client";
@@ -733,9 +733,8 @@ export class BattleScene extends Phaser.Scene {
   addUnit(serverUnit: ServerUnit, isTeamA: boolean) {
     // see if we find a unit with the name given by the world scene in the array
     // of all available units
-    const unitData = availableUnits.find(
-      (unitData) => unitData.type === serverUnit.type
-    );
+    const unitData = findUnitDataByType(serverUnit.type);
+
     if (unitData) {
       const isPlayable = serverUnit.id === this.socket.id;
       const key = "player";

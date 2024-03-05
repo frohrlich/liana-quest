@@ -5,7 +5,7 @@ import {
   ServerWorldScene,
   escapeHtml,
 } from "./ServerWorldScene";
-import { availableUnits } from "../../client/data/UnitData";
+import { findUnitDataByType } from "../../client/data/UnitData";
 import { ServerUnit } from "../classes/ServerUnit";
 import findPath, { Vector2 } from "../utils/findPath";
 import { Spell } from "../../client/classes/battle/Spell";
@@ -460,9 +460,7 @@ export class ServerBattleScene {
     isTeamA: boolean,
     isPlayable: boolean
   ) {
-    const playerData = availableUnits.find(
-      (unitData) => unitData.type === unit.type
-    );
+    const playerData = findUnitDataByType(unit.type);
     if (playerData) {
       let starterTiles: Position[];
       starterTiles = isTeamA ? this.teamAStarterTiles : this.teamBStarterTiles;

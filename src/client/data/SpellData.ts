@@ -90,12 +90,12 @@ const stargazing = new Spell(
   2
 );
 
-const understanding = new Spell(
+const revelation = new Spell(
   140,
   0,
   6,
   4,
-  "Understanding",
+  "Revelation",
   false,
   false,
   0,
@@ -171,8 +171,7 @@ const sting = new Spell(
   0,
   "monoTarget",
   0,
-  1,
-  null
+  1
 );
 
 const heal = new Spell(
@@ -180,7 +179,7 @@ const heal = new Spell(
   0,
   4,
   4,
-  "Royal medicine",
+  "Herbal medicine",
   true,
   false,
   0,
@@ -190,10 +189,7 @@ const heal = new Spell(
   1,
   1,
   "star",
-  2,
-  2,
-  null,
-  princess
+  2
 );
 
 const availableSpells = [
@@ -201,7 +197,7 @@ const availableSpells = [
   net,
   trident,
   stargazing,
-  understanding,
+  revelation,
   plague,
   punch,
   sting,

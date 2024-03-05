@@ -17,7 +17,7 @@ export const GAME_HEIGHT = 416;
 const config = {
   type: Phaser.AUTO,
   pixelArt: true,
-  backgroundColor: "#000000",
+  backgroundColor: "#001200",
   scale: {
     mode: Phaser.Scale.FIT,
     parent: "game",

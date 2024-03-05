@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { WorldNpc } from "../classes/world/WorldNpc";
-import { availableUnits, findUnitDataByType } from "../data/UnitData";
+import { findUnitDataByType } from "../data/UnitData";
 import { Socket, io } from "socket.io-client";
 import {
   ServerBattleIcon,

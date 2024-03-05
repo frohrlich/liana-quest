@@ -9,22 +9,32 @@ export class Card extends Phaser.GameObjects.Container {
   outlineWidth = 8;
   outlineColor = 0xffffff;
   fillColor = 0x191430;
-  illustrationTint = 0x555555;
+  illustrationTint = 0x333333;
   fontSize = 16;
   caracFontSize = 32;
 
   unitData: UnitData;
+  // if card on right of screen, character description will go to the left
+  isOnRight: boolean;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, unitData: UnitData) {
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    unitData: UnitData,
+    isOnRight: boolean = false
+  ) {
     super(scene, x, y);
     this.unitData = unitData;
+    this.isOnRight = isOnRight;
     this.makeIllustration();
     this.makeCardOutline();
     this.makeName();
     this.makeCharacteristics();
     this.makeCharacterIcon();
     this.makeSpellIcons();
-    this.makeDescription();
+    // uncomment this if you want character description to appear alongside card
+    // this.makeDescription();
     this.setSize(this.cardWidth, this.cardHeight);
     this.setInteractive();
     this.on("pointerup", () => {
@@ -59,6 +69,9 @@ export class Card extends Phaser.GameObjects.Container {
     )
       .setVisible(false)
       .setName("toggle");
+    if (this.isOnRight) {
+      descriptionText.x = -descriptionText.x - descriptionText.displayWidth;
+    }
     // text
     this.add(descriptionText);
     const descriptionOutline = new Phaser.GameObjects.Rectangle(
@@ -127,7 +140,7 @@ export class Card extends Phaser.GameObjects.Container {
 
   makeCharacteristics() {
     const margin = 10;
-    // PM
+    // MP
     this.add(
       new Phaser.GameObjects.BitmapText(
         this.scene,
@@ -138,7 +151,7 @@ export class Card extends Phaser.GameObjects.Container {
         this.caracFontSize
       ).setName("toggle")
     );
-    // PA
+    // AP
     this.add(
       new Phaser.GameObjects.BitmapText(
         this.scene,

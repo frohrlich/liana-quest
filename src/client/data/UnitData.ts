@@ -12,12 +12,12 @@ export interface UnitData {
 
 export const amazon: UnitData = {
   HP: 100,
-  PM: 4,
+  PM: 5,
   PA: 6,
-  spells: "Deadly javelin, Royal medicine, Sting",
+  spells: "Deadly javelin, Herbal medicine, Sting",
   frame: 8,
   type: "Amazon",
-  description: "A fearsome warrior. \nAlways angry about something.",
+  description: "A fearsome warrior. Always angry about something.",
 };
 
 export const renegade: UnitData = {
@@ -27,14 +27,14 @@ export const renegade: UnitData = {
   spells: "Weighted net, Trident, Punch",
   frame: 84,
   type: "Renegade",
-  description: "Finally free ?",
+  description: "In his dreams, he's still in the Colosseum.",
 };
 
 export const stranger: UnitData = {
   HP: 80,
   PM: 4,
   PA: 6,
-  spells: "Stargazing, Understanding, Plague",
+  spells: "Stargazing, Revelation, Plague",
   frame: 88,
   type: "Stranger",
   description: "...",
@@ -70,14 +70,7 @@ export const princess: UnitData = {
   description: "A typical princess.",
 };
 
-export const availableUnits = [
-  amazon,
-  renegade,
-  stranger,
-  snowman,
-  dude,
-  princess,
-];
+const availableUnits = [amazon, renegade, stranger, snowman, dude, princess];
 
 export const findUnitDataByType = (type: string) => {
   return availableUnits.find((unitData) => unitData.type === type);

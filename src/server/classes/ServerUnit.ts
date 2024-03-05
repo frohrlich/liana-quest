@@ -1,6 +1,6 @@
 import { EffectOverTime } from "../../client/classes/battle/EffectOverTime";
 import { Spell } from "../../client/classes/battle/Spell";
-import { availableUnits } from "../../client/data/UnitData";
+import { findUnitDataByType } from "../../client/data/UnitData";
 import { Vector2 } from "../utils/findPath";
 import { ServerBattleScene } from "../scenes/ServerBattleScene";
 import { decodeSpellString } from "../../client/data/SpellData";
@@ -48,9 +48,7 @@ export class ServerUnit {
     this.name = name;
 
     // retrieve unit characteristics
-    const playerData = availableUnits.find(
-      (unitData) => unitData.type === type
-    );
+    const playerData = findUnitDataByType(type);
     this.maxHp = playerData.HP;
     this.hp = this.maxHp;
     this.maxPa = playerData.PA;

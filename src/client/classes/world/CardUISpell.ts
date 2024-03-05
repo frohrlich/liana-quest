@@ -170,7 +170,7 @@ export class CardUISpell extends Phaser.GameObjects.Container {
     const height =
       this.infoText.displayHeight + this.spellNameInfoText.displayHeight;
 
-    const xPos = -width / 2 - infoOffset;
+    const xPos = width / 2 + infoOffset;
     const yPos = -height / 2 - infoOffset;
 
     this.infoRectangle = new Phaser.GameObjects.Rectangle(
@@ -182,7 +182,7 @@ export class CardUISpell extends Phaser.GameObjects.Container {
       0x31593b
     )
       .setVisible(false)
-      .setAlpha(0.9);
+      .setAlpha(0.95);
     this.add(this.infoRectangle);
 
     this.outlineRectangle = new Phaser.GameObjects.Rectangle(
@@ -192,7 +192,6 @@ export class CardUISpell extends Phaser.GameObjects.Container {
       width + infoTextLeftMargin * 2 + lineWidth,
       height + lineWidth
     ).setStrokeStyle(lineWidth + 0.5, 0xffffff);
-    this.outlineRectangle.alpha = 0.9;
     this.outlineRectangle.visible = false;
     this.add(this.outlineRectangle);
 
