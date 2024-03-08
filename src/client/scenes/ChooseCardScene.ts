@@ -2,9 +2,13 @@ import Phaser from "phaser";
 import { Card } from "../classes/world/Card";
 import { GAME_HEIGHT, GAME_WIDTH } from "../app";
 import { findUnitDataByType } from "../data/UnitData";
+import { Socket, io } from "socket.io-client";
 
 export class ChooseCardScene extends Phaser.Scene {
   cardMargin = 20;
+
+  socket: Socket;
+  currentCharacterChoice: string;
 
   constructor() {
     super({
@@ -13,6 +17,15 @@ export class ChooseCardScene extends Phaser.Scene {
   }
 
   create() {
+    const token = getCookie("jwt");
+    this.socket = io("http://localhost:8081", {
+      query: { token },
+    });
+    this.socket.on("playerTypeUpdated", (type: string) => {
+      if (this.currentCharacterChoice === type) {
+        this.scene.start("WorldScene");
+      }
+    });
     // add cards
     const card1 = new Card(
       this,
@@ -62,7 +75,11 @@ export class ChooseCardScene extends Phaser.Scene {
       .setStrokeStyle(2, 0xffffff)
       .setDepth(-2)
       .setOrigin(0, 0.5)
-      .setVisible(false);
+      .setVisible(false)
+      .setInteractive()
+      .on("pointerup", () => {
+        this.sendCharacterChoiceToServer();
+      });
 
     // add character description on bottom
     const characterDescription = this.add.bitmapText(
@@ -77,6 +94,7 @@ export class ChooseCardScene extends Phaser.Scene {
     card1.on("pointerup", () => {
       toggleCardsVisibility(card2, card3);
       toggleChooseFighter(chooseText, chooseButton, card1.unitData.type);
+      this.currentCharacterChoice = card1.unitData.type;
       if (characterDescription.text === card1.unitData.description) {
         characterDescription.text = "";
       } else {
@@ -86,6 +104,7 @@ export class ChooseCardScene extends Phaser.Scene {
     card2.on("pointerup", () => {
       toggleCardsVisibility(card1, card3);
       toggleChooseFighter(chooseText, chooseButton, card2.unitData.type);
+      this.currentCharacterChoice = card2.unitData.type;
       if (characterDescription.text === card2.unitData.description) {
         characterDescription.text = "";
       } else {
@@ -95,6 +114,7 @@ export class ChooseCardScene extends Phaser.Scene {
     card3.on("pointerup", () => {
       toggleCardsVisibility(card1, card2);
       toggleChooseFighter(chooseText, chooseButton, card3.unitData.type);
+      this.currentCharacterChoice = card3.unitData.type;
       if (characterDescription.text === card3.unitData.description) {
         characterDescription.text = "";
       } else {
@@ -142,6 +162,10 @@ export class ChooseCardScene extends Phaser.Scene {
       8
     );
   }
+
+  sendCharacterChoiceToServer() {
+    this.socket.emit("choosePlayerCard", this.currentCharacterChoice);
+  }
 }
 
 const toggleCardsVisibility = (...cards: Card[]) => {
@@ -167,3 +191,18 @@ const toggleChooseFighter = (
     chooseButton.setVisible(false);
   }
 };
+
+function getCookie(name: string): string {
+  const nameLenPlus = name.length + 1;
+  return (
+    document.cookie
+      .split(";")
+      .map((c) => c.trim())
+      .filter((cookie) => {
+        return cookie.substring(0, nameLenPlus) === `${name}=`;
+      })
+      .map((cookie) => {
+        return decodeURIComponent(cookie.substring(nameLenPlus));
+      })[0] || null
+  );
+}

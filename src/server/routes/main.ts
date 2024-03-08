@@ -64,8 +64,10 @@ router.post("/login", async (req, res, next) => {
           email: user.email,
           _id: user._id,
         };
-        //Send back the token to the user
-        return res.status(200).json({ token, refreshToken });
+        const isFirstConnection = user.type === null;
+        // Send back the token to the user
+        // Also send a boolean to tell game if it's this user's first connection or not
+        return res.status(200).json({ token, refreshToken, isFirstConnection });
       });
     } catch (error) {
       return next(error);

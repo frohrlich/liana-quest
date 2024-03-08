@@ -4,6 +4,7 @@ import { Server, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import UserModel from "./models/userModel";
+import { findUnitDataByType } from "../client/data/UnitData";
 dotenv.config(); // Load environment variables from .env file
 
 export class Game {
@@ -62,10 +63,17 @@ export class Game {
       .on("connection", async (socket) => {
         // fetch user info in the database
         const user = await UserModel.findById(socket.data.user._id);
-        // on connection, add player to first world scene of the array (our starter scene)
         if (user) {
-          socket.data.user = user;
-          this.sendPlayerToWorldScene(socket, user.mapName);
+          // on first connection
+          if (!user.type) {
+            socket.once("choosePlayerCard", (type: string) => {
+              this.changePlayerType(socket, type);
+            });
+          } else {
+            // on connection, add player to first world scene of the array (our starter scene)
+            socket.data.user = user;
+            this.sendPlayerToWorldScene(socket, user.mapName);
+          }
         }
       });
   }
@@ -86,6 +94,20 @@ export class Game {
       { _id: socket.data.user._id },
       { indX: indX, indY: indY, mapName: mapName }
     );
+  }
+
+  async changePlayerType(socket: Socket, type: string) {
+    if (findUnitDataByType(type)) {
+      const updatedUser = await UserModel.findByIdAndUpdate(
+        { _id: socket.data.user._id },
+        { type: type },
+        { new: true }
+      );
+      if (updatedUser) {
+        socket.data.user = updatedUser;
+        socket.emit("playerTypeUpdated", updatedUser.type);
+      }
+    }
   }
 
   sendPlayerToWorldScene(socket: Socket, destination: string) {

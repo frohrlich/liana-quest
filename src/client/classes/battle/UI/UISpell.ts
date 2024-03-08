@@ -105,7 +105,7 @@ export class UISpell extends UIElement {
     // spell name text in bold
     let spellNameText = `${this.spell.name}`;
     // spell cost
-    let addText = `\ncost: ${this.spell.cost} PA`;
+    let addText = `\ncost: ${this.spell.cost} AP`;
     text += addText;
     // spell range
     // addText = `\n${this.spell.minRange}-${this.spell.maxRange} range`;
@@ -127,22 +127,22 @@ export class UISpell extends UIElement {
     }
     // spell malus PA
     if (this.spell.malusPA > 0) {
-      addText = `\n-${this.spell.malusPA} PA`;
+      addText = `\n-${this.spell.malusPA} AP`;
       text += addText;
     }
     // spell bonus PA
     if (this.spell.bonusPA > 0) {
-      addText = `\n+${this.spell.bonusPA} PA`;
+      addText = `\n+${this.spell.bonusPA} AP`;
       text += addText;
     }
-    // spell malus PM
+    // spell malus MP
     if (this.spell.malusPM > 0) {
-      addText = `\n-${this.spell.malusPM} PM`;
+      addText = `\n-${this.spell.malusPM} MP`;
       text += addText;
     }
-    // spell bonus PM
+    // spell bonus MP
     if (this.spell.bonusPM > 0) {
-      addText = `\n+${this.spell.bonusPM} PM`;
+      addText = `\n+${this.spell.bonusPM} MP`;
       text += addText;
     }
     // spell effect over time

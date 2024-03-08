@@ -188,8 +188,11 @@ export class LoginScene extends Phaser.Scene {
       url: "/login",
       data,
       success: (data) => {
-        // Start world scene
-        this.scene.start("ChooseCardScene");
+        if (data.isFirstConnection) {
+          this.scene.start("ChooseCardScene");
+        } else {
+          this.scene.start("WorldScene");
+        }
         refreshToken();
       },
       error: (xhr, status, error) => {

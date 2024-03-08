@@ -12,7 +12,6 @@ import { ServerUnit } from "../../server/classes/ServerUnit";
 import { WorldUnit } from "../classes/world/WorldUnit";
 import { NpcData, WorldData, findWorldMapByName } from "../data/WorldData";
 import { ChatScene } from "./ChatScene";
-import { Card } from "../classes/world/Card";
 
 interface UnitPosition {
   indX: number;
@@ -27,7 +26,7 @@ export class WorldScene extends Phaser.Scene {
   npcBattleIconFrame = 72;
   teamABattleIconFrame = 74;
   teamBBattleIconFrame = 73;
-  isBattleActivated = false;
+  isBattleActivated = true;
 
   player: WorldOnlinePlayer;
   spawns: Phaser.Physics.Arcade.Group;

@@ -91,7 +91,9 @@ export class ServerWorldScene {
   }
 
   private listenToSceneEvents(socket: Socket, io: Server) {
-    socket.removeAllListeners();
+    if (socket.data.user.type) {
+      socket.removeAllListeners();
+    }
 
     socket.on("startBattle", (enemyId: string) => {
       const myPlayer = this.findCurrentPlayer(socket);

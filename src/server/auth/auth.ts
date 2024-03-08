@@ -36,8 +36,8 @@ passport.use(
           email,
           password,
           username,
-          mapName: "forest",
-          type: "Stranger",
+          mapName: "forest", // starting map
+          type: null, // the character type will be chosen on first login
           color: randomColor,
         });
         return done(null, user);
