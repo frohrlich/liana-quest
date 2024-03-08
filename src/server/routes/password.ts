@@ -65,7 +65,7 @@ router.post(
       template: "forgot-password",
       subject: "Liana Quest Password Reset",
       context: {
-        url: `http://localhost:${
+        url: `${req.protocol}'://'${req.get("host")}:${
           process.env.PORT || 8081
         }/reset-password?token=${token}`,
         name: user.username,
