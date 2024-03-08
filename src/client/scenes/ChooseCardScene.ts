@@ -18,7 +18,7 @@ export class ChooseCardScene extends Phaser.Scene {
 
   create() {
     const token = getCookie("jwt");
-    this.socket = io(window.location.origin + ":8081", {
+    this.socket = io(window.location.origin, {
       query: { token },
     });
     this.socket.on("playerTypeUpdated", (type: string) => {

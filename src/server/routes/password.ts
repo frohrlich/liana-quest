@@ -65,9 +65,9 @@ router.post(
       template: "forgot-password",
       subject: "Liana Quest Password Reset",
       context: {
-        url: `${req.protocol}'://'${req.get("host")}:${
-          process.env.PORT || 8081
-        }/reset-password?token=${token}`,
+        url: `${req.protocol}://${req.get(
+          "host"
+        )}/reset-password?token=${token}`,
         name: user.username,
       },
     };
@@ -98,6 +98,11 @@ router.post(
       return;
     }
 
+    if (!validatePassword(req.body.password)) {
+      res.status(400).json({ message: "Invalid password format" });
+      return;
+    }
+
     // update user model
     user.password = req.body.password;
     user.resetToken = undefined;
@@ -121,3 +126,7 @@ router.post(
 );
 
 export default router;
+
+const validatePassword = (password: string) => {
+  return password.match(/^.{8,30}$/);
+};

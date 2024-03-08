@@ -363,7 +363,7 @@ export class WorldScene extends Phaser.Scene {
 
   initSocket() {
     const token = getCookie("jwt");
-    this.socket = io(window.location.origin + ":8081", {
+    this.socket = io(window.location.origin, {
       query: { token },
     });
   }

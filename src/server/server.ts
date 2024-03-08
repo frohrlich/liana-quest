@@ -83,7 +83,12 @@ const io = new Server<
   ServerToClientEvents,
   InterServerEvents,
   SocketData
->(server);
+>(server, {
+  cors: {
+    origin: "https://liana-quest-41980538aff2.herokuapp.com",
+    methods: ["GET", "POST"],
+  },
+});
 
 // update express settings
 app.use(bodyParser.urlencoded({ extended: false })); // parse application/x-www-form-urlencoded
