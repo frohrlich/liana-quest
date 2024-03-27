@@ -1,4 +1,4 @@
-A simple tactical MMORPG made with Phaser 3 and node.js.
+A simple tactical MMORPG made with Phaser 3, node.js and socket.io.
 
 Demo is available here : https://liana-quest-41980538aff2.herokuapp.com/game
 
