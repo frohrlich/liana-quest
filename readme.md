@@ -2,7 +2,12 @@ A simple tactical MMORPG made with Phaser 3, node.js and socket.io.
 
 Demo is available here : https://liana-quest-41980538aff2.herokuapp.com/game
 
-To compile and start the project, just run :
+You will need to create a .env file from the .env.dist template.
+TOKEN_SECRET and REFRESH_TOKEN_SECRET are simple strings that you can set as you like.
+You will need a working email if you want to use the login system. Set it up in the EMAIL, PASSWORD and EMAIL_PROVIDER variables. Your email will need to be configured to accept use by external software (you will likely need to generate a special password for that).
+You will need a mongoDB database to run the game. When it is setup, put the connection string in the MONGO_CONNECTION_URL variable.
+
+Finally, to compile and start the project, just run :
 
 ```
 npm install
