@@ -1,4 +1,6 @@
-A simple turn-based game made with Phaser 3.
+A simple tactical MMORPG made with Phaser 3, node.js and socket.io.
+
+Demo is available here : https://liana-quest-41980538aff2.herokuapp.com/game
 
 To compile and start the project, just run :
 
