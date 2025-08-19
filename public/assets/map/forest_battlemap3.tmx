@@ -1446,7 +1446,6 @@
    </properties>
   </tile>
  </tileset>
- <tileset firstgid="289" source="../../../../forest_tilemap.tsx"/>
  <layer id="2" name="background_layer" width="23" height="13">
   <data encoding="csv">
 101,101,101,101,101,101,101,101,101,101,101,101,101,101,101,101,101,101,101,101,101,101,101,
