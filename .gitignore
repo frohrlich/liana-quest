@@ -3,6 +3,7 @@
 # Compiled output
 /dist
 /public/js/app.js
+/public/js/app.js.LICENSE.txt
 /tmp
 /out-tsc
 /bazel-out
