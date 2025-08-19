@@ -13,8 +13,8 @@ Finally, to compile and start the project, just run :
 
 ```
 npm install
+npm run build
 npm start
-node dist/server.js
 ```
 
 ## Credits for the assets :
