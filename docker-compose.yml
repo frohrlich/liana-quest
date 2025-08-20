@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      - database
+    env_file:
+      - .env
+  database:
+    image: mongodb/mongodb-community-server:latest
+    ports:
+      - "27017:27017"
