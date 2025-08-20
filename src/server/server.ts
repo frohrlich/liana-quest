@@ -102,7 +102,7 @@ app.use(express.static("./"));
 app.use("/", routes);
 app.use("/", passwordRoutes);
 
-app.get("/game", function (req, res) {
+app.get("/", function (req, res) {
   res.sendFile("/public/index.html", { root: "./" });
 });
 
