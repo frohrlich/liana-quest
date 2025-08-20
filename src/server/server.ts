@@ -1,19 +1,19 @@
-import express, { Application } from "express";
-import { Server } from "socket.io";
-import * as http from "http";
-import { ServerWorldUnit, Position } from "./scenes/ServerWorldScene";
-import { ServerUnit } from "./classes/ServerUnit";
-import { Vector2 } from "./utils/findPath";
-import { Game } from "./Game";
-import mongoose from "mongoose";
-import routes from "./routes/main";
-import passwordRoutes from "./routes/password";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+import express, { Application } from "express";
+import * as http from "http";
+import mongoose from "mongoose";
+import { Server } from "socket.io";
+import { ServerUnit } from "./classes/ServerUnit";
+import { Game } from "./Game";
+import routes from "./routes/main";
+import passwordRoutes from "./routes/password";
+import { Position, ServerWorldUnit } from "./scenes/ServerWorldScene";
+import { Vector2 } from "./utils/findPath";
 dotenv.config(); // Load environment variables from .env file
 
-const port = 8081;
+const port = process.env.PORT || 8080;
 
 interface ServerToClientEvents {
   // world events
