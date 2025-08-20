@@ -31,6 +31,7 @@ docker compose up
 ```
 In that case, make sure to use the default MONGO_CONNECTION_URL in the `.env.dist` file.
 
+The game will be running on `http://localhost:8080` by default (the port can be specified in the .env file if needed).
 
 ## Credits for the assets :
 
